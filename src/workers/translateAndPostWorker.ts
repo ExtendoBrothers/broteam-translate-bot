@@ -79,15 +79,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
     }
 
+    // Check if blocked by pre-existing cooldown before fetching
+    const wasBlockedBefore = rateLimitTracker.isRateLimited('timeline');
+
     // Always fetch new tweets (independent of queue and post limit status)
     const tweets = await fetchTweets();
         
     if (tweets.length === 0) {
       logger.info('No new tweets to process');
-      // Check if we were blocked by a cooldown
-      if (rateLimitTracker.isRateLimited('timeline')) {
-        blockedByCooldown = true;
-      }
+      // Only mark as blocked if cooldown existed BEFORE the fetch attempt
+      blockedByCooldown = wasBlockedBefore;
       return { didWork: false, blockedByCooldown };
     }
         
