@@ -1,0 +1,16 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Attach to ts-node-dev (9229)",
+      "type": "node",
+      "request": "attach",
+      "port": 9229,
+      "protocol": "inspector",
+      "restart": true,
+      "skipFiles": ["<node_internals>/**"],
+      "localRoot": "${workspaceFolder}",
+      "remoteRoot": "${workspaceFolder}"
+    }
+  ]
+}
