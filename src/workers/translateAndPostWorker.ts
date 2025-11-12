@@ -12,8 +12,15 @@ import { postTracker } from '../utils/postTracker';
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-export const translateAndPostWorker = async () => {
+export interface WorkerResult {
+  didWork: boolean;
+  blockedByCooldown: boolean;
+}
+
+export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   const client = new TwitterClient();
+  let didWork = false;
+  let blockedByCooldown = false;
     
   try {
     // Periodically prune processed tweet IDs to keep storage healthy
@@ -77,7 +84,11 @@ export const translateAndPostWorker = async () => {
         
     if (tweets.length === 0) {
       logger.info('No new tweets to process');
-      return;
+      // Check if we were blocked by a cooldown
+      if (rateLimitTracker.isRateLimited('timeline')) {
+        blockedByCooldown = true;
+      }
+      return { didWork: false, blockedByCooldown };
     }
         
     logger.info(`Processing ${tweets.length} new tweet(s)`);
@@ -147,7 +158,10 @@ export const translateAndPostWorker = async () => {
     if (!tweetQueue.isEmpty()) {
       logger.info(`Worker complete. ${tweetQueue.size()} tweet(s) remaining in queue for next run.`);
     }
+    didWork = tweets.length > 0;
+    return { didWork, blockedByCooldown };
   } catch (error) {
     logger.error(`Error in translateAndPostWorker: ${error}`);
+    return { didWork: false, blockedByCooldown };
   }
 };

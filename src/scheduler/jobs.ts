@@ -57,7 +57,30 @@ function scheduleNext(from: Date) {
   setTimeout(async () => {
     try {
       logger.info('Running scheduled translation job...');
-      await translateAndPostWorker();
+      const result = await translateAndPostWorker();
+      
+      // If blocked by cooldown, schedule next run for 20s after cooldown expires
+      if (result.blockedByCooldown) {
+        const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
+        if (timelineCooldown > 0) {
+          const retryDelay = (timelineCooldown + 20) * 1000; // cooldown + 20s
+          const retryAt = new Date(Date.now() + retryDelay);
+          logger.info(`Blocked by cooldown. Retrying at ${retryAt.toISOString()} (in ${Math.ceil(retryDelay/1000)}s)`);
+          setTimeout(async () => {
+            try {
+              logger.info('Running post-cooldown retry...');
+              await translateAndPostWorker();
+            } catch (error) {
+              logger.error(`Error in post-cooldown retry: ${error}`);
+            } finally {
+              const now2 = new Date();
+              recordLastRun(now2);
+              scheduleNext(now2);
+            }
+          }, retryDelay);
+          return; // Don't schedule normal next run yet
+        }
+      }
     } catch (error) {
       logger.error(`Error in scheduled job: ${error}`);
     } finally {
@@ -76,7 +99,30 @@ export function scheduleJobs(lastRunAt?: Date, initialDelayMs?: number) {
     setTimeout(async () => {
       try {
         logger.info('Running scheduled translation job...');
-        await translateAndPostWorker();
+        const result = await translateAndPostWorker();
+        
+        // If blocked by cooldown, schedule next run for 20s after cooldown expires
+        if (result.blockedByCooldown) {
+          const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
+          if (timelineCooldown > 0) {
+            const retryDelay = (timelineCooldown + 20) * 1000; // cooldown + 20s
+            const retryAt = new Date(Date.now() + retryDelay);
+            logger.info(`Blocked by cooldown. Retrying at ${retryAt.toISOString()} (in ${Math.ceil(retryDelay/1000)}s)`);
+            setTimeout(async () => {
+              try {
+                logger.info('Running post-cooldown retry...');
+                await translateAndPostWorker();
+              } catch (error) {
+                logger.error(`Error in post-cooldown retry: ${error}`);
+              } finally {
+                const now2 = new Date();
+                recordLastRun(now2);
+                scheduleNext(now2);
+              }
+            }, retryDelay);
+            return; // Don't schedule normal next run yet
+          }
+        }
       } catch (error) {
         logger.error(`Error in scheduled job: ${error}`);
       } finally {
