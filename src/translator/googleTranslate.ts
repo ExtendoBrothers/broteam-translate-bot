@@ -26,13 +26,34 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   if (!text) return '';
 
-  // Protect URLs by replacing them with base64-encoded placeholders during translation,
-  // then restore them after translation.
-  const urlRegex = /(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi;
-  const sanitized = text.replace(urlRegex, (match) => {
-    const b64 = Buffer.from(match, 'utf8').toString('base64');
-    return `{{XURL:${b64}}}`;
-  });
+  // Normalize to NFC before processing to reduce cross-hop artifacts
+  try { text = text.normalize('NFC'); } catch { /* noop */ }
+
+  // Tokenize and protect sensitive spans so translators don't mangle them.
+  // Order matters: protect code blocks first to avoid inner replacements.
+  const patterns: Array<{ type: string; regex: RegExp }> = [
+    { type: 'CODEBLK', regex: /```[\s\S]*?```/g },
+    { type: 'CODE', regex: /`[^`]+`/g },
+    { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)/gi },
+    { type: 'EMAIL', regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
+    { type: 'MENTION', regex: /\B@[a-zA-Z0-9_]{1,15}\b/g },
+    { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
+    { type: 'CASHTAG', regex: /\B\$[A-Za-z]{1,6}\b/g },
+  ];
+
+  let tokenIndex = 0;
+  const replacements: Array<{ token: string; value: string }> = [];
+  let sanitized = text;
+
+  for (const { type, regex } of patterns) {
+    sanitized = sanitized.replace(regex, (match: string) => {
+      tokenIndex += 1;
+      const b64 = Buffer.from(match, 'utf8').toString('base64');
+      const token = `{{XTOK:${type}:${tokenIndex}:${b64}}}`;
+      replacements.push({ token, value: match });
+      return token;
+    });
+  }
 
   const bodyPayload: any = {
     q: sanitized,
@@ -67,22 +88,35 @@ export async function translateText(text: string, targetLanguage: string): Promi
       const data = await res.json();
       let restored = (data?.translatedText as string) || (data?.translated_text as string) || '';
 
-      // Replace any form of XURL:<base64> (regardless of surrounding braces) with decoded URL
+      // Backward compatibility for prior placeholder style (XURL)
       restored = restored.replace(/XURL:([A-Za-z0-9+/=]+)/g, (_m, p1) => {
-        try {
-          return Buffer.from(p1, 'base64').toString('utf8');
-        } catch {
-          return _m;
-        }
+        try { return Buffer.from(p1, 'base64').toString('utf8'); } catch { return _m; }
       });
 
-      // Clean up any leftover surrounding brackets/braces around URLs introduced by translation
-      restored = restored
-        .replace(/\{+\s*(https?:\/\/[^\s{}]+)\s*\}+/g, '$1')
-        .replace(/\[+\s*(https?:\/\/[^\s\[\]]+)\s*\]+/g, '$1')
-        .replace(/<+\s*(https?:\/\/[^\s<>]+)\s*>+/g, '$1')
-        .replace(/\(+\s*(https?:\/\/[^\s()]+)\s*\)+/g, '$1');
+      // Restore all generic XTOK placeholders regardless of surrounding punctuation/braces
+      restored = restored.replace(/XTOK:([A-Z]+):(\d+):([A-Za-z0-9+/=]+)/g, (_m, type, _idx, b64) => {
+        try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return _m; }
+      });
 
+      // Clean up any leftover wrapper chars that translators might add around tokens
+      restored = restored
+        .replace(/\{+\s*([^{}\s][^{}]*?)\s*\}+/g, '$1')
+        .replace(/\[+\s*([^\[\]\s][^\[\]]*?)\s*\]+/g, '$1')
+        .replace(/<+\s*([^<>\s][^<>]*?)\s*>+/g, '$1')
+        .replace(/\(+\s*([^()\s][^()]*)\s*\)+/g, '$1')
+        // Also strip stray leading/trailing wrappers around common token types
+        .replace(/[\[{(<]+(?=(https?:\/\/\S))/g, '')
+        .replace(/(?<=https?:\/\/\S)[\]})>]+/g, '')
+        .replace(/[\[{(<]+(?=(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b))/gi, '')
+        .replace(/(?:(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b))[\]})>]+/gi, (m) => m.replace(/[\]})>]+$/,' ' ).trimEnd())
+        .replace(/[\[{(<]+(?=@[a-zA-Z0-9_]{1,15}\b)/g, '')
+        .replace(/(@[a-zA-Z0-9_]{1,15}\b)[\]})>]+/g, '$1')
+        .replace(/[\[{(<]+(?=#[\p{L}0-9_]+)/gu, '')
+        .replace(/(#[\p{L}0-9_]+)[\]})>]+/gu, '$1')
+        .replace(/[\[{(<]+(?=\$[A-Za-z]{1,6}\b)/g, '')
+        .replace(/(\$[A-Za-z]{1,6}\b)[\]})>]+/g, '$1');
+
+      try { restored = restored.normalize('NFC'); } catch { /* noop */ }
       return restored;
     } catch (error: any) {
       lastErr = error;
