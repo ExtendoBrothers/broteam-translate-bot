@@ -57,8 +57,23 @@ export async function fetchTweets(): Promise<Tweet[]> {
     // Increase batch size to 40 to maximize catch-up in a single allowed request.
     const timeline = await client.getUserTimeline(targetUserId, {
       max_results: 40,  // Increased to 40 per user request
-      'tweet.fields': ['created_at', 'text']
+      'tweet.fields': ['created_at', 'text', 'entities']
     });
+
+    const expandUrls = (text: string, entities: any | undefined): string => {
+      if (!entities?.urls || !Array.isArray(entities.urls)) return text;
+      let out = text;
+      for (const u of entities.urls) {
+        const short = u?.url;
+        const expanded = u?.unwound_url || u?.expanded_url || u?.display_url;
+        if (short && expanded && typeof short === 'string' && typeof expanded === 'string') {
+          // Replace all occurrences of the t.co URL with the expanded URL
+          const rx = new RegExp(short.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
+          out = out.replace(rx, expanded);
+        }
+      }
+      return out;
+    };
 
     for (const tweet of timeline.data.data || []) {
       // Check if tweet should be processed (not already processed and after start date)
@@ -66,9 +81,10 @@ export async function fetchTweets(): Promise<Tweet[]> {
         continue;
       }
             
+      const expandedText = expandUrls(tweet.text, (tweet as any).entities);
       tweets.push({
         id: tweet.id,
-        text: tweet.text,
+        text: expandedText,
         createdAt: new Date(tweet.created_at || Date.now()),
         user: {
           id: targetUserId,

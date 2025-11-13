@@ -26,6 +26,15 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   if (!text) return '';
 
+  // If text is mostly URLs or contains no alphabetic characters, skip translation
+  const urlRegex = /(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi;
+  const stripped = text.replace(urlRegex, '').trim();
+  const hasLetters = /[A-Za-z\p{L}]/u.test(stripped);
+  if (!hasLetters || stripped.length < 3) {
+    logger.info('Skipping translation for URL-only or non-linguistic content');
+    return text;
+  }
+
   const bodyPayload: any = {
     q: text,
     source: 'auto',
