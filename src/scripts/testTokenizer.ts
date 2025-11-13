@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import { protectTokens, restoreTokens } from '../translator/tokenizer';
 
 function assertEqual(actual: string, expected: string, msg: string) {

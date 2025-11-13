@@ -1,4 +1,5 @@
-﻿import { translateText } from '../translator/googleTranslate';
+﻿/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
+import { translateText } from '../translator/googleTranslate';
 import { config } from '../config';
 
 async function main() {

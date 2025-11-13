@@ -1,3 +1,4 @@
+/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import 'dotenv/config';
 import * as http from 'http';
 import { URL } from 'url';
