@@ -24,22 +24,47 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
   }
 }
 
+// Improved chunker: prefer sentence boundaries; fallback to word splits only when necessary
 function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[] {
   if (protectedText.length <= maxLen) return [protectedText];
-  const parts = protectedText.split(/(\s+)/); // keep whitespace tokens
-  const chunks: string[] = [];
+  // Split into sentence-like segments including trailing punctuation + whitespace
+  const sentenceSegments = protectedText.match(/[^.!?]+[.!?]*\s*/g) || [protectedText];
+  const primaryChunks: string[] = [];
   let current = '';
-  for (const p of parts) {
-    if (!p) continue;
-    if ((current + p).length > maxLen && current.length > 0) {
-      chunks.push(current);
-      current = p.trimStart();
+  for (const seg of sentenceSegments) {
+    if (!current) {
+      current = seg;
+      continue;
+    }
+    if ((current + seg).length <= maxLen) {
+      current += seg;
     } else {
-      current += p;
+      primaryChunks.push(current);
+      current = seg;
     }
   }
-  if (current) chunks.push(current);
-  return chunks;
+  if (current) primaryChunks.push(current);
+  // Second pass: ensure no chunk exceeds maxLen; if it does, word-split that chunk
+  const finalChunks: string[] = [];
+  for (const chunk of primaryChunks) {
+    if (chunk.length <= maxLen) {
+      finalChunks.push(chunk);
+      continue;
+    }
+    const parts = chunk.split(/(\s+)/); // keep whitespace tokens
+    let acc = '';
+    for (const p of parts) {
+      if (!p) continue;
+      if ((acc + p).length > maxLen && acc) {
+        finalChunks.push(acc);
+        acc = p.trimStart();
+      } else {
+        acc += p;
+      }
+    }
+    if (acc) finalChunks.push(acc);
+  }
+  return finalChunks;
 }
 
 async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {

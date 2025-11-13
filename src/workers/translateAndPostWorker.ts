@@ -12,6 +12,49 @@ import { postTracker } from '../utils/postTracker';
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Circuit breaker state per language
+interface CircuitState { failures: number; openedAt?: number; }
+const circuit: Record<string, CircuitState> = {};
+const FAILURE_THRESHOLD = 3;
+const CIRCUIT_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes
+
+function isCircuitOpen(lang: string): boolean {
+  const state = circuit[lang];
+  if (!state) return false;
+  if (state.failures < FAILURE_THRESHOLD) return false;
+  if (!state.openedAt) return false;
+  const elapsed = Date.now() - state.openedAt;
+  if (elapsed >= CIRCUIT_COOLDOWN_MS) {
+    // Cooldown expired; reset state
+    circuit[lang] = { failures: 0, openedAt: undefined };
+    return false;
+  }
+  return true;
+}
+
+function recordFailure(lang: string): void {
+  const state = circuit[lang] || { failures: 0 };
+  state.failures += 1;
+  if (state.failures === FAILURE_THRESHOLD && !state.openedAt) {
+    state.openedAt = Date.now();
+    logger.warn(`Circuit opened for language ${lang} after ${state.failures} consecutive failures; skipping translations for ${Math.round(CIRCUIT_COOLDOWN_MS/60000)}m`);
+  }
+  circuit[lang] = state;
+}
+
+function recordSuccess(lang: string): void {
+  const state = circuit[lang];
+  if (state && state.failures > 0) {
+    circuit[lang] = { failures: 0, openedAt: undefined };
+    logger.info(`Circuit reset for language ${lang} after successful translation`);
+  }
+}
+
+function jitteredTranslationDelay(baseMs: number = 2000): number {
+  // Add 0-1200ms jitter to spread requests
+  return baseMs + Math.floor(Math.random() * 1200);
+}
+
 export interface WorkerResult {
   didWork: boolean;
   blockedByCooldown: boolean;
@@ -103,21 +146,27 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       let translationChain = tweet.text;
             
-      // Chain translations through all languages
+      // Chain translations through all languages with circuit breaker and jittered delays
       for (const lang of config.LANGUAGES) {
+        // Skip if circuit open
+        if (isCircuitOpen(lang)) {
+          logger.warn(`Skipping language ${lang} due to open circuit`);
+          continue;
+        }
         try {
           translationChain = await translateText(translationChain, lang);
+          recordSuccess(lang);
           logger.info(`Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
-                    
-          // Add 2-second delay between translation calls
-          await delay(2000);
         } catch (error: unknown) {
           logger.error(`Failed to translate for ${lang}: ${error}`);
+          recordFailure(lang);
           // Continue with partial translation rather than failing completely
         }
+        // Apply jittered delay after attempt (success or failure) to avoid thundering herd
+        await delay(jitteredTranslationDelay());
       }
 
-      // Translate final result back to English
+      // Translate final result back to English (no circuit skip for final step)
       try {
         const finalResult = await translateText(translationChain, 'en');
         logger.info(`Final translation result: ${finalResult}`);
@@ -156,8 +205,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
       } catch (error: unknown) {
         logger.error(`Failed to translate final result for tweet ${tweet.id}: ${error}`);
-        // Mark as processed to avoid infinite retry
-        tweetTracker.markProcessed(tweet.id);
+        // Do NOT mark as processed so it can be retried in future runs
       }
     }
         
