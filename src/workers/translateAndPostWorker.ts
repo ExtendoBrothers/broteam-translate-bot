@@ -15,12 +15,14 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 export interface WorkerResult {
   didWork: boolean;
   blockedByCooldown: boolean;
+  blockedByPostLimit: boolean;
 }
 
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
+  let blockedByPostLimit = false;
     
   try {
     // Periodically prune processed tweet IDs to keep storage healthy
@@ -40,6 +42,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (rateLimitTracker.isRateLimited('post')) {
         const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
         logger.info(`Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
+        blockedByPostLimit = true;
         break;
       }
 
@@ -89,7 +92,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       logger.info('No new tweets to process');
       // Only mark as blocked if cooldown existed BEFORE the fetch attempt
       blockedByCooldown = wasBlockedBefore;
-      return { didWork: false, blockedByCooldown };
+      return { didWork: false, blockedByCooldown, blockedByPostLimit };
     }
         
     logger.info(`Processing ${tweets.length} new tweet(s)`);
@@ -160,9 +163,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       logger.info(`Worker complete. ${tweetQueue.size()} tweet(s) remaining in queue for next run.`);
     }
     didWork = tweets.length > 0;
-    return { didWork, blockedByCooldown };
+    return { didWork, blockedByCooldown, blockedByPostLimit };
   } catch (error) {
     logger.error(`Error in translateAndPostWorker: ${error}`);
-    return { didWork: false, blockedByCooldown };
+    return { didWork: false, blockedByCooldown, blockedByPostLimit };
   }
 };

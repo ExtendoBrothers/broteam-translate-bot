@@ -81,6 +81,29 @@ function scheduleNext(from: Date) {
           return; // Don't schedule normal next run yet
         }
       }
+      
+      // If blocked by post rate limit, schedule retry after post limit expires
+      if (result.blockedByPostLimit) {
+        const postCooldown = rateLimitTracker.getSecondsUntilReset('post');
+        if (postCooldown > 0) {
+          const retryDelay = (postCooldown + 20) * 1000; // cooldown + 20s
+          const retryAt = new Date(Date.now() + retryDelay);
+          logger.info(`Blocked by post rate limit. Retrying at ${retryAt.toISOString()} (in ${Math.ceil(retryDelay/1000)}s)`);
+          setTimeout(async () => {
+            try {
+              logger.info('Running post-limit retry...');
+              await translateAndPostWorker();
+            } catch (error) {
+              logger.error(`Error in post-limit retry: ${error}`);
+            } finally {
+              const now2 = new Date();
+              recordLastRun(now2);
+              scheduleNext(now2);
+            }
+          }, retryDelay);
+          return; // Don't schedule normal next run yet
+        }
+      }
     } catch (error) {
       logger.error(`Error in scheduled job: ${error}`);
     } finally {
@@ -114,6 +137,29 @@ export function scheduleJobs(lastRunAt?: Date, initialDelayMs?: number) {
                 await translateAndPostWorker();
               } catch (error) {
                 logger.error(`Error in post-cooldown retry: ${error}`);
+              } finally {
+                const now2 = new Date();
+                recordLastRun(now2);
+                scheduleNext(now2);
+              }
+            }, retryDelay);
+            return; // Don't schedule normal next run yet
+          }
+        }
+        
+        // If blocked by post rate limit, schedule retry after post limit expires
+        if (result.blockedByPostLimit) {
+          const postCooldown = rateLimitTracker.getSecondsUntilReset('post');
+          if (postCooldown > 0) {
+            const retryDelay = (postCooldown + 20) * 1000; // cooldown + 20s
+            const retryAt = new Date(Date.now() + retryDelay);
+            logger.info(`Blocked by post rate limit. Retrying at ${retryAt.toISOString()} (in ${Math.ceil(retryDelay/1000)}s)`);
+            setTimeout(async () => {
+              try {
+                logger.info('Running post-limit retry...');
+                await translateAndPostWorker();
+              } catch (error) {
+                logger.error(`Error in post-limit retry: ${error}`);
               } finally {
                 const now2 = new Date();
                 recordLastRun(now2);
