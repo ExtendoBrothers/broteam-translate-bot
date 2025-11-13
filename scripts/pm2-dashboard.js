@@ -145,7 +145,7 @@ async function handleRequest(req, res) {
         memory: p.monit && p.monit.memory,
       }
     }));
-    res.writeHead(200, { 'Content-Type': 'application/json' });
+    res.writeHead(200, { 'Content-Type': 'application/json', 'Cache-Control': 'no-store, max-age=0' });
     res.end(JSON.stringify(safe, null, 2));
     return;
   }
@@ -236,7 +236,6 @@ async function handleRequest(req, res) {
 <head>
   <title>PM2 Dashboard - broteam-translate-bot</title>
   <meta charset="utf-8">
-  <meta http-equiv="refresh" content="60">
   <style>
     body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
     h1 { color: #4ec9b0; margin-bottom: 8px; }
@@ -356,12 +355,22 @@ async function handleRequest(req, res) {
 
     refreshProcesses();
     setInterval(refreshProcesses, 5000);
+    // Robust auto-refresh every 60s using JS to avoid meta-refresh hangups
+    setTimeout(function(){
+      try { window.stop && window.stop(); } catch(_) {}
+      location.replace(location.href.split('#')[0]);
+    }, 60000);
   </script>
 </body>
 </html>
   `;
 
-  res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' });
+  res.writeHead(200, {
+    'Content-Type': 'text/html; charset=utf-8',
+    'Cache-Control': 'no-store, max-age=0',
+    'Pragma': 'no-cache',
+    'Expires': '0'
+  });
   res.end(html);
 }
 

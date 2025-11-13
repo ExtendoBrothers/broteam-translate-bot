@@ -1,0 +1,256 @@
+﻿
+<!DOCTYPE html>
+<html>
+<head>
+  <title>PM2 Dashboard - broteam-translate-bot</title>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
+    h1 { color: #4ec9b0; margin-bottom: 8px; }
+    .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
+    @media (min-width: 1100px) { .row { grid-template-columns: 1fr 1fr; } }
+    table { border-collapse: collapse; width: 100%; background: #252526; }
+    th, td { padding: 10px; text-align: left; border-bottom: 1px solid #3e3e42; font-size: 14px; }
+    th { background: #2d2d30; color: #4ec9b0; font-weight: 600; position: sticky; top: 0; }
+    tr:hover { background: #2a2d2e; }
+    .badge { padding: 2px 6px; border-radius: 4px; font-size: 12px; font-weight: 600; }
+    .badge-success { background: #3e7e3a; color: #89d185; }
+    .badge-danger { background: #5a1d1d; color: #f48771; }
+    code { background: #1e1e1e; padding: 1px 4px; border-radius: 3px; color: #ce9178; }
+    .meta { color: #858585; font-size: 13px; margin: 8px 0 16px; }
+    .card { background: #252526; border: 1px solid #3e3e42; border-radius: 6px; overflow: hidden; }
+    .card h2 { margin: 0; padding: 10px; font-size: 16px; background: #2d2d30; color: #4ec9b0; }
+    .controls { padding: 8px 10px; background: #1e1e1e; border-bottom: 1px solid #3e3e42; display: flex; gap: 8px; align-items: center; }
+    .controls label { font-size: 13px; color: #c5c5c5; }
+    .controls select, .controls button { background: #2d2d30; color: #d4d4d4; border: 1px solid #3e3e42; border-radius: 4px; padding: 6px 8px; font-size: 13px; }
+    .log { font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; font-size: 12px; white-space: pre-wrap; padding: 10px; height: 480px; overflow: auto; background: #1e1e1e; }
+  </style>
+</head>
+<body>
+  <h1>🚀 PM2 Dashboard</h1>
+  <p class="meta">Local only • Process stats refresh every 5s • Live logs stream instantly</p>
+  <div class="row">
+    <div class="card">
+      <h2>Processes</h2>
+      <div style="max-height: 520px; overflow: auto;">
+        <table>
+          <thead>
+            <tr>
+              <th>ID</th>
+              <th>Name</th>
+              <th>Status</th>
+              <th>PID</th>
+              <th>Uptime</th>
+              <th>Restarts</th>
+              <th>CPU</th>
+              <th>Memory</th>
+            </tr>
+          </thead>
+          <tbody id="tbody"><tr><td>0</td><td><code>broteam-translate-bot</code></td><td><span class="badge badge-success">online</span></td><td>29912</td><td>14h 33m</td><td>0</td><td>0%</td><td>47.9MB</td></tr><tr><td>2</td><td><code>pm2-dashboard</code></td><td><span class="badge badge-success">online</span></td><td>10368</td><td>57s</td><td>28</td><td>0%</td><td>55.5MB</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+    <div class="card">
+      <h2>Live Logs</h2>
+      <div class="controls">
+        <label>Process:
+          <select id="procName"></select>
+        </label>
+        <label>Type:
+          <select id="logType">
+            <option value="out" selected>out</option>
+            <option value="err">err</option>
+            <option value="both">both</option>
+          </select>
+        </label>
+        <label>Filter:
+          <input id="filter" placeholder="e.g. error|rate limit|translate failed" style="width: 280px;" />
+        </label>
+        <label><input type="checkbox" id="regex"> regex</label>
+        <label><input type="checkbox" id="case"> case</label>
+        <button id="pause">Pause</button>
+        <button id="clear">Clear</button>
+        <span class="meta" id="status"></span>
+      </div>
+      <div class="log" id="log"></div>
+    </div>
+  </div>
+
+  <script>
+    const tbody = document.getElementById('tbody');
+    const procName = document.getElementById('procName');
+    const logType = document.getElementById('logType');
+    const filterInput = document.getElementById('filter');
+    const regexCb = document.getElementById('regex');
+    const caseCb = document.getElementById('case');
+    const logEl = document.getElementById('log');
+    const pauseBtn = document.getElementById('pause');
+    const clearBtn = document.getElementById('clear');
+    const statusEl = document.getElementById('status');
+    let paused = false;
+    let es = null;
+    let buffer = [];
+    let lastUpdate = 0;
+    let pendingLines = [];
+
+    function formatUptime(ms) {
+      const sec = Math.floor(ms / 1000);
+      const min = Math.floor(sec / 60);
+      const hr = Math.floor(min / 60);
+      const day = Math.floor(hr / 24);
+      if (day > 0) return day + 'd ' + (hr % 24) + 'h';
+      if (hr > 0) return hr + 'h ' + (min % 60) + 'm';
+      if (min > 0) return min + 'm';
+      return sec + 's';
+    }
+
+    function formatBytes(bytes) {
+      if (bytes < 1024) return bytes + 'B';
+      if (bytes < 1024 * 1024) return (bytes / 1024).toFixed(1) + 'KB';
+      return (bytes / (1024 * 1024)).toFixed(1) + 'MB';
+    }
+
+    async function refreshProcesses() {
+      try {
+        const res = await fetch('/api/processes');
+        const data = await res.json();
+        tbody.innerHTML = data.map(p => {
+          const uptime = p.pm2_env.pm_uptime ? (Date.now() - p.pm2_env.pm_uptime) : 0;
+          const badgeClass = p.pm2_env.status === 'online' ? 'badge-success' : 'badge-danger';
+          return '<tr>' +
+            '<td>' + p.pm_id + '</td>' +
+            '<td><code>' + p.name + '</code></td>' +
+            '<td><span class="badge ' + badgeClass + '">' + p.pm2_env.status + '</span></td>' +
+            '<td>' + (p.pid || 'N/A') + '</td>' +
+            '<td>' + formatUptime(uptime) + '</td>' +
+            '<td>' + (p.pm2_env.restart_time || 0) + '</td>' +
+            '<td>' + (p.monit && p.monit.cpu !== undefined ? (p.monit.cpu + '%') : 'N/A') + '</td>' +
+            '<td>' + (p.monit && p.monit.memory !== undefined ? formatBytes(p.monit.memory) : 'N/A') + '</td>' +
+          '</tr>';
+        }).join('');
+
+        const names = data.map(p => p.name);
+        const current = procName.value;
+        procName.innerHTML = names.map(function(n){ return '<option value="' + n + '">' + n + '</option>'; }).join('');
+        if (!current) {
+          const def = names.includes('broteam-translate-bot') ? 'broteam-translate-bot' : names[0];
+          if (def) procName.value = def;
+        } else {
+          procName.value = current;
+        }
+      } catch (e) { }
+    }
+
+    function connect() {
+      if (es) es.close();
+      const name = encodeURIComponent(procName.value || 'broteam-translate-bot');
+      const type = encodeURIComponent(logType.value || 'out');
+      const sseUrl = '/api/logs/stream?name=' + name + '&type=' + type;
+      es = new EventSource(sseUrl);
+      statusEl.textContent = 'connecting...';
+      es.addEventListener('open', function(){ statusEl.textContent = 'live'; });
+      es.addEventListener('error', function(){ statusEl.textContent = 'disconnected'; });
+      es.addEventListener('log', function(ev){
+        if (paused) return;
+        const line = ev.data;
+        // Skip "already processed" messages to reduce noise
+        if (/already processed/i.test(line)) return;
+        buffer.unshift(line); // Add to beginning for newest-first
+        pendingLines.unshift(line); // Add to beginning
+        // Batch updates: flush at most once per 10 seconds
+        const now = Date.now();
+        if (now - lastUpdate >= 10000) {
+          flushPendingLines();
+        }
+      });
+    }
+
+    function getMatcher() {
+      const q = filterInput.value;
+      if (!q) return null;
+      try {
+        if (regexCb.checked) {
+          const flags = caseCb.checked ? '' : 'i';
+          return new RegExp(q, flags);
+        } else {
+          const m = caseCb.checked ? q : q.toLowerCase();
+          return { test: s => (caseCb.checked ? s : s.toLowerCase()).includes(m) };
+        }
+      } catch (e) { return null; }
+    }
+
+    function appendIfMatch(line) {
+      const matcher = getMatcher();
+      if (!matcher || matcher.test(line)) {
+        logEl.textContent += (line + '
+');
+        logEl.scrollTop = logEl.scrollHeight;
+      }
+    }
+
+    function flushPendingLines() {
+      if (pendingLines.length === 0) return;
+      const matcher = getMatcher();
+      const linesToFlush = pendingLines.slice();
+      pendingLines.length = 0;
+      let newContent = '';
+      for (const line of linesToFlush) {
+        if (!matcher || matcher.test(line)) {
+          newContent += (line + '
+');
+        }
+      }
+      if (newContent) {
+        logEl.textContent = newContent + logEl.textContent;
+        logEl.scrollTop = 0; // Scroll to top for newest
+      }
+      lastUpdate = Date.now();
+    }
+
+    function rerender() {
+      const matcher = getMatcher();
+      logEl.textContent = '';
+      // Take newest 5000 lines (from beginning of buffer since we unshift)
+      for (let i = 0; i < Math.min(5000, buffer.length); i++) {
+        const line = buffer[i];
+        if (!line) continue;
+        if (!matcher || matcher.test(line)) {
+          logEl.textContent += (line + '
+');
+        }
+      }
+      logEl.scrollTop = 0; // Scroll to top for newest
+    }
+
+    pauseBtn.addEventListener('click', function(){
+      paused = !paused;
+      pauseBtn.textContent = paused ? 'Resume' : 'Pause';
+    });
+    clearBtn.addEventListener('click', function(){ logEl.textContent = ''; buffer = []; pendingLines.length = 0; });
+    procName.addEventListener('change', function(){ logEl.textContent = ''; buffer = []; pendingLines.length = 0; connect(); });
+    logType.addEventListener('change', function(){ logEl.textContent = ''; buffer = []; pendingLines.length = 0; connect(); });
+    filterInput.addEventListener('input', rerender);
+    regexCb.addEventListener('change', rerender);
+    caseCb.addEventListener('change', rerender);
+
+    refreshProcesses();
+    connect();
+    setInterval(refreshProcesses, 5000);
+    
+    // Flush pending log lines every 10 seconds
+    setInterval(flushPendingLines, 10000);
+    
+    // Set initial log content
+    (function(){
+      const initial = "2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987852698922910034 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987852440235032919 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987851745624789502 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987851442733138140 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987850978050310592 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987850779907223577 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987850397000892628 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987819564722483306 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987795443280207992 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987788867131547864 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987727554414092514 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987718825073430881 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987692976089497836 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987681516600889566 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987678821521490085 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987675689521496307 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987423506280350037 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987369268938482159 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987346773611036757 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987346430718267406 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987315563157463084 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987154742414651840 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Skipping tweet 1987154713968816316 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Fetched 0 tweets from @BroTeamPills\n2025-11-13T15:44:00: 2025-11-13T14:44:00.928Z [info]: Setting cooldown for 'timeline' for 1800s (post-fetch cadence enforcement). Until 2025-11-13T15:14:10.928Z\n2025-11-13T15:44:00: 2025-11-13T14:44:00.929Z [info]: No new tweets to process\n2025-11-13T15:44:00: 2025-11-13T14:44:00.930Z [info]: Adjusting schedule: timeline cooldown active for 1810s; adding buffer\n2025-11-13T15:44:00: 2025-11-13T14:44:00.930Z [info]: Next scheduled run at 2025-11-13T15:14:44.084Z (in 1844s)\n2025-11-13T16:14:44: 2025-11-13T15:14:44.099Z [info]: Running scheduled translation job...\n2025-11-13T16:14:44: 2025-11-13T15:14:44.100Z [info]: Post limit status: 1/17 posts in last 24h, 16 remaining\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988763233608691825 - already processed\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988763232232960286 - already processed\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988389601153896642 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988389600134664684 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988230884164845863 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988167152797683769 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988133259142984011 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988035764035424541 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988035762751942961 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988007802531704975 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988005881297129770 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1988004765255823634 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987855296090501327 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987854783445959111 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987854310500368389 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987853159604355295 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987852698922910034 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987852440235032919 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987851745624789502 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987851442733138140 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987850978050310592 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987850779907223577 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987850397000892628 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987819564722483306 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987795443280207992 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987788867131547864 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987727554414092514 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987718825073430881 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987692976089497836 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987681516600889566 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987678821521490085 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987675689521496307 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987423506280350037 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987369268938482159 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987346773611036757 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987346430718267406 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987315563157463084 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987154742414651840 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Skipping tweet 1987154713968816316 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Fetched 0 tweets from @BroTeamPills\n2025-11-13T16:14:44: 2025-11-13T15:14:44.443Z [info]: Setting cooldown for 'timeline' for 1800s (post-fetch cadence enforcement). Until 2025-11-13T15:44:54.443Z\n2025-11-13T16:14:44: 2025-11-13T15:14:44.444Z [info]: No new tweets to process\n2025-11-13T16:14:44: 2025-11-13T15:14:44.445Z [info]: Adjusting schedule: timeline cooldown active for 1810s; adding buffer\n2025-11-13T16:14:44: 2025-11-13T15:14:44.445Z [info]: Next scheduled run at 2025-11-13T15:45:17.448Z (in 1834s)\n2025-11-13T16:45:17: 2025-11-13T15:45:17.456Z [info]: Running scheduled translation job...\n2025-11-13T16:45:17: 2025-11-13T15:45:17.457Z [info]: Post limit status: 1/17 posts in last 24h, 16 remaining\n2025-11-13T16:45:17: 2025-11-13T15:45:17.805Z [info]: Skipping tweet 1988763233608691825 - already processed\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988763232232960286 - already processed\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988389601153896642 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988389600134664684 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988230884164845863 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988167152797683769 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988133259142984011 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988035764035424541 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988035762751942961 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988007802531704975 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988005881297129770 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1988004765255823634 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987855296090501327 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987854783445959111 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987854310500368389 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987853159604355295 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987852698922910034 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987852440235032919 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987851745624789502 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987851442733138140 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987850978050310592 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987850779907223577 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987850397000892628 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987819564722483306 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987795443280207992 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987788867131547864 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987727554414092514 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987718825073430881 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987692976089497836 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987681516600889566 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987678821521490085 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987675689521496307 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987423506280350037 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987369268938482159 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987346773611036757 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987346430718267406 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987315563157463084 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987154742414651840 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Skipping tweet 1987154713968816316 - created before 2025-11-12T00:00:00.000Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Fetched 0 tweets from @BroTeamPills\n2025-11-13T16:45:17: 2025-11-13T15:45:17.806Z [info]: Setting cooldown for 'timeline' for 1800s (post-fetch cadence enforcement). Until 2025-11-13T16:15:27.806Z\n2025-11-13T16:45:17: 2025-11-13T15:45:17.807Z [info]: No new tweets to process\n2025-11-13T16:45:17: 2025-11-13T15:45:17.809Z [info]: Adjusting schedule: timeline cooldown active for 1810s; adding buffer\n2025-11-13T16:45:17: 2025-11-13T15:45:17.809Z [info]: Next scheduled run at 2025-11-13T16:15:54.475Z (in 1837s)";
+      if (initial) {
+        const lines = initial.split('\n').filter(l => l.length > 0).reverse();
+        buffer = lines;
+        logEl.textContent = lines.join('\n');
+        logEl.scrollTop = 0;
+      }
+    })();
+  </script>
+</body>
+</html>
+  
