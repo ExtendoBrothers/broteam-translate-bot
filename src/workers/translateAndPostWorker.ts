@@ -50,7 +50,7 @@ function recordSuccess(lang: string): void {
   }
 }
 
-function jitteredTranslationDelay(baseMs: number = 2000): number {
+function jitteredTranslationDelay(baseMs = 2000) {
   // Add 0-1200ms jitter to spread requests
   return baseMs + Math.floor(Math.random() * 1200);
 }
