@@ -161,11 +161,21 @@ async function handleRequest(req, res) {
       return;
     }
     res.writeHead(200, {
-      'Content-Type': 'text/event-stream',
-      'Cache-Control': 'no-cache',
-      Connection: 'keep-alive',
-      'Access-Control-Allow-Origin': 'http://127.0.0.1:' + PORT
+      'Content-Type': 'text/event-stream; charset=utf-8',
+      'Cache-Control': 'no-cache, no-transform',
+      'Connection': 'keep-alive',
+      'X-Accel-Buffering': 'no',
+      'Access-Control-Allow-Origin': '*'
     });
+    if (typeof res.flushHeaders === 'function') { try { res.flushHeaders(); } catch(_) {} }
+    // Send an initial heartbeat to open the stream and keep it alive
+    try {
+      res.write('retry: 2000\n');
+      res.write(': heartbeat\n\n');
+    } catch(_) {}
+    const ping = setInterval(() => {
+      try { res.write(': ping\n\n'); } catch(_) {}
+    }, 15000);
     const outPath = proc.pm2_env && proc.pm2_env.pm_out_log_path;
     const errPath = proc.pm2_env && proc.pm2_env.pm_err_log_path;
     const redactors = buildRedactors();
@@ -175,12 +185,18 @@ async function handleRequest(req, res) {
         tailSSEWithPrefix(res, outPath, { tailBytes: 16384 }, '[out] ', redactors),
         tailSSEWithPrefix(res, errPath, { tailBytes: 16384 }, '[err] ', redactors),
       ];
-      res.on('close', () => { cleaners.forEach(fn => { try { fn(); } catch(_) {} }); });
+      res.on('close', () => {
+        try { clearInterval(ping); } catch(_) {}
+        cleaners.forEach(fn => { try { fn(); } catch(_) {} });
+      });
     } else {
       const logPath = type === 'err' ? errPath : outPath;
       sseWrite(res, 'info', `[dashboard] streaming ${type} logs for ${name}`);
       const cleaner = tailSSEWithPrefix(res, logPath, { tailBytes: 16384 }, type === 'err' ? '[err] ' : '', redactors);
-      res.on('close', () => { try { cleaner(); } catch(_) {} });
+      res.on('close', () => {
+        try { clearInterval(ping); } catch(_) {}
+        try { cleaner(); } catch(_) {}
+      });
     }
     return;
   }
@@ -205,7 +221,14 @@ async function handleRequest(req, res) {
   const bot = processes.find(p => p.name === 'broteam-translate-bot');
   const botOut = bot && bot.pm2_env ? bot.pm2_env.pm_out_log_path : null;
   const fallbackLog = botOut ? tailFileSync(botOut, 16384, 120) : '';
-  const escapedLog = fallbackLog ? (fallbackLog.replace(/&/g,'&amp;').replace(/</g,'&lt;')) : '';
+  // Filter out noise from initial logs and reverse for newest-first
+  const filteredLog = fallbackLog 
+    ? fallbackLog.split('\n')
+        .filter(line => !/already processed|skipping tweet/i.test(line))
+        .reverse()
+        .join('\n')
+    : '';
+  const escapedLog = filteredLog ? (filteredLog.replace(/&/g,'&amp;').replace(/</g,'&lt;')) : '';
 
   const html = `
 <!DOCTYPE html>
@@ -213,6 +236,7 @@ async function handleRequest(req, res) {
 <head>
   <title>PM2 Dashboard - broteam-translate-bot</title>
   <meta charset="utf-8">
+  <meta http-equiv="refresh" content="60">
   <style>
     body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
     h1 { color: #4ec9b0; margin-bottom: 8px; }
@@ -237,7 +261,7 @@ async function handleRequest(req, res) {
 </head>
 <body>
   <h1>🚀 PM2 Dashboard</h1>
-  <p class="meta">Local only • Process stats refresh every 5s • Live logs stream instantly</p>
+  <p class="meta">Local only • Page auto-refreshes every 60s</p>
   <div class="row">
     <div class="card">
       <h2>Processes</h2>
@@ -272,14 +296,6 @@ async function handleRequest(req, res) {
             <option value="both">both</option>
           </select>
         </label>
-        <label>Filter:
-          <input id="filter" placeholder="e.g. error|rate limit|translate failed" style="width: 280px;" />
-        </label>
-        <label><input type="checkbox" id="regex"> regex</label>
-        <label><input type="checkbox" id="case"> case</label>
-        <button id="pause">Pause</button>
-        <button id="clear">Clear</button>
-        <span class="meta" id="status"></span>
       </div>
       <div class="log" id="log">${escapedLog}</div>
     </div>
@@ -289,16 +305,6 @@ async function handleRequest(req, res) {
     const tbody = document.getElementById('tbody');
     const procName = document.getElementById('procName');
     const logType = document.getElementById('logType');
-    const filterInput = document.getElementById('filter');
-    const regexCb = document.getElementById('regex');
-    const caseCb = document.getElementById('case');
-    const logEl = document.getElementById('log');
-    const pauseBtn = document.getElementById('pause');
-    const clearBtn = document.getElementById('clear');
-    const statusEl = document.getElementById('status');
-    let paused = false;
-    let es = null;
-    let buffer = (logEl.textContent || '').split('\n');
 
     function formatUptime(ms) {
       const sec = Math.floor(ms / 1000);
@@ -348,71 +354,7 @@ async function handleRequest(req, res) {
       } catch (e) { }
     }
 
-    function connect() {
-      if (es) es.close();
-      const name = encodeURIComponent(procName.value || 'broteam-translate-bot');
-      const type = encodeURIComponent(logType.value || 'out');
-      const sseUrl = '/api/logs/stream?name=' + name + '&type=' + type;
-      es = new EventSource(sseUrl);
-      statusEl.textContent = 'connecting...';
-      es.addEventListener('open', function(){ statusEl.textContent = 'live'; });
-      es.addEventListener('error', function(){ statusEl.textContent = 'disconnected'; });
-      es.addEventListener('log', function(ev){
-        if (paused) return;
-        const line = ev.data;
-        buffer.push(line);
-        appendIfMatch(line);
-      });
-    }
-
-    function getMatcher() {
-      const q = filterInput.value;
-      if (!q) return null;
-      try {
-        if (regexCb.checked) {
-          const flags = caseCb.checked ? '' : 'i';
-          return new RegExp(q, flags);
-        } else {
-          const m = caseCb.checked ? q : q.toLowerCase();
-          return { test: s => (caseCb.checked ? s : s.toLowerCase()).includes(m) };
-        }
-      } catch (e) { return null; }
-    }
-
-    function appendIfMatch(line) {
-      const matcher = getMatcher();
-      if (!matcher || matcher.test(line)) {
-        logEl.textContent += (line + '\n');
-        logEl.scrollTop = logEl.scrollHeight;
-      }
-    }
-
-    function rerender() {
-      const matcher = getMatcher();
-      logEl.textContent = '';
-      for (let i = Math.max(0, buffer.length - 5000); i < buffer.length; i++) {
-        const line = buffer[i];
-        if (!line) continue;
-        if (!matcher || matcher.test(line)) {
-          logEl.textContent += (line + '\n');
-        }
-      }
-      logEl.scrollTop = logEl.scrollHeight;
-    }
-
-    pauseBtn.addEventListener('click', function(){
-      paused = !paused;
-      pauseBtn.textContent = paused ? 'Resume' : 'Pause';
-    });
-    clearBtn.addEventListener('click', function(){ logEl.textContent = ''; buffer = []; });
-    procName.addEventListener('change', function(){ logEl.textContent = ''; buffer = []; connect(); });
-    logType.addEventListener('change', function(){ logEl.textContent = ''; buffer = []; connect(); });
-    filterInput.addEventListener('input', rerender);
-    regexCb.addEventListener('change', rerender);
-    caseCb.addEventListener('change', rerender);
-
     refreshProcesses();
-    connect();
     setInterval(refreshProcesses, 5000);
   </script>
 </body>
