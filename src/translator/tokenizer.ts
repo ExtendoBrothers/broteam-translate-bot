@@ -46,7 +46,7 @@ export function restoreTokens(text: string): string {
   // Clean up any leftover wrapper chars that translators might add around tokens
   restored = restored
     .replace(/\{+\s*([^{}\s][^{}]*?)\s*\}+/g, '$1')
-    .replace(/\[+\s*([^\[\]\s][^\[\]]*?)\s*\]+/g, '$1')
+    .replace(/\[+\s*([^\]\s][^\]]*?)\s*\]+/g, '$1')
     .replace(/<+\s*([^<>\s][^<>]*?)\s*>+/g, '$1')
     .replace(/\(+\s*([^()\s][^()]*)\s*\)+/g, '$1');
 
@@ -84,15 +84,15 @@ export function restoreTokens(text: string): string {
     [new RegExp(`\\(\\s*(${cashtagPart})\\s*\\)`, 'g'), '$1'],
 
     // Code spans and blocks
-    [new RegExp(`\\{\\s*(` + "`[^`]+`" + `)\\s*\\}`, 'g'), '$1'],
-    [new RegExp(`\\[\\s*(` + "`[^`]+`" + `)\\s*\\]`, 'g'), '$1'],
-    [new RegExp(`<\\s*(` + "`[^`]+`" + `)\\s*>`, 'g'), '$1'],
-    [new RegExp(`\\(\\s*(` + "`[^`]+`" + `)\\s*\\)`, 'g'), '$1'],
+    [new RegExp('\\{\\s*(`[^`]+`)\\s*\\}', 'g'), '$1'],
+    [new RegExp('\\[\\s*(`[^`]+`)\\s*\\]', 'g'), '$1'],
+    [new RegExp('<\\s*(`[^`]+`)\\s*>', 'g'), '$1'],
+    [new RegExp('\\(\\s*(`[^`]+`)\\s*\\)', 'g'), '$1'],
     // Fenced code blocks
-    [new RegExp("\\{\\s*(```[\\s\\S]*?```)\\s*\\}", 'g'), '$1'],
-    [new RegExp("\\[\\s*(```[\\s\\S]*?```)\\s*\\]", 'g'), '$1'],
-    [new RegExp("<\\s*(```[\\s\\S]*?```)\\s*>", 'g'), '$1'],
-    [new RegExp("\\(\\s*(```[\\s\\S]*?```)\\s*\\)", 'g'), '$1'],
+    [new RegExp('\\{\\s*(```[\\s\\S]*?```)\\s*\\}', 'g'), '$1'],
+    [new RegExp('\\[\\s*(```[\\s\\S]*?```)\\s*\\]', 'g'), '$1'],
+    [new RegExp('<\\s*(```[\\s\\S]*?```)\\s*>', 'g'), '$1'],
+    [new RegExp('\\(\\s*(```[\\s\\S]*?```)\\s*\\)', 'g'), '$1'],
   ];
   for (const [re, rep] of pairs) restored = restored.replace(re, rep);
 
