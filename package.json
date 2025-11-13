@@ -9,7 +9,8 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "debug": "ts-node-dev --respawn --transpile-only --inspect=9229 src/index.ts",
     "lint": "eslint . --ext .ts",
-    "translate:one": "ts-node src/scripts/translateOne.ts"
+    "translate:one": "ts-node src/scripts/translateOne.ts",
+    "test:tokens": "ts-node src/scripts/testTokenizer.ts"
   ,"resolve:user": "ts-node src/scripts/resolveUserId.ts"
   ,"oauth2:auth": "ts-node src/scripts/oauth2Authorize.ts"
   ,"oauth2:handle": "ts-node src/scripts/oauth2HandleCode.ts"
