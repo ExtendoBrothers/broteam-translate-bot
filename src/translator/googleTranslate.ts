@@ -26,17 +26,16 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 export async function translateText(text: string, targetLanguage: string): Promise<string> {
   if (!text) return '';
 
-  // If text is mostly URLs or contains no alphabetic characters, skip translation
+  // Protect URLs by replacing them with base64-encoded placeholders during translation,
+  // then restore them after translation.
   const urlRegex = /(https?:\/\/[^\s)]+)|(www\.[^\s)]+)/gi;
-  const stripped = text.replace(urlRegex, '').trim();
-  const hasLetters = /[A-Za-z\p{L}]/u.test(stripped);
-  if (!hasLetters || stripped.length < 3) {
-    logger.info('Skipping translation for URL-only or non-linguistic content');
-    return text;
-  }
+  const sanitized = text.replace(urlRegex, (match) => {
+    const b64 = Buffer.from(match, 'utf8').toString('base64');
+    return `{{XURL:${b64}}}`;
+  });
 
   const bodyPayload: any = {
-    q: text,
+    q: sanitized,
     source: 'auto',
     target: targetLanguage,
     format: 'text',
@@ -66,7 +65,25 @@ export async function translateText(text: string, targetLanguage: string): Promi
       }
 
       const data = await res.json();
-      return (data?.translatedText as string) || (data?.translated_text as string) || '';
+      let restored = (data?.translatedText as string) || (data?.translated_text as string) || '';
+
+      // Replace any form of XURL:<base64> (regardless of surrounding braces) with decoded URL
+      restored = restored.replace(/XURL:([A-Za-z0-9+/=]+)/g, (_m, p1) => {
+        try {
+          return Buffer.from(p1, 'base64').toString('utf8');
+        } catch {
+          return _m;
+        }
+      });
+
+      // Clean up any leftover surrounding brackets/braces around URLs introduced by translation
+      restored = restored
+        .replace(/\{+\s*(https?:\/\/[^\s{}]+)\s*\}+/g, '$1')
+        .replace(/\[+\s*(https?:\/\/[^\s\[\]]+)\s*\]+/g, '$1')
+        .replace(/<+\s*(https?:\/\/[^\s<>]+)\s*>+/g, '$1')
+        .replace(/\(+\s*(https?:\/\/[^\s()]+)\s*\)+/g, '$1');
+
+      return restored;
     } catch (error: any) {
       lastErr = error;
       const isAbort = error?.name === 'AbortError' || /aborted|timeout/i.test(error?.message || '');
