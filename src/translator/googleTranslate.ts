@@ -17,8 +17,8 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
   const controller = new AbortController();
   const id = setTimeout(() => controller.abort(), timeoutMs);
   try {
-    const res = await fetch(input as any, { ...init, signal: controller.signal } as any);
-    return res as any;
+    const res = await fetch(input, { ...init, signal: controller.signal });
+    return res;
   } finally {
     clearTimeout(id);
   }
@@ -43,7 +43,7 @@ function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[]
 }
 
 async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {
-  const bodyPayload: any = {
+  const bodyPayload: Record<string, unknown> = {
     q,
     source: 'auto',
     target: targetLanguage,
@@ -75,25 +75,26 @@ export async function translateText(text: string, targetLanguage: string): Promi
 
   const MAX_RETRIES = 3;
   const BASE_TIMEOUT_MS = 15000; // 15s per attempt
-  let lastErr: any;
+  let lastErr: unknown;
   let triedChunkFallback = false;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const raw = await doTranslateOnce(sanitized, targetLanguage, BASE_TIMEOUT_MS);
       return restoreTokens(raw);
-    } catch (error: any) {
+    } catch (error: unknown) {
       lastErr = error;
-      const statusMatch = /LibreTranslate error (\d+)/.exec(error?.message || '');
+      const errMsg = (error as Error)?.message || '';
+      const statusMatch = /LibreTranslate error (\d+)/.exec(errMsg);
       const status = statusMatch ? parseInt(statusMatch[1], 10) : undefined;
-      const isAbort = error?.name === 'AbortError' || /aborted|timeout/i.test(error?.message || '');
-      const isNetwork = /ECONNRESET|ENOTFOUND|EAI_AGAIN|ECONNREFUSED/i.test(error?.message || '');
+      const isAbort = (error as Error)?.name === 'AbortError' || /aborted|timeout/i.test(errMsg);
+      const isNetwork = /ECONNRESET|ENOTFOUND|EAI_AGAIN|ECONNREFUSED/i.test(errMsg);
       const retriable = isAbort || isNetwork || [408, 429, 500, 502, 503, 504].includes(status || 0);
       if (attempt < MAX_RETRIES && retriable) {
         const backoff = Math.min(5000, 500 * Math.pow(2, attempt - 1));
         const jitter = Math.floor(Math.random() * 250);
         const wait = backoff + jitter;
-        logger.warn(`Translate retry ${attempt}/${MAX_RETRIES - 1} after ${wait}ms due to: ${error?.message || error}`);
+        logger.warn(`Translate retry ${attempt}/${MAX_RETRIES - 1} after ${wait}ms due to: ${errMsg || error}`);
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
@@ -110,7 +111,7 @@ export async function translateText(text: string, targetLanguage: string): Promi
           }
           const rawJoined = outPieces.join('');
           return restoreTokens(rawJoined);
-        } catch (e: any) {
+        } catch (e: unknown) {
           lastErr = e;
         }
       }
@@ -118,6 +119,6 @@ export async function translateText(text: string, targetLanguage: string): Promi
     }
   }
 
-  const errMsg = (lastErr as any)?.message || String(lastErr);
+  const errMsg = (lastErr as Error)?.message || String(lastErr);
   throw new Error(`Translation failed (LibreTranslate at ${LIBRE_URL}): ${errMsg}`);
 }

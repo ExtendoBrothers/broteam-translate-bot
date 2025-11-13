@@ -93,7 +93,8 @@ class TweetQueue {
   public dequeue(): QueuedTweet | null {
     if (this.queue.length === 0) return null;
         
-    const tweet = this.queue.shift()!;
+    const tweet = this.queue.shift();
+    if (!tweet) return null;
     this.saveState();
     logger.info(`Dequeued tweet ${tweet.sourceTweetId}. Queue size: ${this.queue.length}`);
     return tweet;

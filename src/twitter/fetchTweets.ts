@@ -60,7 +60,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       'tweet.fields': ['created_at', 'text', 'entities']
     });
 
-    const expandUrls = (text: string, entities: any | undefined): string => {
+    const expandUrls = (text: string, entities: Record<string, unknown> | undefined): string => {
       if (!entities?.urls || !Array.isArray(entities.urls)) return text;
       let out = text;
       for (const u of entities.urls) {
@@ -81,7 +81,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         continue;
       }
             
-      const expandedText = expandUrls(tweet.text, (tweet as any).entities);
+      const expandedText = expandUrls(tweet.text, (tweet as { entities?: Record<string, unknown> }).entities);
       tweets.push({
         id: tweet.id,
         text: expandedText,
@@ -99,12 +99,13 @@ export async function fetchTweets(): Promise<Tweet[]> {
     // Enforce 30-minute cadence regardless of API header presence
     // Persist a cooldown so restarts don't trigger an early fetch
     rateLimitTracker.setCooldown('timeline', 30 * 60, 'post-fetch cadence enforcement');
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle rate limit errors and extract reset time
-    if (error?.code === 429 || error?.rateLimit?.reset) {
-      const resetTime = error?.rateLimit?.reset || error?.headers?.['x-rate-limit-reset'];
+    const err = error as { code?: number; rateLimit?: { reset?: number }; headers?: Record<string, string>; message?: string };
+    if (err?.code === 429 || err?.rateLimit?.reset) {
+      const resetTime = err?.rateLimit?.reset || (err?.headers?.['x-rate-limit-reset'] ? Number(err.headers['x-rate-limit-reset']) : undefined);
       rateLimitTracker.setRateLimit('timeline', resetTime);
-    } else if (error?.message?.includes('429')) {
+    } else if (err?.message?.includes('429')) {
       rateLimitTracker.setRateLimit('timeline');
     } else {
       logger.error(`Error fetching tweets: ${error}`);

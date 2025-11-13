@@ -61,9 +61,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 
         // Add delay between posts
         await delay(5000);
-      } catch (error: any) {
+      } catch (error: unknown) {
         // If rate limit hit, stop processing queue
-        if (error?.code === 429 || error?.message?.includes('429')) {
+        const err = error as { code?: number; message?: string };
+        if (err?.code === 429 || err?.message?.includes('429')) {
           logger.error('Rate limit hit while posting queued tweet. Will retry next run.');
           tweetQueue.incrementAttempt();
           break;
@@ -110,7 +111,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                     
           // Add 2-second delay between translation calls
           await delay(2000);
-        } catch (error: any) {
+        } catch (error: unknown) {
           logger.error(`Failed to translate for ${lang}: ${error}`);
           // Continue with partial translation rather than failing completely
         }
@@ -140,8 +141,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                         
             // Add delay between processing different tweets
             await delay(5000);
-          } catch (error: any) {
-            if (error?.code === 429 || error?.message?.includes('429')) {
+          } catch (error: unknown) {
+            const err = error as { code?: number; message?: string };
+            if (err?.code === 429 || err?.message?.includes('429')) {
               logger.error(`Rate limit hit on post. Queueing tweet ${tweet.id} for later.`);
               tweetQueue.enqueue(tweet.id, finalResult);
               // Don't process more new tweets this run
@@ -152,7 +154,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             tweetTracker.markProcessed(tweet.id);
           }
         }
-      } catch (error: any) {
+      } catch (error: unknown) {
         logger.error(`Failed to translate final result for tweet ${tweet.id}: ${error}`);
         // Mark as processed to avoid infinite retry
         tweetTracker.markProcessed(tweet.id);

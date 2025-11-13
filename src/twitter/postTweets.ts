@@ -47,12 +47,13 @@ export async function postTweet(client: TwitterClient, content: string) {
     }
         
     return { id: previousTweetId, threadLength: chunks.length };
-  } catch (error: any) {
+  } catch (error: unknown) {
     // Handle rate limit errors and extract reset time
-    if (error?.code === 429 || error?.rateLimit?.reset) {
-      const resetTime = error?.rateLimit?.reset || error?.headers?.['x-rate-limit-reset'];
+    const err = error as { code?: number; rateLimit?: { reset?: number }; headers?: Record<string, string>; message?: string };
+    if (err?.code === 429 || err?.rateLimit?.reset) {
+      const resetTime = err?.rateLimit?.reset || (err?.headers?.['x-rate-limit-reset'] ? Number(err.headers['x-rate-limit-reset']) : undefined);
       rateLimitTracker.setRateLimit('post', resetTime);
-    } else if (error?.message?.includes('429')) {
+    } else if (err?.message?.includes('429')) {
       rateLimitTracker.setRateLimit('post');
     } else {
       logger.error(`Failed to post tweet: ${error}`);

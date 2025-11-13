@@ -107,8 +107,10 @@ export class TwitterClient {
     try {
       await this.ensureFreshToken();
       return await request();
-    } catch (err: any) {
-      if ((err?.code === 401 || err?.status === 401) && this.oauth2Tokens?.refreshToken) {
+    } catch (err: unknown) {
+      const code = (err as { code?: number })?.code;
+      const status = (err as { status?: number })?.status;
+      if ((code === 401 || status === 401) && this.oauth2Tokens?.refreshToken) {
         logger.warn('401 received from Twitter API. Attempting OAuth2 token refresh...');
         await this.refreshOAuth2Token(this.oauth2Tokens);
         return await request();
@@ -166,12 +168,12 @@ export class TwitterClient {
     return await this.withRefreshOn401(() => this.client.v2.userByUsername(username));
   }
 
-  public async getUserTimeline(userId: string, options: any = {}) {
+  public async getUserTimeline(userId: string, options: Record<string, unknown> = {}) {
     return await this.withRefreshOn401(() => this.client.v2.userTimeline(userId, options));
   }
 
   public async postTweet(content: string, replyToTweetId?: string) {
-    const tweetOptions: any = { text: content };
+    const tweetOptions: Record<string, unknown> = { text: content };
         
     // If this is a reply (part of a thread), add reply settings
     if (replyToTweetId) {

@@ -32,9 +32,9 @@ function validateEnv(): boolean {
 async function main() {
   try {
     // Global safety net for unhandled rejections
-    process.on('unhandledRejection', (reason: any) => {
+    process.on('unhandledRejection', (reason: unknown) => {
       try {
-        const msg = reason?.stack || reason?.message || String(reason);
+        const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
         logger.error(`Unhandled promise rejection: ${msg}`);
       } catch (e) {
         // ignore
