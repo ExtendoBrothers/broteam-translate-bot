@@ -199,6 +199,18 @@ Contributions welcome! Please:
 1. Test changes with `DRY_RUN=1`
 2. Respect rate limits
 3. Document environment variables
+4. Ensure code passes `npm run build` and `npm run lint` before pushing
+
+### Pre-Push Hook
+
+A git pre-push hook is installed at `.git/hooks/pre-push` that automatically runs:
+- `npm run build` (TypeScript compilation)
+- `npm run lint` (ESLint checks)
+
+If either fails, the push is blocked. To bypass in emergencies (not recommended):
+```powershell
+git push --no-verify
+```
 
 ## License
 
