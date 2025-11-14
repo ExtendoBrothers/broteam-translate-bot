@@ -89,7 +89,7 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
           .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
-          .replace(/&apos;/g, "'")
+          .replace(/&apos;/g, '\'')
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
           .replace(/\s+/g, ' ')
           .trim();
@@ -124,7 +124,7 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
 /**
  * Fetch via vxtwitter (fxtwitter) - provides JSON API
  */
-export async function fetchFromVxTwitter(username: string, max = 20): Promise<Tweet[]> {
+export async function fetchFromVxTwitter(): Promise<Tweet[]> {
   if (rateLimitTracker.isRateLimited('vxtwitter')) {
     const waitSeconds = rateLimitTracker.getSecondsUntilReset('vxtwitter');
     logger.info(`VxTwitter rate limited for ${waitSeconds} more seconds`);
@@ -134,7 +134,6 @@ export async function fetchFromVxTwitter(username: string, max = 20): Promise<Tw
   try {
     // VxTwitter doesn't have a timeline API, but we can try the embed endpoint
     // This is a long shot and likely won't work for timelines
-    const url = `https://api.vxtwitter.com/Twitter/status/1`; // Placeholder
     
     logger.info('VxTwitter API not suitable for timeline fetching');
     rateLimitTracker.setCooldown('vxtwitter', 30 * 60, 'not suitable');
