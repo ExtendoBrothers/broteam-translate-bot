@@ -10,10 +10,10 @@
     "debug": "ts-node-dev --respawn --transpile-only --inspect=9229 src/index.ts",
     "lint": "eslint . --ext .ts",
     "translate:one": "ts-node src/scripts/translateOne.ts",
-    "test:tokens": "ts-node src/scripts/testTokenizer.ts"
-  ,"resolve:user": "ts-node src/scripts/resolveUserId.ts"
-  ,"oauth2:auth": "ts-node src/scripts/oauth2Authorize.ts"
-  ,"oauth2:handle": "ts-node src/scripts/oauth2HandleCode.ts"
+    "test:tokens": "ts-node src/scripts/testTokenizer.ts",
+    "resolve:user": "ts-node src/scripts/resolveUserId.ts",
+    "oauth2:auth": "ts-node src/scripts/oauth2Authorize.ts",
+    "oauth2:handle": "ts-node src/scripts/oauth2HandleCode.ts"
   },
   "dependencies": {
     "dotenv": "^17.2.3",
@@ -26,6 +26,7 @@
   "devDependencies": {
     "@types/node": "^20.5.1",
     "@types/node-cron": "^3.0.11",
+    "@types/node-fetch": "^2.6.13",
     "@typescript-eslint/eslint-plugin": "^5.0.0",
     "@typescript-eslint/parser": "^5.0.0",
     "eslint": "^8.40.0",

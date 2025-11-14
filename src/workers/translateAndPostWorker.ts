@@ -12,6 +12,10 @@ import { postTracker } from '../utils/postTracker';
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
+// Minimum delay between posts to avoid rapid-fire posting (15 minutes)
+const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+let lastPostTime = 0;
+
 // Circuit breaker state per language
 interface CircuitState { failures: number; openedAt?: number; }
 const circuit: Record<string, CircuitState> = {};
@@ -93,6 +97,15 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (!queuedTweet) break;
 
       try {
+        // Enforce minimum interval between posts
+        const timeSinceLastPost = Date.now() - lastPostTime;
+        if (lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS) {
+          const waitMs = MIN_POST_INTERVAL_MS - timeSinceLastPost;
+          logger.info(`Enforcing minimum post interval. Waiting ${Math.ceil(waitMs / 1000)}s before next post`);
+          blockedByPostLimit = true;
+          break;
+        }
+
         logger.info(`Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
         await postTweet(client, queuedTweet.finalTranslation);
         logger.info(`Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
@@ -101,15 +114,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         postTracker.recordPost();
         tweetTracker.markProcessed(queuedTweet.sourceTweetId);
         tweetQueue.dequeue();
+        lastPostTime = Date.now();
                 
         // Add delay between posts
         await delay(5000);
       } catch (error: unknown) {
-        // If rate limit hit, stop processing queue
+        // If rate limit hit (429 or 403), stop processing queue
         const err = error as { code?: number; message?: string };
-        if (err?.code === 429 || err?.message?.includes('429')) {
-          logger.error('Rate limit hit while posting queued tweet. Will retry next run.');
+        if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+          logger.error(`Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
           tweetQueue.incrementAttempt();
+          blockedByPostLimit = true;
           break;
         }
         // For other errors, increment attempt count but keep in queue
@@ -171,11 +186,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const finalResult = await translateText(translationChain, 'en');
         logger.info(`Final translation result: ${finalResult}`);
                 
-        // If queue has items OR we can't post (24h limit or rate limit), add to queue
-        if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post')) {
+        // Check if we should queue instead of posting immediately
+        const timeSinceLastPost = Date.now() - lastPostTime;
+        const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
+        
+        // If queue has items OR we can't post (24h limit, rate limit, or interval), add to queue
+        if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
           const reason = !tweetQueue.isEmpty() ? 'queue not empty' : 
             !postTracker.canPost() ? '24h limit reached' : 
-              'rate limited';
+              rateLimitTracker.isRateLimited('post') ? 'rate limited' :
+                'minimum interval enforcement';
           logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
           tweetQueue.enqueue(tweet.id, finalResult);
         } else {
@@ -187,20 +207,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Record the post and mark tweet as processed
             postTracker.recordPost();
             tweetTracker.markProcessed(tweet.id);
+            lastPostTime = Date.now();
                         
             // Add delay between processing different tweets
             await delay(5000);
           } catch (error: unknown) {
             const err = error as { code?: number; message?: string };
-            if (err?.code === 429 || err?.message?.includes('429')) {
-              logger.error(`Rate limit hit on post. Queueing tweet ${tweet.id} for later.`);
+            if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+              logger.error(`Rate limit hit (${err?.code || 'unknown'}) on post. Queueing tweet ${tweet.id} for later.`);
               tweetQueue.enqueue(tweet.id, finalResult);
+              blockedByPostLimit = true;
               // Don't process more new tweets this run
               break;
             }
             logger.error(`Failed to post final translation for tweet ${tweet.id}: ${error}`);
-            // Don't queue on non-rate-limit errors, but mark as processed to avoid retry loop
-            tweetTracker.markProcessed(tweet.id);
+            // Queue the tweet to retry later instead of marking as processed
+            tweetQueue.enqueue(tweet.id, finalResult);
           }
         }
       } catch (error: unknown) {

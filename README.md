@@ -5,11 +5,13 @@ This project retrieves tweets from @BroTeamPills, translates them into 13 langua
 ## Features
 
 - ✅ Self-hosted LibreTranslate (no API costs)
-- ✅ Twitter API integration with robust rate-limit compliance
-- ✅ Supports 13 languages: Spanish, French, German, Italian, Portuguese, Russian, Chinese, Japanese, Korean, Arabic, Hindi, Turkish, Dutch
+- ✅ **Nitter/Syndication API for fetching tweets** (no auth required, bypasses monthly caps)
+- ✅ Twitter API for posting only (17 tweets/day limit)
+- ✅ Robust rate-limit compliance with persistent state
+- ✅ Supports 13 languages via telephone-game chain
 - ✅ Dry-run mode for testing
-- ✅ Automatic scheduling every 30 minutes (relative to last completion, with jitter)
-- ✅ Persistent queue for delayed posts + strict 24h post cap (17/day)
+- ✅ Automatic scheduling every 30 minutes with jitter
+- ✅ Persistent queue + strict 24h post cap (17/day)
 - ✅ Resilience: token auto-refresh, retries/timeouts, atomic state, log rotation
 
 ## Project Structure
@@ -65,6 +67,9 @@ TWITTER_CALLBACK_URL=http://127.0.0.1:6789/callback
 # Source account
 SOURCE_USERNAME=BroTeamPills
 SOURCE_USER_ID=1572243080191016961
+
+# Fetch method: 'nitter' (syndication API, no auth, unlimited) or 'twitter' (X API, has monthly cap)
+FETCH_METHOD=nitter
 
 # LibreTranslate
 LIBRETRANSLATE_URL=http://127.0.0.1:5000/translate
@@ -126,6 +131,24 @@ npm run translate:one -- "hello world"
 - Persists API cooldowns across restarts and differentiates API vs. cooldown blocks in logs
 - Scheduler runs every 30 minutes from the last completion; on startup, first run is delayed until cooldown expiry + ~20s
 - Automatic rate-limit detection; see [RATE_LIMITS.md](RATE_LIMITS.md) for details
+
+## Fetching Tweets & Monthly Limit
+
+Two fetch modes are supported:
+
+1. `FETCH_METHOD=nitter` – Uses Twitter's public syndication/Nitter-like method (no auth). Returns engagement-sorted tweets that may be older; unlimited but not ideal for real-time.
+2. `FETCH_METHOD=twitter` – Uses authenticated X API (timeline endpoint). Subject to a strict monthly product cap (≈100 timeline fetches) and per-15-minute limits.
+
+To avoid exhausting the monthly cap early, the scheduler dynamically spaces fetches across the remaining days of the month:
+
+```env
+MONTHLY_FETCH_LIMIT=100   # Total authenticated timeline fetches allowed per month
+FETCH_SPREAD=true         # Enable dynamic spacing (recommended)
+```
+
+When the monthly limit is reached, the bot attempts a lightweight fallback scrape via a public proxy (`r.jina.ai`) to extract recent tweet IDs/text best-effort (timestamps not guaranteed). This allows continued operation (translations/posting) without further authenticated timeline calls.
+
+Logs include monthly usage: `monthly usage X/100` to help monitoring.
 
 ## Usage
 

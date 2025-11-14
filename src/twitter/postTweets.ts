@@ -48,13 +48,15 @@ export async function postTweet(client: TwitterClient, content: string) {
         
     return { id: previousTweetId, threadLength: chunks.length };
   } catch (error: unknown) {
-    // Handle rate limit errors and extract reset time
+    // Handle rate limit errors (429 and 403) and extract reset time
     const err = error as { code?: number; rateLimit?: { reset?: number }; headers?: Record<string, string>; message?: string };
-    if (err?.code === 429 || err?.rateLimit?.reset) {
+    if (err?.code === 429 || err?.code === 403 || err?.rateLimit?.reset) {
       const resetTime = err?.rateLimit?.reset || (err?.headers?.['x-rate-limit-reset'] ? Number(err.headers['x-rate-limit-reset']) : undefined);
       rateLimitTracker.setRateLimit('post', resetTime);
-    } else if (err?.message?.includes('429')) {
+      logger.warn(`Post rate limit hit (${err?.code || 'unknown'}). Reset time: ${resetTime ? new Date(resetTime * 1000).toISOString() : 'unknown'}`);
+    } else if (err?.message?.includes('429') || err?.message?.includes('403')) {
       rateLimitTracker.setRateLimit('post');
+      logger.warn('Post rate limit detected in error message');
     } else {
       logger.error(`Failed to post tweet: ${error}`);
     }
