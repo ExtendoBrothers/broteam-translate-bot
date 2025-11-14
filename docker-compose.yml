@@ -7,4 +7,13 @@ services:
       - "5000:5000"
     environment:
       - PORT=5000
+      - LT_THREADS=8
+      - LT_REQ_LIMIT=-1
+      - LT_CHAR_LIMIT=-1
+    deploy:
+      resources:
+        limits:
+          memory: 8G
+        reservations:
+          memory: 4G
     restart: unless-stopped

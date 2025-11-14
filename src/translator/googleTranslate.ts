@@ -116,8 +116,11 @@ export async function translateText(text: string, targetLanguage: string): Promi
       const isNetwork = /ECONNRESET|ENOTFOUND|EAI_AGAIN|ECONNREFUSED/i.test(errMsg);
       const retriable = isAbort || isNetwork || [408, 429, 500, 502, 503, 504].includes(status || 0);
       if (attempt < MAX_RETRIES && retriable) {
-        const backoff = Math.min(5000, 500 * Math.pow(2, attempt - 1));
-        const jitter = Math.floor(Math.random() * 250);
+        // Use much longer backoff for 500 errors (server overload)
+        const is500 = status === 500;
+        const baseBackoff = is500 ? 10000 : 500;
+        const backoff = Math.min(is500 ? 20000 : 5000, baseBackoff * Math.pow(2, attempt - 1));
+        const jitter = Math.floor(Math.random() * (is500 ? 2000 : 250));
         const wait = backoff + jitter;
         logger.warn(`Translate retry ${attempt}/${MAX_RETRIES - 1} after ${wait}ms due to: ${errMsg || error}`);
         await new Promise(r => setTimeout(r, wait));
