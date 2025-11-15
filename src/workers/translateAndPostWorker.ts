@@ -9,6 +9,7 @@ import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
+import * as fs from 'fs';
 
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -20,8 +21,8 @@ let lastPostTime = 0;
 const LAST_FETCH_FILE = '.last-fetch.json';
 function readLastFetch(): Date | null {
   try {
-    if (!require('fs').existsSync(LAST_FETCH_FILE)) return null;
-    const raw = require('fs').readFileSync(LAST_FETCH_FILE, 'utf-8');
+    if (!fs.existsSync(LAST_FETCH_FILE)) return null;
+    const raw = fs.readFileSync(LAST_FETCH_FILE, 'utf-8');
     const parsed = JSON.parse(raw);
     if (parsed?.lastFetch) {
       const dt = new Date(parsed.lastFetch);
@@ -32,7 +33,6 @@ function readLastFetch(): Date | null {
 }
 function recordLastFetch(when: Date) {
   try {
-    const fs = require('fs');
     const tmp = LAST_FETCH_FILE + '.tmp';
     fs.writeFileSync(tmp, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
     fs.renameSync(tmp, LAST_FETCH_FILE);
