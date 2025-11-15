@@ -4,15 +4,7 @@ This project retrieves tweets from @BroTeamPills, translates them into 13 langua
 
 ## Features
 
-- ✅ Self-hosted LibreTranslate (no API costs)
-- ✅ **Nitter/Syndication API for fetching tweets** (no auth required, bypasses monthly caps)
-- ✅ Twitter API for posting only (17 tweets/day limit)
-- ✅ Robust rate-limit compliance with persistent state
-- ✅ Supports 13 languages via telephone-game chain
-- ✅ Dry-run mode for testing
-- ✅ Automatic scheduling every 30 minutes with jitter
-- ✅ Persistent queue + strict 24h post cap (17/day)
-- ✅ Resilience: token auto-refresh, retries/timeouts, atomic state, log rotation
+   - Note: the client now supports rotated OAuth2 refresh tokens and will persist new refresh tokens to `.env` when Twitter returns a rotated refresh token during refresh. It also retries transient refresh failures with exponential backoff (configurable via `OAUTH2_REFRESH_MAX_RETRIES` and `OAUTH2_REFRESH_BACKOFF_MS`), and avoids retries on HTTP 400 responses which indicate invalid grant or revoked refresh tokens.
 
 ## Project Structure
 
@@ -55,6 +47,12 @@ docker-compose up -d
 ### 3. Configure Environment
 Copy `.env.example` to `.env` and add your Twitter credentials.
 
+For easy setup, use the **Admin CLI**:
+```powershell
+npm run admin
+```
+See [ADMIN_CLI.md](ADMIN_CLI.md) for detailed admin CLI usage and options.
+
 #### Option A: OAuth 2.0 (Recommended - User Context)
 OAuth 2.0 allows posting tweets and supports automatic token refresh:
 
@@ -84,12 +82,18 @@ RATE_LIMIT_BUFFER_SECONDS=10
 2. Set **Type of App** to: `Native App` (Public client)
 3. Add **Callback URL**: `http://127.0.0.1:6789/callback`
 4. Enable scopes: `tweet.read`, `tweet.write`, `users.read`, `offline.access`
-5. Run the authorization flow:
+5. Run the admin CLI for easy interactive setup:
    ```powershell
-   npm run oauth2:auth
+   npm run admin
    ```
-6. Open the printed URL in your browser and approve the app
-7. Tokens will be saved to `.twitter-oauth2-tokens.json` and `.env`
+   Select option **1** to authorize via browser and automatically persist tokens to `.env` and `.twitter-oauth2-tokens.json`.
+
+**Alternative: Manual OAuth2 flow**
+If you prefer manual control:
+```powershell
+npm run oauth2:auth
+```
+Open the printed URL in your browser and approve the app. Tokens will be saved automatically.
 
 **Manual token exchange (if callback fails):**
 If the callback doesn't connect, copy the full redirect URL from your browser and run:
@@ -234,6 +238,21 @@ If either fails, the push is blocked. To bypass in emergencies (not recommended)
 ```powershell
 git push --no-verify
 ```
+
+## Available npm Scripts
+
+- `npm run admin` - Interactive admin CLI for OAuth2 token management
+- `npm run dev` - Development mode with auto-reload
+- `npm start` - Production mode
+- `npm run build` - Compile TypeScript
+- `npm run lint` - ESLint checks
+- `npm run oauth2:auth` - Manual OAuth2 authorization flow
+- `npm run oauth2:handle` - Handle OAuth2 callback
+- `npm run translate:one` - Test translation chain with a single text
+- `npm run resolve:user` - Resolve Twitter username to user ID
+- `npm run test:tokens` - Test tokenizer for tweet splitting
+
+See [ADMIN_CLI.md](ADMIN_CLI.md) for detailed admin CLI documentation.
 
 ## License
 

@@ -35,29 +35,11 @@ import { config } from '../config';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 
 function computeDynamicIntervalMs(from: Date): number {
-  // If spreading disabled, default 30m
-  if (!config.FETCH_SPREAD) return 30 * 60 * 1000;
+  // Always schedule 30 minutes after the last post
   const now = new Date();
-  const monthKey = monthlyUsageTracker.getCurrentMonthKey();
-  const used = monthlyUsageTracker.getFetchCount(monthKey);
-  const limit = config.MONTHLY_FETCH_LIMIT;
-  const remaining = Math.max(0, limit - used);
-  // If limit exhausted schedule at next month boundary (approx)
-  if (remaining === 0) {
-    const nextMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    const diffMs = nextMonth.getTime() - now.getTime();
-    return diffMs + (5 * 60 * 1000); // 5m buffer into next month
-  }
-  // Compute hours left in month
-  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-  const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
-  const intervalHours = hoursLeft / remaining; // Spread evenly
-  // Minimum 45m to avoid hammering; maximum 24h to avoid missing window
-  const clampedHours = Math.min(Math.max(intervalHours, 0.75), 24); // 0.75h = 45m
-  const targetIntervalMs = clampedHours * 3600000;
-  // Adjust for elapsed since last run
   const elapsed = now.getTime() - from.getTime();
-  return Math.max(0, targetIntervalMs - elapsed);
+  const intervalMs = 30 * 60 * 1000; // 30 minutes
+  return Math.max(0, intervalMs - elapsed);
 }
 
 function scheduleNext(from: Date) {
@@ -75,11 +57,16 @@ function scheduleNext(from: Date) {
     }
   }
 
+  // Add extra debug logging so we can see why the next run is scheduled
+  const debugMsg = `Scheduling details: baseDelay=${Math.ceil(baseDelay/1000)}s` +
+    (timelineCooldown > 0 ? `, timelineCooldown=${timelineCooldown}s` : '');
+  logger.info(debugMsg);
+
   const JITTER_MS = 15 * 1000; // up to 15s jitter to avoid bursts
   const jitter = Math.floor(Math.random() * JITTER_MS);
   const delay = baseDelay + jitter;
   const nextAt = new Date(Date.now() + delay);
-  logger.info(`Next scheduled run at ${nextAt.toISOString()} (in ${Math.ceil(delay/1000)}s) [monthly usage ${monthlyUsageTracker.getFetchCount()}/${config.MONTHLY_FETCH_LIMIT}]`);
+  logger.info(`Next scheduled run at ${nextAt.toISOString()} (in ${Math.ceil(delay/1000)}s)`);
   setTimeout(async () => {
     try {
       logger.info('Running scheduled translation job...');

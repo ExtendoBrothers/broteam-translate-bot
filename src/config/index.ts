@@ -20,10 +20,14 @@ export const config = {
   // Enable dynamic spacing of fetches across the month so we do not exceed the cap prematurely.
   FETCH_SPREAD: (process.env.FETCH_SPREAD || 'true').toLowerCase() === 'true',
   RATE_LIMIT_BUFFER_SECONDS: Number(process.env.RATE_LIMIT_BUFFER_SECONDS || '10'),
+  // OAuth2 refresh retry config
+  OAUTH2_REFRESH_MAX_RETRIES: Number(process.env.OAUTH2_REFRESH_MAX_RETRIES || '3'),
+  OAUTH2_REFRESH_BACKOFF_MS: Number(process.env.OAUTH2_REFRESH_BACKOFF_MS || '1000'),
   // Translation chain optimized for "telephone game" comedy:
   // English → Japanese → Arabic → Finnish → Hungarian → Korean → Turkish →
-  // Chinese → Russian → Thai → Vietnamese → Hindi → Polish → Greek → English
+  // Chinese → Russian → Thai → Vietnamese → Hindi → Polish → English
   // Maximizes grammar/script changes for funny mistranslations
+  // Note: Greek (el) removed because LibreTranslate Greek→English model is broken
   LANGUAGES: [
     'ja', // Japanese (different grammar, particles)
     'ar', // Arabic (RTL, gendered, complex plurals)
@@ -37,6 +41,5 @@ export const config = {
     'vi', // Vietnamese (tonal, different grammar)
     'hi', // Hindi (Devanagari script)
     'pl', // Polish (7 cases, complex conjugation)
-    'el', // Greek (different alphabet)
   ],
 };

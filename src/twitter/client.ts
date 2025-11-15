@@ -3,6 +3,7 @@ import { config } from '../config';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from '../utils/logger';
+import { setEnvVar } from '../utils/envWriter';
 
 // Token storage file for OAuth2 user context
 const OAUTH2_TOKEN_FILE = path.join(process.cwd(), '.twitter-oauth2-tokens.json');
@@ -73,21 +74,76 @@ export class TwitterClient {
       }
       const tempClient = new TwitterApi({ clientId: config.TWITTER_CLIENT_ID, clientSecret: config.TWITTER_CLIENT_SECRET || undefined });
       if (!oldTokens.refreshToken) return oldTokens;
-      const refreshed = await tempClient.refreshOAuth2Token(oldTokens.refreshToken);
+      // Retry with exponential backoff for transient errors (5xx/network), but don't retry on 400.
+      const maxRetries = config.OAUTH2_REFRESH_MAX_RETRIES || 3;
+      const baseBackoffMs = config.OAUTH2_REFRESH_BACKOFF_MS || 1000;
+      let attempt = 0;
+      let refreshed: any;
+      while (attempt <= maxRetries) {
+        try {
+          refreshed = await tempClient.refreshOAuth2Token(oldTokens.refreshToken as string);
+          break; // success
+        } catch (err: unknown) {
+          const status = (err as any)?.response?.status || (err as any)?.status || (err as any)?.code;
+          // If status 400 or 401 this is likely invalid grant — do NOT retry
+          if (status === 400 || status === 401) {
+            throw err;
+          }
+          attempt += 1;
+          if (attempt > maxRetries) {
+            throw err;
+          }
+          const jitter = Math.floor(Math.random() * 300);
+          const backoff = Math.pow(2, attempt - 1) * baseBackoffMs + jitter;
+          logger.info(`OAuth2 refresh failed on attempt ${attempt}/${maxRetries}. Backing off ${backoff}ms before retry.`);
+          await new Promise(r => setTimeout(r, backoff));
+        }
+      }
       const stored: StoredOAuth2Tokens = {
         accessToken: refreshed.accessToken,
         refreshToken: refreshed.refreshToken,
         scope: refreshed.scope,
         expiresAt: Date.now() + (refreshed.expiresIn * 1000) - 5000, // subtract 5s safety
       };
+      // If Twitter rotated the refresh token (new refreshToken supplied), persist it to .env
+      if (refreshed.refreshToken && refreshed.refreshToken !== oldTokens.refreshToken) {
+        try {
+          setEnvVar('TWITTER_OAUTH2_REFRESH_TOKEN', refreshed.refreshToken);
+          logger.info('Updated TWITTER_OAUTH2_REFRESH_TOKEN in .env due to rotated refresh token');
+        } catch (e) {
+          logger.error(`Failed to update .env with rotated refresh token: ${e}`);
+        }
+      }
       this.persistOAuth2Tokens(stored);
       logger.info('OAuth2 token refreshed');
       // Re-initialize client with new access token
       this.oauth2Tokens = stored;
       this.client = new TwitterApi(stored.accessToken);
       return stored;
-    } catch (e) {
-      logger.error(`Failed to refresh OAuth2 token: ${e}`);
+    } catch (e: unknown) {
+      const err = e as any;
+      logger.error(`Failed to refresh OAuth2 token: ${err?.message || err}`);
+      // If the refresh returned a HTTP 400, the refresh token may be invalid or revoked.
+      // In that case, clear stored tokens and fall back to OAuth1 (if configured).
+      const status = err?.status || err?.code || err?.response?.status;
+      if (status === 400) {
+        logger.error('OAuth2 refresh failed with HTTP 400 — refresh token may be invalid or revoked. Clearing stored OAuth2 tokens.');
+        try {
+          fs.unlinkSync(OAUTH2_TOKEN_FILE);
+        } catch { /* ignore */ }
+        this.oauth2Tokens = null;
+        if (config.TWITTER_API_KEY && config.TWITTER_API_SECRET && config.TWITTER_ACCESS_TOKEN && config.TWITTER_ACCESS_SECRET) {
+          logger.info('Falling back to OAuth1 credentials after failed OAuth2 refresh');
+          this.client = new TwitterApi({
+            appKey: config.TWITTER_API_KEY,
+            appSecret: config.TWITTER_API_SECRET,
+            accessToken: config.TWITTER_ACCESS_TOKEN,
+            accessSecret: config.TWITTER_ACCESS_SECRET,
+          });
+          return null;
+        }
+        return null;
+      }
       return oldTokens;
     }
   }
@@ -112,8 +168,19 @@ export class TwitterClient {
       const status = (err as { status?: number })?.status;
       if ((code === 401 || status === 401) && this.oauth2Tokens?.refreshToken) {
         logger.warn('401 received from Twitter API. Attempting OAuth2 token refresh...');
-        await this.refreshOAuth2Token(this.oauth2Tokens);
-        return await request();
+        const refreshed = await this.refreshOAuth2Token(this.oauth2Tokens);
+        // If refresh succeeded and we have a new access token, retry the request once.
+        if (refreshed) {
+          return await request();
+        }
+        // Otherwise, if we have fallen back to OAuth1, attempt the request again to allow posting.
+        if (!this.oauth2Tokens) {
+          try {
+            return await request();
+          } catch (err2) {
+            // Keep original error if retry fails; we'll throw below
+          }
+        }
       }
       throw err;
     }

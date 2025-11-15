@@ -1,0 +1,117 @@
+┌─────────────────────────────────────────────────────────────────┐
+│                   ADMIN CLI QUICK REFERENCE                     │
+└─────────────────────────────────────────────────────────────────┘
+
+🚀 START
+  npm run admin
+
+📋 MENU OPTIONS
+
+  1️⃣  Reauthorize OAuth2 (Browser Flow)
+      → Best for: First-time setup, token refresh
+      → Opens browser, handles callback automatically
+      → Saves to .env + .twitter-oauth2-tokens.json
+      
+  2️⃣  Manual Token Entry
+      → Best for: Automation, existing tokens
+      → Paste access/refresh tokens directly
+      → Configure expiration time
+      
+  3️⃣  View Current Token Status
+      → Best for: Checking expiration, debugging
+      → Shows token preview (first 20 chars)
+      → Displays time until expiry
+      → Compares file vs env vars
+      
+  4️⃣  Clear Stored OAuth2 Tokens
+      → Best for: Token rotation, cleanup
+      → Deletes .twitter-oauth2-tokens.json
+      → Requires "yes" confirmation
+      → Note: Doesn't modify .env
+      
+  5️⃣  Test Twitter API Connection
+      → Best for: Verifying tokens work
+      → Fetches @BroTeamPills user info
+      → Shows detailed errors
+      → Run after any token change
+      
+  6️⃣  Exit
+      → Clean shutdown
+
+⚡ COMMON WORKFLOWS
+
+  First-Time Setup:
+    1 → 5 → 6 → npm run dev
+    
+  Token Expired:
+    3 → 1 → 5 → 6 → restart bot
+    
+  Token Rotation:
+    4 → 1 → 5 → 6
+    
+  Verify Tokens:
+    3 → 5 → 6
+
+🔧 TROUBLESHOOTING
+
+  Port Already in Use:
+    • Change TWITTER_CALLBACK_URL in .env
+    • Update Twitter app settings
+    
+  Authorization Timeout (5 min):
+    • Exit and restart admin CLI
+    • Complete authorization faster
+    
+  Connection Test Fails:
+    • Check tokens (option 3)
+    • Reauthorize (option 1)
+    • Verify CLIENT_ID/SECRET in .env
+    
+  State Mismatch:
+    • Delete .oauth2-meta.json
+    • Run option 1 again
+    • Or use --force flag
+
+📚 DOCUMENTATION
+
+  Detailed Guide:     ADMIN_CLI.md
+  Interactive Demo:   ADMIN_CLI_DEMO.md
+  Implementation:     ADMIN_CLI_SUMMARY.md
+  Main README:        README.md
+
+💡 TIPS
+
+  ✓ Use option 1 for quickest setup
+  ✓ Run option 5 after any token change
+  ✓ Check option 3 regularly for expiry
+  ✓ Keep CLI running during auth (option 1)
+  ✓ Backup tokens before clearing (option 4)
+
+🔐 SECURITY
+
+  • Never commit .env or .twitter-oauth2-tokens.json
+  • Both files are in .gitignore
+  • Rotate tokens if compromised
+  • Use DRY_RUN=1 for testing
+
+📦 FILES MODIFIED BY ADMIN CLI
+
+  Created/Updated:
+    • .twitter-oauth2-tokens.json
+    • .env (TWITTER_OAUTH2_ACCESS_TOKEN)
+    • .env (TWITTER_OAUTH2_REFRESH_TOKEN)
+    
+  Temporary (auto-deleted):
+    • .oauth2-meta.json
+
+🎯 ONE-LINER CHEAT SHEET
+
+  Setup:    npm run admin → 1 → (browser) → 5 → 6
+  Refresh:  npm run admin → 1 → (browser) → 6
+  Check:    npm run admin → 3 → 6
+  Test:     npm run admin → 5 → 6
+  Clean:    npm run admin → 4 → yes → 6
+
+┌─────────────────────────────────────────────────────────────────┐
+│  For help: npm run admin or see ADMIN_CLI.md                    │
+└─────────────────────────────────────────────────────────────────┘
