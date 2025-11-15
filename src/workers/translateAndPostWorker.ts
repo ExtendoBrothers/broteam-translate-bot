@@ -7,6 +7,7 @@ import { logger } from '../utils/logger';
 import { tweetTracker } from '../utils/tweetTracker';
 import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
+import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 
 // Helper to add delay between operations to respect rate limits
@@ -15,6 +16,28 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Minimum delay between posts to avoid rapid-fire posting (15 minutes)
 const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 let lastPostTime = 0;
+// Track last fetch timestamp (persisted) for dynamic monthly spacing
+const LAST_FETCH_FILE = '.last-fetch.json';
+function readLastFetch(): Date | null {
+  try {
+    if (!require('fs').existsSync(LAST_FETCH_FILE)) return null;
+    const raw = require('fs').readFileSync(LAST_FETCH_FILE, 'utf-8');
+    const parsed = JSON.parse(raw);
+    if (parsed?.lastFetch) {
+      const dt = new Date(parsed.lastFetch);
+      if (isFinite(dt.getTime())) return dt;
+    }
+  } catch { /* ignore */ }
+  return null;
+}
+function recordLastFetch(when: Date) {
+  try {
+    const fs = require('fs');
+    const tmp = LAST_FETCH_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
+    fs.renameSync(tmp, LAST_FETCH_FILE);
+  } catch { /* ignore */ }
+}
 
 // Circuit breaker state per language
 interface CircuitState { failures: number; openedAt?: number; }
@@ -141,12 +164,54 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
     }
 
-    // Check if blocked by pre-existing cooldown before fetching
+    // Check if blocked by pre-existing cooldown before deciding about fetch
     const wasBlockedBefore = rateLimitTracker.isRateLimited('timeline');
 
-    // Always fetch new tweets (independent of queue and post limit status)
-    const tweets = await fetchTweets();
+    // Decide whether to fetch based on monthly usage spacing
+    let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
+    const monthKey = monthlyUsageTracker.getCurrentMonthKey();
+    const used = monthlyUsageTracker.getFetchCount(monthKey);
+    const limit = config.MONTHLY_FETCH_LIMIT;
+    const remaining = Math.max(0, limit - used);
+    const lastFetchAt = readLastFetch();
+    const now = new Date();
+    let shouldFetch = true;
+    let spacingReason = '';
+    if (remaining === 0) {
+      shouldFetch = false;
+      spacingReason = 'monthly limit reached';
+    } else {
+      // Recreate previous dynamic spacing logic
+      const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+      const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
+      const intervalHours = hoursLeft / remaining; // spread evenly
+      const clampedHours = Math.min(Math.max(intervalHours, 0.75), 24); // min 45m, max 24h previously
+      const targetMs = clampedHours * 3600000;
+      const elapsedMs = lastFetchAt ? (now.getTime() - lastFetchAt.getTime()) : Number.MAX_SAFE_INTEGER;
+      if (elapsedMs < targetMs) {
+        shouldFetch = false;
+        const waitRemain = Math.ceil((targetMs - elapsedMs) / 1000);
+        spacingReason = `spacing interval not met (need ${Math.ceil(targetMs/60000)}m, wait ${waitRemain}s)`;
+      }
+    }
+
+    if (shouldFetch) {
+      tweets = await fetchTweets();
+      monthlyUsageTracker.incrementFetch(monthKey); // count every fetch attempt
+      recordLastFetch(now);
+    } else {
+      logger.info(`Skipping fetch: ${spacingReason}. Used ${used}/${limit}.`);
+    }
         
+    if (!shouldFetch) {
+      // Only mark cooldown block if it existed BEFORE we decided not to fetch
+      blockedByCooldown = wasBlockedBefore;
+      if (!tweetQueue.isEmpty()) {
+        logger.info('Fetch skipped; queue will be processed next run if still pending');
+      }
+      return { didWork: false, blockedByCooldown, blockedByPostLimit };
+    }
+
     if (tweets.length === 0) {
       logger.info('No new tweets to process');
       // Only mark as blocked if cooldown existed BEFORE the fetch attempt
