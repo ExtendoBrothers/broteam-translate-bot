@@ -107,7 +107,6 @@ function scheduleNext() {
 }
 
 export function scheduleJobs(lastRunAt?: Date, initialDelayMs?: number) {
-  const anchor = lastRunAt || readLastRun() || new Date();
   if (initialDelayMs && initialDelayMs > 0) {
     const nextAt = new Date(Date.now() + initialDelayMs);
     logger.info(`Startup cooldown detected. First scheduled run at ${nextAt.toISOString()} (in ${Math.ceil(initialDelayMs/1000)}s)`);

@@ -17,27 +17,6 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 // Minimum delay between posts to avoid rapid-fire posting (15 minutes)
 const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
 let lastPostTime = 0;
-// Track last fetch timestamp (persisted) for dynamic monthly spacing
-const LAST_FETCH_FILE = '.last-fetch.json';
-function readLastFetch(): Date | null {
-  try {
-    if (!fs.existsSync(LAST_FETCH_FILE)) return null;
-    const raw = fs.readFileSync(LAST_FETCH_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    if (parsed?.lastFetch) {
-      const dt = new Date(parsed.lastFetch);
-      if (isFinite(dt.getTime())) return dt;
-    }
-  } catch { /* ignore */ }
-  return null;
-}
-function recordLastFetch(when: Date) {
-  try {
-    const tmp = LAST_FETCH_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
-    fs.renameSync(tmp, LAST_FETCH_FILE);
-  } catch { /* ignore */ }
-}
 
 // Circuit breaker state per language
 interface CircuitState { failures: number; openedAt?: number; }
