@@ -19,8 +19,13 @@ export class TwitterClient {
   private client: TwitterApi;
 
   private oauth2Tokens: StoredOAuth2Tokens | null = null;
+  private usingOAuth1 = false;
 
   constructor() {
+    // Check if OAuth1 credentials are available for autonomous operation
+    const hasOAuth1 = config.TWITTER_API_KEY && config.TWITTER_API_SECRET && 
+                      config.TWITTER_ACCESS_TOKEN && config.TWITTER_ACCESS_SECRET;
+    
     // Prefer OAuth2 user context if tokens available; fallback to legacy OAuth1
     let tokens = this.loadOAuth2Tokens();
     if (!tokens && config.TWITTER_OAUTH2_ACCESS_TOKEN) {
@@ -29,16 +34,23 @@ export class TwitterClient {
         refreshToken: config.TWITTER_OAUTH2_REFRESH_TOKEN || undefined,
       };
     }
+    
+    // If OAuth2 tokens exist, use them. Otherwise use OAuth1 if available
     if (tokens?.accessToken) {
       this.oauth2Tokens = tokens;
       this.client = new TwitterApi(tokens.accessToken);
-    } else {
+      logger.info('Initialized with OAuth2 credentials' + (hasOAuth1 ? ' (OAuth1 available as fallback)' : ''));
+    } else if (hasOAuth1) {
+      this.usingOAuth1 = true;
       this.client = new TwitterApi({
         appKey: config.TWITTER_API_KEY,
         appSecret: config.TWITTER_API_SECRET,
         accessToken: config.TWITTER_ACCESS_TOKEN,
         accessSecret: config.TWITTER_ACCESS_SECRET,
       });
+      logger.info('Initialized with OAuth1 credentials (autonomous mode)');
+    } else {
+      throw new Error('No Twitter credentials available - need either OAuth2 tokens or OAuth1 credentials');
     }
   }
 
@@ -132,16 +144,30 @@ export class TwitterClient {
           fs.unlinkSync(OAUTH2_TOKEN_FILE);
         } catch { /* ignore */ }
         this.oauth2Tokens = null;
+        
+        // Fall back to OAuth1 if available for autonomous operation
         if (config.TWITTER_API_KEY && config.TWITTER_API_SECRET && config.TWITTER_ACCESS_TOKEN && config.TWITTER_ACCESS_SECRET) {
-          logger.info('Falling back to OAuth1 credentials after failed OAuth2 refresh');
+          logger.warn('OAuth2 failed - switching to OAuth1 for autonomous operation');
+          this.usingOAuth1 = true;
           this.client = new TwitterApi({
             appKey: config.TWITTER_API_KEY,
             appSecret: config.TWITTER_API_SECRET,
             accessToken: config.TWITTER_ACCESS_TOKEN,
             accessSecret: config.TWITTER_ACCESS_SECRET,
           });
+          
+          // Clear OAuth2 tokens from .env to prevent retry on next restart
+          try {
+            setEnvVar('TWITTER_OAUTH2_ACCESS_TOKEN', '');
+            setEnvVar('TWITTER_OAUTH2_REFRESH_TOKEN', '');
+            logger.info('Cleared OAuth2 tokens from .env - will use OAuth1 until manually re-authorized');
+          } catch (e) {
+            logger.error(`Failed to clear OAuth2 tokens from .env: ${e}`);
+          }
+          
           return null;
         }
+        logger.error('OAuth2 failed and no OAuth1 credentials available - manual re-authorization required');
         return null;
       }
       return oldTokens;
@@ -149,6 +175,9 @@ export class TwitterClient {
   }
 
   private async ensureFreshToken() {
+    // Skip token refresh if using OAuth1
+    if (this.usingOAuth1) return;
+    
     if (!this.oauth2Tokens?.refreshToken) return;
     const expiresAt = this.oauth2Tokens.expiresAt;
     if (!expiresAt) return;
@@ -166,22 +195,27 @@ export class TwitterClient {
     } catch (err: unknown) {
       const code = (err as { code?: number })?.code;
       const status = (err as { status?: number })?.status;
-      if ((code === 401 || status === 401) && this.oauth2Tokens?.refreshToken) {
+      
+      // Only attempt OAuth2 refresh if we're using OAuth2 and have a refresh token
+      if ((code === 401 || status === 401) && !this.usingOAuth1 && this.oauth2Tokens?.refreshToken) {
         logger.warn('401 received from Twitter API. Attempting OAuth2 token refresh...');
         const refreshed = await this.refreshOAuth2Token(this.oauth2Tokens);
         // If refresh succeeded and we have a new access token, retry the request once.
         if (refreshed) {
           return await request();
         }
-        // Otherwise, if we have fallen back to OAuth1, attempt the request again to allow posting.
-        if (!this.oauth2Tokens) {
-          try {
-            return await request();
-          } catch (err2) {
-            // Keep original error if retry fails; we'll throw below
-          }
+        // If we fell back to OAuth1 during refresh, retry the request
+        if (this.usingOAuth1) {
+          logger.info('Retrying request with OAuth1 credentials...');
+          return await request();
         }
       }
+      
+      // If already using OAuth1 and still got 401, it's a real auth error
+      if ((code === 401 || status === 401) && this.usingOAuth1) {
+        logger.error('401 error with OAuth1 credentials - check TWITTER_ACCESS_TOKEN and TWITTER_ACCESS_SECRET');
+      }
+      
       throw err;
     }
   }
