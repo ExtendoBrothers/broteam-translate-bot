@@ -171,6 +171,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let translationChain = tweet.text;
             
       // Chain translations through all languages with circuit breaker and jittered delays
+      let translationAttempted = false;
       for (const lang of config.LANGUAGES) {
         // Skip if circuit open
         if (isCircuitOpen(lang)) {
@@ -180,6 +181,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         try {
           translationChain = await translateText(translationChain, lang);
           recordSuccess(lang);
+          translationAttempted = true;
           logger.info(`Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
         } catch (error: unknown) {
           logger.error(`Failed to translate for ${lang}: ${error}`);
@@ -188,6 +190,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         // Apply jittered delay after attempt (success or failure) to avoid thundering herd
         await delay(jitteredTranslationDelay());
+      }
+
+      // If no translations succeeded at all, skip this tweet (will retry later)
+      if (!translationAttempted) {
+        logger.error(`No translations succeeded for tweet ${tweet.id} - will retry in next run`);
+        continue;
       }
 
       // Translate final result back to English (no circuit skip for final step)
@@ -235,6 +243,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
       } catch (error: unknown) {
         logger.error(`Failed to translate final result for tweet ${tweet.id}: ${error}`);
+        // Queue the partially translated result if we got far enough
+        if (translationChain && translationChain !== tweet.text) {
+          logger.info(`Queueing partially translated tweet ${tweet.id} for retry`);
+          tweetQueue.enqueue(tweet.id, translationChain);
+        }
         // Do NOT mark as processed so it can be retried in future runs
       }
     }
