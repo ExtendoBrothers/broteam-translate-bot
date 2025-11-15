@@ -9,7 +9,6 @@ import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
-import * as fs from 'fs';
 
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
