@@ -10,15 +10,12 @@ function readLastRun(): Date | null {
   try {
     if (!fs.existsSync(LAST_RUN_FILE)) return null;
     const raw = fs.readFileSync(LAST_RUN_FILE, 'utf-8');
-    const parsed = JSON.parse(raw);
-    if (parsed?.lastRun) {
-      const dt = new Date(parsed.lastRun);
-      if (isFinite(dt.getTime())) return dt;
-    }
+    const parsed = JSON.parse(raw) as { lastRun?: string };
+    const dt = new Date(parsed.lastRun || '');
+    return isFinite(dt.getTime()) ? dt : null;
   } catch {
-    // ignore
+    return null;
   }
-  return null;
 }
 
 export function recordLastRun(when: Date) {
@@ -36,30 +33,38 @@ export function recordLastRun(when: Date) {
 function readLastPost(): Date | null {
   try {
     const file = path.join(process.cwd(), '.post-tracker.json');
-    if (!fs.existsSync(file)) return null;
+    if (!fs.existsSync(file)) return readLastRun(); // Fallback to last run timestamp
     const raw = fs.readFileSync(file, 'utf-8');
     const parsed = JSON.parse(raw) as { postTimestamps?: string[] };
     const arr = parsed.postTimestamps || [];
-    if (!arr.length) return null;
+    if (!arr.length) return readLastRun(); // Fallback if no post timestamps
     const latestIso = arr.reduce((max, cur) => (cur > max ? cur : max));
     const dt = new Date(latestIso);
-    return isFinite(dt.getTime()) ? dt : null;
+    return isFinite(dt.getTime()) ? dt : readLastRun(); // Fallback if invalid date
   } catch {
-    return null;
+    return readLastRun(); // Fallback on error
   }
 }
 
-function computeDynamicIntervalMs(from: Date): number {
-  // Always schedule 30 minutes after the last post (preferred) or last run
-  const anchor = readLastPost() || from;
+function computeDynamicIntervalMs(): number {
+  // Always schedule 30 minutes after the last run (most recent operation)
+  const anchor = readLastRun() || readLastPost();
+  if (!anchor) {
+    // No previous run/post found, schedule in 30 minutes from now
+    logger.info('No previous run or post found, scheduling in 30 minutes');
+    return 30 * 60 * 1000;
+  }
   const now = new Date();
   const elapsed = now.getTime() - anchor.getTime();
   const intervalMs = 30 * 60 * 1000; // 30 minutes
+
+  logger.info(`Interval calculation: now=${now.toISOString()}, anchor=${anchor.toISOString()}, elapsed=${Math.ceil(elapsed/1000)}s, target=1800s`);
+
   return Math.max(0, intervalMs - elapsed);
 }
 
-function scheduleNext(from: Date) {
-  let baseDelay = computeDynamicIntervalMs(from);
+function scheduleNext() {
+  let baseDelay = computeDynamicIntervalMs();
 
   // Check if timeline cooldown is active and ensure we don't schedule before it expires
   const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
@@ -74,9 +79,11 @@ function scheduleNext(from: Date) {
   }
 
   // Add extra debug logging so we can see why the next run is scheduled
+  const lastRunAt = readLastRun();
   const lastPostAt = readLastPost();
   const debugMsg = `Scheduling details: baseDelay=${Math.ceil(baseDelay/1000)}s` +
     (timelineCooldown > 0 ? `, timelineCooldown=${timelineCooldown}s` : '') +
+    (lastRunAt ? `, lastRunAt=${lastRunAt.toISOString()}` : ', lastRunAt=none') +
     (lastPostAt ? `, lastPostAt=${lastPostAt.toISOString()}` : ', lastPostAt=none');
   logger.info(debugMsg);
 
@@ -94,7 +101,7 @@ function scheduleNext(from: Date) {
     } finally {
       const now2 = new Date();
       recordLastRun(now2);
-      scheduleNext(now2);
+      scheduleNext();
     }
   }, delay);
 }
@@ -113,11 +120,11 @@ export function scheduleJobs(lastRunAt?: Date, initialDelayMs?: number) {
       } finally {
         const now2 = new Date();
         recordLastRun(now2);
-        scheduleNext(now2);
+        scheduleNext();
       }
     }, initialDelayMs);
   } else {
-    scheduleNext(anchor);
+    scheduleNext();
   }
   logger.info('Scheduler configured: running every 30 minutes since the last run');
 }

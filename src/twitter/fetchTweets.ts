@@ -10,6 +10,32 @@ import { config } from '../config';
 import { setEnvVar } from '../utils/envWriter';
 import { tweetTracker } from '../utils/tweetTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
+import * as fs from 'fs';
+import * as path from 'path';
+
+const LAST_TWITTER_API_FETCH_FILE = path.join(process.cwd(), '.last-twitter-api-fetch.json');
+
+function readLastTwitterApiFetch(): Date | null {
+  try {
+    if (!fs.existsSync(LAST_TWITTER_API_FETCH_FILE)) return null;
+    const raw = fs.readFileSync(LAST_TWITTER_API_FETCH_FILE, 'utf-8');
+    const parsed = JSON.parse(raw) as { lastFetch?: string };
+    const dt = new Date(parsed.lastFetch || '');
+    return isFinite(dt.getTime()) ? dt : null;
+  } catch {
+    return null;
+  }
+}
+
+function recordTwitterApiFetch(when: Date) {
+  try {
+    const tmp = LAST_TWITTER_API_FETCH_FILE + '.tmp';
+    fs.writeFileSync(tmp, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
+    fs.renameSync(tmp, LAST_TWITTER_API_FETCH_FILE);
+  } catch {
+    // ignore
+  }
+}
 
 export async function fetchTweets(): Promise<Tweet[]> {
   const tweets: Tweet[] = [];
@@ -35,172 +61,125 @@ export async function fetchTweets(): Promise<Tweet[]> {
     return tweets;
   }
 
-  // Fallback: Use Twitter API (has monthly cap issues)
-  // If monthly limit reached, attempt alternative source (Jina AI page scrape)
-  if (monthlyUsageTracker.isLimitReached()) {
-    logger.warn(`Monthly fetch limit (${config.MONTHLY_FETCH_LIMIT}) reached. Attempting alternative fallback sources.`);
-    
-    // Try Jina first
-    try {
-      const altTweets = await fetchTweetsFromJina(targetUsername, 20);
-      for (const t of altTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-        }
-      }
-      logger.info(`Jina fallback fetched ${tweets.length} tweet(s)`);
-    } catch (err) {
-      logger.error(`Jina fallback failed: ${err}`);
-    }
-    
-    // Also try syndication API
-    try {
-      const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
-      let addedCount = 0;
-      for (const t of syndicationTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Syndication API fallback added ${addedCount} additional tweet(s)`);
-    } catch (err) {
-      logger.error(`Syndication API fallback failed: ${err}`);
-    }
-    
-    // Try Nitter instances
-    try {
-      const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of nitterTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Nitter instances added ${addedCount} additional tweet(s)`);
-    } catch (err) {
-      logger.error(`Nitter instances failed: ${err}`);
-    }
-    
-    // Try Google Cache
-    try {
-      const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of cacheTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Google Cache added ${addedCount} additional tweet(s)`);
-    } catch (err) {
-      logger.error(`Google Cache failed: ${err}`);
-    }
-    
-    // Try Google Search
-    try {
-      const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of searchTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Google Search added ${addedCount} additional tweet(s)`);
-    } catch (err) {
-      logger.error(`Google Search failed: ${err}`);
-    }
-    
-    return tweets; // Do not attempt API when limit reached
-  }
-
-  logger.info(`Fetching tweets via Twitter API for @${targetUsername}`);
+  // Always run fallback sources every 30 minutes (called by worker)
+  logger.info('Fetching from fallback sources...');
   
-  // Check timeline read bucket
+  // Try Jina first
+  try {
+    const altTweets = await fetchTweetsFromJina(targetUsername, 20);
+    for (const t of altTweets) {
+      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+        tweets.push(t);
+      }
+    }
+    logger.info(`Jina fallback fetched ${tweets.length} tweet(s)`);
+  } catch (err) {
+    logger.error(`Jina fallback failed: ${err}`);
+  }
+  
+  // Try syndication API
+  try {
+    const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
+    let addedCount = 0;
+    for (const t of syndicationTweets) {
+      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+        tweets.push(t);
+        addedCount++;
+      }
+    }
+    logger.info(`Syndication API fallback added ${addedCount} additional tweet(s)`);
+  } catch (err) {
+    logger.error(`Syndication API fallback failed: ${err}`);
+  }
+  
+  // Try Nitter instances
+  try {
+    const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
+    let addedCount = 0;
+    for (const t of nitterTweets) {
+      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+        tweets.push(t);
+        addedCount++;
+      }
+    }
+    logger.info(`Nitter instances added ${addedCount} additional tweet(s)`);
+  } catch (err) {
+    logger.error(`Nitter instances failed: ${err}`);
+  }
+  
+  // Try Google Cache
+  try {
+    const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
+    let addedCount = 0;
+    for (const t of cacheTweets) {
+      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+        tweets.push(t);
+        addedCount++;
+      }
+    }
+    logger.info(`Google Cache added ${addedCount} additional tweet(s)`);
+  } catch (err) {
+    logger.error(`Google Cache failed: ${err}`);
+  }
+  
+  // Try Google Search
+  try {
+    const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
+    let addedCount = 0;
+    for (const t of searchTweets) {
+      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+        tweets.push(t);
+        addedCount++;
+      }
+    }
+    logger.info(`Google Search added ${addedCount} additional tweet(s)`);
+  } catch (err) {
+    logger.error(`Google Search failed: ${err}`);
+  }
+  
+  // Check if we should also use Twitter API based on monthly spacing
+  const monthKey = monthlyUsageTracker.getCurrentMonthKey();
+  const used = monthlyUsageTracker.getFetchCount(monthKey);
+  const limit = config.MONTHLY_FETCH_LIMIT;
+  const remaining = Math.max(0, limit - used);
+  
+  let shouldUseTwitterApi = false;
+  if (remaining === 0) {
+    logger.info(`Twitter API monthly limit (${limit}) reached. Skipping Twitter API this run.`);
+  } else {
+    // Calculate if enough time has passed for next Twitter API fetch
+    const now = new Date();
+    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
+    const intervalHours = hoursLeft / remaining; // spread evenly across month
+    const clampedHours = Math.min(Math.max(intervalHours, 0.5), 24); // min 30m, max 24h
+    const targetMs = clampedHours * 3600000;
+    
+    const lastTwitterApiFetch = readLastTwitterApiFetch();
+    const elapsedMs = lastTwitterApiFetch ? (now.getTime() - lastTwitterApiFetch.getTime()) : Number.MAX_SAFE_INTEGER;
+    
+    if (elapsedMs >= targetMs) {
+      logger.info(`Twitter API fetch interval met (${Math.ceil(elapsedMs/3600000)}h elapsed, need ${clampedHours.toFixed(1)}h). Using ${used}/${limit} this month.`);
+      shouldUseTwitterApi = true;
+    } else {
+      const waitHours = (targetMs - elapsedMs) / 3600000;
+      logger.info(`Twitter API spacing: need ${clampedHours.toFixed(1)}h between fetches, ${waitHours.toFixed(1)}h remaining. Skipping Twitter API. (${used}/${limit} this month)`);
+    }
+  }
+  
+  // If Twitter API spacing not met or limit reached, return fallback results
+  if (!shouldUseTwitterApi) {
+    logger.info(`Returning ${tweets.length} tweet(s) from fallback sources`);
+    return tweets;
+  }
+  
+  // Otherwise continue with Twitter API fetch
+  logger.info('Proceeding with Twitter API fetch...');
+  
+  // Check timeline read bucket  
   if (rateLimitTracker.isRateLimited('timeline')) {
     const waitSeconds = rateLimitTracker.getSecondsUntilReset('timeline');
-    logger.info(`Skipping fetch - timeline rate limited for ${waitSeconds} more seconds`);
-    
-    // Try Jina fallback when rate limited before even making the call
-    logger.warn('Twitter API rate limited (pre-check). Attempting Jina fallback.');
-    try {
-      const jinaFallbackTweets = await fetchTweetsFromJina(targetUsername, 20);
-      for (const t of jinaFallbackTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-        }
-      }
-      logger.info(`Jina fallback retrieved ${tweets.length} tweet(s) while rate limited`);
-    } catch (fallbackErr) {
-      logger.error(`Jina fallback failed: ${fallbackErr}`);
-    }
-    
-    // Also try syndication API fallback (different source, might have different tweets)
-    logger.info('Attempting syndication API fallback as additional source.');
-    try {
-      const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
-      let addedCount = 0;
-      for (const t of syndicationTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Syndication API fallback added ${addedCount} additional tweet(s)`);
-    } catch (syndicationErr) {
-      logger.error(`Syndication API fallback failed: ${syndicationErr}`);
-    }
-    
-    // Try Nitter instances as third fallback
-    logger.info('Attempting Nitter instances fallback.');
-    try {
-      const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of nitterTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Nitter instances added ${addedCount} additional tweet(s)`);
-    } catch (nitterErr) {
-      logger.error(`Nitter instances failed: ${nitterErr}`);
-    }
-    
-    // Try Google Cache as fourth fallback
-    logger.info('Attempting Google Cache fallback.');
-    try {
-      const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of cacheTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Google Cache added ${addedCount} additional tweet(s)`);
-    } catch (cacheErr) {
-      logger.error(`Google Cache failed: ${cacheErr}`);
-    }
-    
-    // Try Google Search as fifth fallback
-    logger.info('Attempting Google Search fallback.');
-    try {
-      const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
-      let addedCount = 0;
-      for (const t of searchTweets) {
-        if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
-          tweets.push(t);
-          addedCount++;
-        }
-      }
-      logger.info(`Google Search added ${addedCount} additional tweet(s)`);
-    } catch (searchErr) {
-      logger.error(`Google Search failed: ${searchErr}`);
-    }
-    
+    logger.info(`Skipping Twitter API - timeline rate limited for ${waitSeconds} more seconds. Returning ${tweets.length} tweet(s) from fallbacks.`);
     return tweets;
   }
 
@@ -243,7 +222,10 @@ export async function fetchTweets(): Promise<Tweet[]> {
     // We only post the final English translation (1 post per source tweet).
     // Increase batch size to 40 to maximize catch-up in a single allowed request.
     // Record intended API usage BEFORE making the call (only if not rate limited and limit not reached)
+    const fetchTime = new Date();
     monthlyUsageTracker.incrementFetch();
+    recordTwitterApiFetch(fetchTime);
+    logger.info(`Using Twitter API (fetch ${used + 1}/${limit} this month)`);
     const timeline = await client.getUserTimeline(targetUserId, {
       max_results: 40,  // Increased to 40 per user request
       'tweet.fields': ['created_at', 'text', 'entities']

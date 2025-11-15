@@ -167,50 +167,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     // Check if blocked by pre-existing cooldown before deciding about fetch
     const wasBlockedBefore = rateLimitTracker.isRateLimited('timeline');
 
-    // Decide whether to fetch based on monthly usage spacing
+    // Always fetch (worker runs every 30 minutes)
+    // fetchTweets() handles monthly Twitter API limit internally and uses fallbacks
     let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
     const monthKey = monthlyUsageTracker.getCurrentMonthKey();
     const used = monthlyUsageTracker.getFetchCount(monthKey);
     const limit = config.MONTHLY_FETCH_LIMIT;
-    const remaining = Math.max(0, limit - used);
-    const lastFetchAt = readLastFetch();
-    const now = new Date();
-    let shouldFetch = true;
-    let spacingReason = '';
-    if (remaining === 0) {
-      shouldFetch = false;
-      spacingReason = 'monthly limit reached';
-    } else {
-      // Recreate previous dynamic spacing logic
-      const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-      const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
-      const intervalHours = hoursLeft / remaining; // spread evenly
-      const clampedHours = Math.min(Math.max(intervalHours, 0.75), 24); // min 45m, max 24h previously
-      const targetMs = clampedHours * 3600000;
-      const elapsedMs = lastFetchAt ? (now.getTime() - lastFetchAt.getTime()) : Number.MAX_SAFE_INTEGER;
-      if (elapsedMs < targetMs) {
-        shouldFetch = false;
-        const waitRemain = Math.ceil((targetMs - elapsedMs) / 1000);
-        spacingReason = `spacing interval not met (need ${Math.ceil(targetMs/60000)}m, wait ${waitRemain}s)`;
-      }
-    }
-
-    if (shouldFetch) {
-      tweets = await fetchTweets();
-      monthlyUsageTracker.incrementFetch(monthKey); // count every fetch attempt
-      recordLastFetch(now);
-    } else {
-      logger.info(`Skipping fetch: ${spacingReason}. Used ${used}/${limit}.`);
-    }
-        
-    if (!shouldFetch) {
-      // Only mark cooldown block if it existed BEFORE we decided not to fetch
-      blockedByCooldown = wasBlockedBefore;
-      if (!tweetQueue.isEmpty()) {
-        logger.info('Fetch skipped; queue will be processed next run if still pending');
-      }
-      return { didWork: false, blockedByCooldown, blockedByPostLimit };
-    }
+    
+    logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
+    tweets = await fetchTweets();
+    
+    // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
 
     if (tweets.length === 0) {
       logger.info('No new tweets to process');
