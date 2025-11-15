@@ -108,12 +108,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
 
         logger.info(`Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
-        await postTweet(client, queuedTweet.finalTranslation);
+        await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
         logger.info(`Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
                 
-        // Record the post and mark original tweet as processed
+        // Record the post - tweet tracker updated inside postTweet
         postTracker.recordPost();
-        tweetTracker.markProcessed(queuedTweet.sourceTweetId);
         tweetQueue.dequeue();
         lastPostTime = Date.now();
                 
@@ -132,11 +131,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
         tweetQueue.incrementAttempt();
                 
-        // If too many failures, remove from queue
+        // If too many failures, remove from queue and let it be re-fetched/retried later
         if (queuedTweet.attemptCount >= 5) {
-          logger.error(`Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts`);
+          logger.error(`Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
           tweetQueue.dequeue();
-          tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+          // Do NOT mark as processed - allow retry in future runs
         }
         break;
       }
@@ -211,12 +210,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         } else {
           // Try to post immediately
           try {
-            await postTweet(client, finalResult);
+            await postTweet(client, finalResult, tweet.id);
             logger.info(`Posted final translation to Twitter for tweet ${tweet.id}`);
                         
-            // Record the post and mark tweet as processed
+            // Record the post - tweet tracker updated inside postTweet
             postTracker.recordPost();
-            tweetTracker.markProcessed(tweet.id);
             lastPostTime = Date.now();
                         
             // Add delay between processing different tweets

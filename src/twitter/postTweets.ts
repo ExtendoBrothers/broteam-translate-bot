@@ -2,8 +2,9 @@ import { TwitterClient } from './client';
 import { logger } from '../utils/logger';
 import { splitTweet } from '../utils/tweetSplitter';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
+import { tweetTracker } from '../utils/tweetTracker';
 
-export async function postTweet(client: TwitterClient, content: string) {
+export async function postTweet(client: TwitterClient, content: string, sourceTweetId?: string) {
   const isDryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';
     
   // Check if we're currently rate limited
@@ -44,6 +45,12 @@ export async function postTweet(client: TwitterClient, content: string) {
       if (i < chunks.length - 1) {
         await new Promise(resolve => setTimeout(resolve, 1000));
       }
+    }
+    
+    // Mark source tweet as processed only after successful posting
+    if (sourceTweetId) {
+      tweetTracker.markProcessed(sourceTweetId);
+      logger.info(`Marked source tweet ${sourceTweetId} as processed after successful post`);
     }
         
     return { id: previousTweetId, threadLength: chunks.length };
