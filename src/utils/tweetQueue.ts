@@ -125,6 +125,13 @@ class TweetQueue {
   }
 
   /**
+     * Check if a tweet is already in the queue
+     */
+  public isQueued(sourceTweetId: string): boolean {
+    return this.queue.some(t => t.sourceTweetId === sourceTweetId);
+  }
+
+  /**
      * Clear the queue (for testing/manual override)
      */
   public clear() {

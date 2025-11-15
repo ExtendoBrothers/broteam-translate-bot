@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { tweetQueue } from './tweetQueue';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
 const START_DATE = new Date('2025-11-12T00:00:00.000Z'); // Ignore tweets before this date
@@ -87,6 +88,12 @@ class TweetTracker {
     // Check if already processed
     if (this.processed.has(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
+      return false;
+    }
+
+    // Check if already in queue (being retried)
+    if (tweetQueue.isQueued(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       return false;
     }
 
