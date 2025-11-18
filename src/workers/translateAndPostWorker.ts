@@ -216,9 +216,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         try {
           let result = await translateText(translationChain, lang);
           // If result is just a problematic char or empty, retry with a different language
-          if (['/', ':', '.', '', ' '].includes(result.trim())) {
+          const trimmedResult = result.trim();
+          if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
             logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
-            const altResult = await retryWithDifferentLang(translationChain, result.trim(), [lang]);
+            const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
             if (altResult) {
               result = altResult;
             }
@@ -298,10 +299,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             finalResult = await translateText(chain, 'en');
             translationLogSteps.push({ lang: 'en', text: finalResult });
             const trimmedFinal = finalResult.trim();
-            problematic = (trimmedFinal.length <= 1 || ['/', ':', '.', '', ' '].includes(trimmedFinal));
+            problematic = (trimmedFinal.length <= 1 || ['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/'));
             if (problematic) {
               logger.warn(`Final EN translation returned problematic result (single char or empty): '${finalResult}'. Retrying chain.`);
-            } else if (['/', ':', '.', '', ' '].includes(trimmedFinal)) {
+            } else if (['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/')) {
               logger.warn(`Final EN translation returned problematic result: '${finalResult}'. Retrying with different intermediate language.`);
               const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
               if (altResult) {
