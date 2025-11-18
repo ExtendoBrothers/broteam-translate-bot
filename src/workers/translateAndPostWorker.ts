@@ -169,63 +169,225 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
 
       let translationChain = tweet.text;
-            
-      // Chain translations through all languages with circuit breaker and jittered delays
       let translationAttempted = false;
-      for (const lang of config.LANGUAGES) {
-        // Skip if circuit open
+      // Translation steps log setup
+      const fs = require('fs');
+      const path = require('path');
+      const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
+      function logTranslationStep(lang: string, text: string) {
+        const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
+        fs.appendFileSync(translationLogPath, entry, 'utf8');
+      }
+
+      // Helper: retry translation with a different language if result is problematic
+      async function retryWithDifferentLang(input: string, badResult: string, excludeLangs: string[]): Promise<string | null> {
+        const allLangs = config.LANGUAGES.filter(l => !excludeLangs.includes(l));
+        for (const lang of allLangs) {
+          try {
+            const result = await translateText(input, lang);
+            if (result && result.trim() !== badResult && result.trim() !== '' && result.trim() !== '/') {
+              logger.info(`Recovered translation using alt lang ${lang}: ${result.substring(0, 50)}...`);
+              return result;
+            }
+          } catch (e) {
+            logger.warn(`Retry with alt lang ${lang} failed: ${e}`);
+          }
+        }
+        return null;
+      }
+
+      // Shuffle language order for more comedic, less deterministic results
+      function shuffleArray<T>(array: T[]): T[] {
+        const arr = array.slice();
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+        return arr;
+      }
+
+      const randomizedLangs = shuffleArray(config.LANGUAGES);
+      for (const lang of randomizedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
           continue;
         }
         try {
-          translationChain = await translateText(translationChain, lang);
+          let result = await translateText(translationChain, lang);
+          // If result is just a problematic char or empty, retry with a different language
+          if (['/', ':', '.', '', ' '].includes(result.trim())) {
+            logger.warn(`Translation for ${lang} returned problematic result: "${result}". Retrying with a different language.`);
+            const altResult = await retryWithDifferentLang(translationChain, result.trim(), [lang]);
+            if (altResult) {
+              result = altResult;
+            }
+          }
+          translationChain = result;
           recordSuccess(lang);
           translationAttempted = true;
           logger.info(`Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
+          logTranslationStep(lang, translationChain);
         } catch (error: unknown) {
           logger.error(`Failed to translate for ${lang}: ${error}`);
           recordFailure(lang);
-          // Continue with partial translation rather than failing completely
         }
-        // Apply jittered delay after attempt (success or failure) to avoid thundering herd
         await delay(jitteredTranslationDelay());
       }
 
-      // If no translations succeeded at all, skip this tweet (will retry later)
       if (!translationAttempted) {
         logger.error(`No translations succeeded for tweet ${tweet.id} - will retry in next run`);
         continue;
       }
 
-      // Translate final result back to English (no circuit skip for final step)
+      // Always translate final result back to English
       try {
-        const finalResult = await translateText(translationChain, 'en');
+        logger.info(`Translation chain before final EN: ${translationChain}`);
+        const fs = require('fs');
+        const path = require('path');
+        const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+        let finalResult = '';
+        let chainInput = tweet.text;
+        // Prepare to collect translation steps for detailed logging
+        const translationLogSteps: { lang: string, text: string }[] = [];
+        let duplicate = false;
+        let postedOutputs = [];
+        try {
+          if (fs.existsSync(postedLogPath)) {
+            postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
+          }
+        } catch (e) {
+          logger.warn(`Could not read posted-outputs.log: ${e}`);
+        }
+        let maxChainRetries = 3;
+        let maxLangOrderRetries = 3;
+        let chainRetries = 0;
+        let shouldRetry = false;
+        do {
+          let tries = 0;
+          let problematic = false;
+          do {
+            // Shuffle language order for each attempt
+            const randomizedLangs = shuffleArray(config.LANGUAGES);
+            let chain = chainInput;
+            for (const lang of randomizedLangs) {
+              if (isCircuitOpen(lang)) {
+                logger.warn(`Skipping language ${lang} due to open circuit`);
+                continue;
+              }
+              try {
+                let result = await translateText(chain, lang);
+                if (["/", ":", ".", "", " "].includes(result.trim())) {
+                  logger.warn(`Translation for ${lang} returned problematic result: "${result}". Retrying with a different language.`);
+                  const altResult = await retryWithDifferentLang(chain, result.trim(), [lang]);
+                  if (altResult) {
+                    result = altResult;
+                  }
+                }
+                chain = result;
+                recordSuccess(lang);
+                translationAttempted = true;
+                logger.info(`Translated through ${lang}: ${chain.substring(0, 50)}...`);
+                logTranslationStep(lang, chain);
+                translationLogSteps.push({ lang, text: chain });
+              } catch (error: unknown) {
+                logger.error(`Failed to translate for ${lang}: ${error}`);
+                recordFailure(lang);
+              }
+              await delay(jitteredTranslationDelay());
+            }
+            // Always translate back to English
+            finalResult = await translateText(chain, 'en');
+            translationLogSteps.push({ lang: 'en', text: finalResult });
+            const trimmedFinal = finalResult.trim();
+            problematic = (trimmedFinal.length <= 1 || ["/", ":", ".", "", " "].includes(trimmedFinal));
+            if (problematic) {
+              logger.warn(`Final EN translation returned problematic result (single char or empty): "${finalResult}". Retrying chain.`);
+            } else if (["/", ":", ".", "", " "].includes(trimmedFinal)) {
+              logger.warn(`Final EN translation returned problematic result: "${finalResult}". Retrying with different intermediate language.`);
+              const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
+              if (altResult) {
+                finalResult = await translateText(altResult, 'en');
+              }
+            }
+            duplicate = postedOutputs.includes(trimmedFinal);
+            if (duplicate) {
+              logger.warn(`Duplicate translation result detected. Retrying with a new language order. Attempt ${tries + 1}/${maxLangOrderRetries}`);
+            }
+            tries++;
+          } while ((duplicate || problematic) && tries < maxLangOrderRetries);
+          // If still duplicate or problematic after all language order tries, retry the whole chain with the previous result as input
+          shouldRetry = (duplicate || problematic) && (chainRetries + 1 < maxChainRetries);
+          if (shouldRetry) {
+            logger.warn(`Still duplicate or problematic after ${maxLangOrderRetries} language order retries. Retrying the entire chain with previous result as input. Chain retry ${chainRetries + 1}/${maxChainRetries}`);
+            chainInput = finalResult;
+          }
+          chainRetries++;
+        } while (shouldRetry);
+        logTranslationStep('final-en', finalResult);
         logger.info(`Final translation result: ${finalResult}`);
-                
-        // Check if we should queue instead of posting immediately
+
+        // Write detailed translation log to a single log file (append)
+        try {
+          const logDir = path.join(process.cwd(), 'translation-logs');
+          if (!fs.existsSync(logDir)) {
+            fs.mkdirSync(logDir);
+          }
+          const logFile = path.join(logDir, 'all-translations.log');
+          const timestamp = new Date().toISOString();
+          let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nSteps:\n`;
+          for (const step of translationLogSteps) {
+            logContent += `  [${step.lang}] ${step.text}\n`;
+          }
+          logContent += `Final Result: ${finalResult}\n`;
+          fs.appendFileSync(logFile, logContent, 'utf8');
+        } catch (e) {
+          logger.warn(`Failed to write detailed translation log: ${e}`);
+        }
+
         const timeSinceLastPost = Date.now() - lastPostTime;
         const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
-        
-        // If queue has items OR we can't post (24h limit, rate limit, or interval), add to queue
+
         if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
-          const reason = !tweetQueue.isEmpty() ? 'queue not empty' : 
-            !postTracker.canPost() ? '24h limit reached' : 
+          const reason = !tweetQueue.isEmpty() ? 'queue not empty' :
+            !postTracker.canPost() ? '24h limit reached' :
               rateLimitTracker.isRateLimited('post') ? 'rate limited' :
                 'minimum interval enforcement';
           logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
+          logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
           tweetQueue.enqueue(tweet.id, finalResult);
         } else {
-          // Try to post immediately
+          if (!finalResult || finalResult.trim() === '/') {
+            const queued = tweetQueue.peek();
+            if (queued && queued.sourceTweetId === tweet.id) {
+              queued.attemptCount = (queued.attemptCount || 0) + 1;
+              if (queued.attemptCount >= 3) {
+                logger.warn(`Tweet ${tweet.id} failed translation ${queued.attemptCount} times. Removing from queue.`);
+                tweetQueue.dequeue();
+                continue;
+              } else {
+                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: "${finalResult}" (attempt ${queued.attemptCount}/3)`);
+                continue;
+              }
+            } else {
+              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: "${finalResult}"`);
+              continue;
+            }
+          }
           try {
             await postTweet(client, finalResult, tweet.id);
             logger.info(`Posted final translation to Twitter for tweet ${tweet.id}`);
-                        
-            // Record the post - tweet tracker updated inside postTweet
+            // Log posted output to a dedicated file
+            try {
+              const fs = require('fs');
+              const path = require('path');
+              const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+              const entry = `${new Date().toISOString()} [tweet ${tweet.id}] ${finalResult.replace(/\n/g, ' ')}\n`;
+              fs.appendFileSync(postedLogPath, entry, 'utf8');
+            } catch (logErr) {
+              logger.warn(`Failed to log posted output for tweet ${tweet.id}: ${logErr}`);
+            }
             postTracker.recordPost();
             lastPostTime = Date.now();
-                        
-            // Add delay between processing different tweets
             await delay(5000);
           } catch (error: unknown) {
             const err = error as { code?: number; message?: string };
@@ -233,22 +395,18 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               logger.error(`Rate limit hit (${err?.code || 'unknown'}) on post. Queueing tweet ${tweet.id} for later.`);
               tweetQueue.enqueue(tweet.id, finalResult);
               blockedByPostLimit = true;
-              // Don't process more new tweets this run
               break;
             }
             logger.error(`Failed to post final translation for tweet ${tweet.id}: ${error}`);
-            // Queue the tweet to retry later instead of marking as processed
             tweetQueue.enqueue(tweet.id, finalResult);
           }
         }
       } catch (error: unknown) {
         logger.error(`Failed to translate final result for tweet ${tweet.id}: ${error}`);
-        // Queue the partially translated result if we got far enough
         if (translationChain && translationChain !== tweet.text) {
           logger.info(`Queueing partially translated tweet ${tweet.id} for retry`);
           tweetQueue.enqueue(tweet.id, translationChain);
         }
-        // Do NOT mark as processed so it can be retried in future runs
       }
     }
         

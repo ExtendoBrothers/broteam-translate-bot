@@ -2,7 +2,7 @@
 # This script will prompt for admin rights if needed
 
 $TaskName = "BroTeam-OAuth2-HealthCheck"
-$ScriptPath = "C:\Users\Daniel\broteam-translate-bot\scripts\check-oauth2-health.ps1"
+$ScriptPath = Join-Path $PSScriptRoot 'check-oauth2-health.ps1'
 $Description = "Daily health check for BroTeam bot OAuth2 tokens"
 
 Write-Host "Setting up automated OAuth2 health monitoring..." -ForegroundColor Cyan

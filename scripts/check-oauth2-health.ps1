@@ -1,17 +1,18 @@
 # PowerShell script to check OAuth2 health and alert if re-auth needed
 # Schedule this to run daily via Task Scheduler
 
-$BOT_DIR = "C:\Users\Daniel\broteam-translate-bot"
-$LOG_FILE = "$BOT_DIR\.oauth2-health.log"
+npm run build 2>&1 | Out-Null
 
-cd $BOT_DIR
+$BOT_DIR = $PSScriptRoot
+$LOG_FILE = Join-Path $BOT_DIR '.oauth2-health.log'
+$CHECK_SCRIPT = Join-Path $BOT_DIR 'dist/scripts/checkOAuth2Health.js'
 
 # Run the health check
 Write-Output "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Running OAuth2 health check..." | Out-File -Append $LOG_FILE
 
 npm run build 2>&1 | Out-Null
 
-$output = node dist/scripts/checkOAuth2Health.js 2>&1
+$output = node $CHECK_SCRIPT 2>&1
 $exitCode = $LASTEXITCODE
 
 Write-Output $output | Out-File -Append $LOG_FILE

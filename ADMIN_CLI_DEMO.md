@@ -4,7 +4,7 @@
 
 ### Starting the CLI
 ```powershell
-PS C:\Users\Daniel\broteam-translate-bot> npm run admin
+PS <your-project-root>\broteam-translate-bot> npm run admin
 
 🤖 Welcome to the BroTeam Translate Bot Admin CLI
 
