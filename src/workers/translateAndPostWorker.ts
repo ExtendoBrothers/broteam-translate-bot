@@ -204,7 +204,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     for (const tweet of tweets) {
       logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
 
-      const translationChain = tweet.text;
+      let translationChain = tweet.text;
       let translationAttempted = false;
 
       const randomizedLangs = shuffleArray(config.LANGUAGES);
@@ -249,7 +249,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // Prepare to collect translation steps for detailed logging
         const translationLogSteps: { lang: string, text: string }[] = [];
         let duplicate = false;
-        let postedOutputs = [];
+        let postedOutputs: string[] = [];
         try {
           if (fs.existsSync(postedLogPath)) {
             postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
