@@ -11,7 +11,7 @@ export function protectTokens(text: string): string {
   const patterns: Array<{ type: string; regex: RegExp }> = [
     { type: 'CODEBLK', regex: /```[\s\S]*?```/g },
     { type: 'CODE', regex: /`[^`]+`/g },
-    { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)/gi },
+    { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]}]*)?)/gi },
     { type: 'EMAIL', regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
     { type: 'MENTION', regex: /\B@[a-zA-Z0-9_]{1,15}\b/g },
     { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
