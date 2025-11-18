@@ -9,6 +9,8 @@ import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
+import fs from 'fs';
+import path from 'path';
 
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -71,7 +73,41 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   let didWork = false;
   let blockedByCooldown = false;
   let blockedByPostLimit = false;
-    
+
+  // Translation steps log setup
+  const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
+  function logTranslationStep(lang: string, text: string) {
+    const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
+    fs.appendFileSync(translationLogPath, entry, 'utf8');
+  }
+
+  // Helper: retry translation with a different language if result is problematic
+  async function retryWithDifferentLang(input: string, badResult: string, excludeLangs: string[]): Promise<string | null> {
+    const allLangs = config.LANGUAGES.filter(l => !excludeLangs.includes(l));
+    for (const lang of allLangs) {
+      try {
+        const result = await translateText(input, lang);
+        if (result && result.trim() !== badResult && result.trim() !== '' && result.trim() !== '/') {
+          logger.info(`Recovered translation using alt lang ${lang}: ${result.substring(0, 50)}...`);
+          return result;
+        }
+      } catch (e) {
+        logger.warn(`Retry with alt lang ${lang} failed: ${e}`);
+      }
+    }
+    return null;
+  }
+
+  // Shuffle language order for more comedic, less deterministic results
+  function shuffleArray<T>(array: T[]): T[] {
+    const arr = array.slice();
+    for (let i = arr.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [arr[i], arr[j]] = [arr[j], arr[i]];
+    }
+    return arr;
+  }
+
   try {
     // Periodically prune processed tweet IDs to keep storage healthy
     tweetTracker.prune(90, 50000);
@@ -168,43 +204,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     for (const tweet of tweets) {
       logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
 
-      let translationChain = tweet.text;
+      const translationChain = tweet.text;
       let translationAttempted = false;
-      // Translation steps log setup
-      const fs = require('fs');
-      const path = require('path');
-      const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
-      function logTranslationStep(lang: string, text: string) {
-        const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
-        fs.appendFileSync(translationLogPath, entry, 'utf8');
-      }
-
-      // Helper: retry translation with a different language if result is problematic
-      async function retryWithDifferentLang(input: string, badResult: string, excludeLangs: string[]): Promise<string | null> {
-        const allLangs = config.LANGUAGES.filter(l => !excludeLangs.includes(l));
-        for (const lang of allLangs) {
-          try {
-            const result = await translateText(input, lang);
-            if (result && result.trim() !== badResult && result.trim() !== '' && result.trim() !== '/') {
-              logger.info(`Recovered translation using alt lang ${lang}: ${result.substring(0, 50)}...`);
-              return result;
-            }
-          } catch (e) {
-            logger.warn(`Retry with alt lang ${lang} failed: ${e}`);
-          }
-        }
-        return null;
-      }
-
-      // Shuffle language order for more comedic, less deterministic results
-      function shuffleArray<T>(array: T[]): T[] {
-        const arr = array.slice();
-        for (let i = arr.length - 1; i > 0; i--) {
-          const j = Math.floor(Math.random() * (i + 1));
-          [arr[i], arr[j]] = [arr[j], arr[i]];
-        }
-        return arr;
-      }
 
       const randomizedLangs = shuffleArray(config.LANGUAGES);
       for (const lang of randomizedLangs) {
@@ -216,7 +217,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           let result = await translateText(translationChain, lang);
           // If result is just a problematic char or empty, retry with a different language
           if (['/', ':', '.', '', ' '].includes(result.trim())) {
-            logger.warn(`Translation for ${lang} returned problematic result: "${result}". Retrying with a different language.`);
+            logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
             const altResult = await retryWithDifferentLang(translationChain, result.trim(), [lang]);
             if (altResult) {
               result = altResult;
@@ -242,8 +243,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // Always translate final result back to English
       try {
         logger.info(`Translation chain before final EN: ${translationChain}`);
-        const fs = require('fs');
-        const path = require('path');
         const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
         let finalResult = '';
         let chainInput = tweet.text;
@@ -258,8 +257,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         } catch (e) {
           logger.warn(`Could not read posted-outputs.log: ${e}`);
         }
-        let maxChainRetries = 3;
-        let maxLangOrderRetries = 3;
+        const maxChainRetries = 3;
+        const maxLangOrderRetries = 3;
         let chainRetries = 0;
         let shouldRetry = false;
         do {
@@ -276,8 +275,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               }
               try {
                 let result = await translateText(chain, lang);
-                if (["/", ":", ".", "", " "].includes(result.trim())) {
-                  logger.warn(`Translation for ${lang} returned problematic result: "${result}". Retrying with a different language.`);
+                if (['/', ':', '.', '', ' '].includes(result.trim())) {
+                  logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
                   const altResult = await retryWithDifferentLang(chain, result.trim(), [lang]);
                   if (altResult) {
                     result = altResult;
@@ -299,11 +298,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             finalResult = await translateText(chain, 'en');
             translationLogSteps.push({ lang: 'en', text: finalResult });
             const trimmedFinal = finalResult.trim();
-            problematic = (trimmedFinal.length <= 1 || ["/", ":", ".", "", " "].includes(trimmedFinal));
+            problematic = (trimmedFinal.length <= 1 || ['/', ':', '.', '', ' '].includes(trimmedFinal));
             if (problematic) {
-              logger.warn(`Final EN translation returned problematic result (single char or empty): "${finalResult}". Retrying chain.`);
-            } else if (["/", ":", ".", "", " "].includes(trimmedFinal)) {
-              logger.warn(`Final EN translation returned problematic result: "${finalResult}". Retrying with different intermediate language.`);
+              logger.warn(`Final EN translation returned problematic result (single char or empty): '${finalResult}'. Retrying chain.`);
+            } else if (['/', ':', '.', '', ' '].includes(trimmedFinal)) {
+              logger.warn(`Final EN translation returned problematic result: '${finalResult}'. Retrying with different intermediate language.`);
               const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
               if (altResult) {
                 finalResult = await translateText(altResult, 'en');
@@ -365,11 +364,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 tweetQueue.dequeue();
                 continue;
               } else {
-                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: "${finalResult}" (attempt ${queued.attemptCount}/3)`);
+                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}' (attempt ${queued.attemptCount}/3)`);
                 continue;
               }
             } else {
-              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: "${finalResult}"`);
+              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
               continue;
             }
           }
@@ -378,8 +377,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             logger.info(`Posted final translation to Twitter for tweet ${tweet.id}`);
             // Log posted output to a dedicated file
             try {
-              const fs = require('fs');
-              const path = require('path');
               const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
               const entry = `${new Date().toISOString()} [tweet ${tweet.id}] ${finalResult.replace(/\n/g, ' ')}\n`;
               fs.appendFileSync(postedLogPath, entry, 'utf8');

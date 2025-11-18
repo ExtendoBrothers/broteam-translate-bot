@@ -13,7 +13,7 @@ const server = http.createServer(async (req, res) => {
   try {
     const reqUrl = url.parse(req.url || '', true);
     if (reqUrl.pathname === '/callback' && reqUrl.query.code && reqUrl.query.state) {
-      console.log(`[callback-server] Callback received with code and state.`);
+      console.log('[callback-server] Callback received with code and state.');
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end('Authorization received! You can close this tab.\nCheck your terminal for next steps.');
       try {
@@ -43,5 +43,5 @@ const server = http.createServer(async (req, res) => {
 });
 
 server.listen(PORT, () => {
-  console.log(`OAuth2 callback server listening at http://127.0.0.1:${PORT}/callback`);
+  console.log('OAuth2 callback server listening at http://127.0.0.1:6789/callback');
 });
