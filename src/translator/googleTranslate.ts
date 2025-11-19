@@ -8,6 +8,7 @@
 
 import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
+import * as franc from 'franc';
 
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)
 const LIBRE_URL = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000/translate';
@@ -67,28 +68,62 @@ function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[]
   return finalChunks;
 }
 
+// Map franc ISO 639-3 codes to LibreTranslate supported language codes
+const LIBRE_SUPPORTED = [
+  'en', 'ar', 'az', 'zh', 'cs', 'de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'nl', 'el', 'he', 'id', 'fa', 'sv', 'fi', 'hu', 'ro', 'sk', 'th', 'bg', 'hr', 'lt', 'sl', 'et', 'sr', 'ms', 'bn', 'ur', 'ta', 'te', 'ml', 'kn', 'gu', 'mr', 'pa', 'sw', 'tl', 'my', 'km', 'lo', 'am', 'zu', 'xh', 'st', 'so', 'yo', 'ig', 'ha', 'eu', 'gl', 'ca', 'is', 'ga', 'mt', 'lb', 'mk', 'sq', 'bs', 'af', 'hy', 'ka', 'be', 'mn', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb'
+];
+const FRANC_TO_LIBRE: Record<string, string> = {
+  'eng': 'en', 'ara': 'ar', 'aze': 'az', 'zho': 'zh', 'ces': 'cs', 'deu': 'de', 'spa': 'es', 'fra': 'fr', 'hin': 'hi', 'ita': 'it', 'jpn': 'ja', 'kor': 'ko', 'pol': 'pl', 'por': 'pt', 'rus': 'ru', 'tur': 'tr', 'ukr': 'uk', 'vie': 'vi', 'nld': 'nl', 'ell': 'el', 'heb': 'he', 'ind': 'id', 'fas': 'fa', 'swe': 'sv', 'fin': 'fi', 'hun': 'hu', 'ron': 'ro', 'slk': 'sk', 'tha': 'th', 'bul': 'bg', 'hrv': 'hr', 'lit': 'lt', 'slv': 'sl', 'est': 'et', 'srp': 'sr', 'msa': 'ms', 'ben': 'bn', 'urd': 'ur', 'tam': 'ta', 'tel': 'te', 'mal': 'ml', 'kan': 'kn', 'guj': 'gu', 'mar': 'mr', 'pan': 'pa', 'swa': 'sw', 'tgl': 'tl', 'mya': 'my', 'khm': 'km', 'lao': 'lo', 'amh': 'am', 'zul': 'zu', 'xho': 'xh', 'sot': 'st', 'som': 'so', 'yor': 'yo', 'ibo': 'ig', 'hau': 'ha', 'eus': 'eu', 'glg': 'gl', 'cat': 'ca', 'isl': 'is', 'gle': 'ga', 'mlt': 'mt', 'ltz': 'lb', 'mkd': 'mk', 'sqi': 'sq', 'bos': 'bs', 'afr': 'af', 'hye': 'hy', 'kat': 'ka', 'bel': 'be', 'mon': 'mn', 'kir': 'ky', 'kaz': 'kk', 'uzb': 'uz', 'tat': 'tt', 'tuk': 'tk', 'pus': 'ps', 'snd': 'sd', 'sin': 'si', 'nep': 'ne', 'asm': 'as', 'ori': 'or', 'dzo': 'dz', 'bod': 'bo', 'uig': 'ug', 'kur': 'ku', 'ckb': 'ckb'
+};
+
 async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {
-  const bodyPayload: Record<string, unknown> = {
-    q,
-    source: 'auto',
-    target: targetLanguage,
-    format: 'text',
-  };
-  if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
-
-  const res = await fetchWithTimeout(LIBRE_URL, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(bodyPayload),
-  }, timeoutMs);
-
-  if (!res.ok) {
-    const body = await res.text();
-    const status = res.status;
-    throw new Error(`LibreTranslate error ${status}: ${body}`);
+  // Use franc to detect the source language (ISO 639-3)
+  let detectedSource = 'auto';
+  try {
+    const francCode = franc.franc(q, { minLength: 3 });
+    if (francCode && francCode !== 'und') {
+      const libreCode = FRANC_TO_LIBRE[francCode];
+      if (libreCode && LIBRE_SUPPORTED.includes(libreCode)) {
+        detectedSource = libreCode;
+      } else {
+        detectedSource = 'auto';
+      }
+    }
+  } catch (e) {
+    logger.warn(`franc language detection failed: ${e}`);
   }
-  const data = await res.json();
-  return (data?.translatedText as string) || (data?.translated_text as string) || '';
+  let lastError: any = null;
+  for (const trySource of [detectedSource, 'auto']) {
+    const bodyPayload: Record<string, unknown> = {
+      q,
+      source: trySource,
+      target: targetLanguage,
+      format: 'text',
+    };
+    if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
+
+    const res = await fetchWithTimeout(LIBRE_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(bodyPayload),
+    }, timeoutMs);
+
+    if (!res.ok) {
+      const body = await res.text();
+      const status = res.status;
+      // If not supported, retry with 'auto' (unless already tried)
+      if (trySource !== 'auto' && /not supported|not\s+available|unsupported/i.test(body)) {
+        logger.warn(`LibreTranslate source language '${trySource}' not supported, retrying with 'auto'`);
+        lastError = new Error(`LibreTranslate error ${status}: ${body}`);
+        continue;
+      }
+      throw new Error(`LibreTranslate error ${status}: ${body}`);
+    }
+    const data = await res.json();
+    return (data?.translatedText as string) || (data?.translated_text as string) || '';
+  }
+  if (lastError) throw lastError;
+  throw new Error('LibreTranslate failed for all source language attempts');
 }
 
 export async function translateText(text: string, targetLanguage: string): Promise<string> {

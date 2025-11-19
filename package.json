@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "dotenv": "^17.2.3",
+    "franc": "^6.2.0",
     "node-cron": "^3.0.2",
     "node-fetch": "^2.6.7",
     "pm2": "^6.0.13",

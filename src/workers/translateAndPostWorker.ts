@@ -11,6 +11,7 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import fs from 'fs';
 import path from 'path';
+import * as franc from 'franc';
 
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
@@ -299,9 +300,21 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             finalResult = await translateText(chain, 'en');
             translationLogSteps.push({ lang: 'en', text: finalResult });
             const trimmedFinal = finalResult.trim();
-            problematic = (trimmedFinal.length <= 1 || ['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/'));
+            // Language check: use franc to detect if the result is English
+            let detectedLang = 'und';
+            try {
+              detectedLang = franc.franc(trimmedFinal, { minLength: 3 });
+            } catch (e) {
+              logger.warn(`Language detection failed: ${e}`);
+            }
+            problematic = (
+              trimmedFinal.length <= 1 ||
+              ['/', ':', '.', '', ' '].includes(trimmedFinal) ||
+              trimmedFinal.startsWith('/') ||
+              detectedLang !== 'eng'
+            );
             if (problematic) {
-              logger.warn(`Final EN translation returned problematic result (single char or empty): '${finalResult}'. Retrying chain.`);
+              logger.warn(`Final EN translation returned problematic or non-English result (lang=${detectedLang}): '${finalResult}'. Retrying chain.`);
             } else if (['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/')) {
               logger.warn(`Final EN translation returned problematic result: '${finalResult}'. Retrying with different intermediate language.`);
               const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
