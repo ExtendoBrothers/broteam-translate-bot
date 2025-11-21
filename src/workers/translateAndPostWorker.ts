@@ -248,6 +248,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
         let finalResult = '';
         let chainInput = tweet.text;
+        const minRelativeLength = 0.25; // If output is less than 25% of input, consider it too short
         // Prepare to collect translation steps for detailed logging
         const translationLogSteps: { lang: string, text: string }[] = [];
         let duplicate = false;
@@ -266,6 +267,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         do {
           let tries = 0;
           let problematic = false;
+          let tooShort = false;
           do {
             // Shuffle language order for each attempt
             const randomizedLangs = shuffleArray(config.LANGUAGES);
@@ -307,14 +309,20 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             } catch (e) {
               logger.warn(`Language detection failed: ${e}`);
             }
+            tooShort = trimmedFinal.length > 0 && (trimmedFinal.length < Math.ceil(minRelativeLength * tweet.text.length));
             problematic = (
               trimmedFinal.length <= 1 ||
               ['/', ':', '.', '', ' '].includes(trimmedFinal) ||
               trimmedFinal.startsWith('/') ||
-              detectedLang !== 'eng'
+              detectedLang !== 'eng' ||
+              tooShort
             );
             if (problematic) {
-              logger.warn(`Final EN translation returned problematic or non-English result (lang=${detectedLang}): '${finalResult}'. Retrying chain.`);
+              let reason = '';
+              if (tooShort) {
+                reason = ` (too short: ${trimmedFinal.length} chars vs input ${tweet.text.length})`;
+              }
+              logger.warn(`Final EN translation returned problematic, non-English, or too short result (lang=${detectedLang}): '${finalResult}'${reason}. Retrying chain.`);
             } else if (['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/')) {
               logger.warn(`Final EN translation returned problematic result: '${finalResult}'. Retrying with different intermediate language.`);
               const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
@@ -331,7 +339,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           // If still duplicate or problematic after all language order tries, retry the whole chain with the previous result as input
           shouldRetry = (duplicate || problematic) && (chainRetries + 1 < maxChainRetries);
           if (shouldRetry) {
-            logger.warn(`Still duplicate or problematic after ${maxLangOrderRetries} language order retries. Retrying the entire chain with previous result as input. Chain retry ${chainRetries + 1}/${maxChainRetries}`);
+            logger.warn(`Still duplicate, problematic, or too short after ${maxLangOrderRetries} language order retries. Retrying the entire chain with previous result as input. Chain retry ${chainRetries + 1}/${maxChainRetries}`);
             chainInput = finalResult;
           }
           chainRetries++;

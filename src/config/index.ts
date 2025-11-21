@@ -23,23 +23,21 @@ export const config = {
   // OAuth2 refresh retry config
   OAUTH2_REFRESH_MAX_RETRIES: Number(process.env.OAUTH2_REFRESH_MAX_RETRIES || '3'),
   OAUTH2_REFRESH_BACKOFF_MS: Number(process.env.OAUTH2_REFRESH_BACKOFF_MS || '1000'),
-  // Translation chain optimized for "telephone game" comedy:
-  // English → Japanese → Arabic → Finnish → Hungarian → Korean → Turkish →
-  // Chinese → Russian → Thai → Vietnamese → Hindi → Polish → English
-  // Maximizes grammar/script changes for funny mistranslations
-  // Note: Greek (el) removed because LibreTranslate Greek→English model is broken
+  // Translation chain reordered to move problematic/short-output languages later:
+  // English → Japanese → Arabic → Finnish → Turkish → Chinese → Russian → Hindi → Polish → Hungarian → Korean → Thai → Vietnamese → English
+  // Vietnamese, Thai, Hungarian, Korean moved later due to frequent short/failing outputs
   LANGUAGES: [
-    'ja', // Japanese (different grammar, particles)
-    'ar', // Arabic (RTL, gendered, complex plurals)
-    'fi', // Finnish (agglutinative, 15 cases)
-    'hu', // Hungarian (agglutinative, different word order)
-    'ko', // Korean (honorifics, SOV order)
-    'tr', // Turkish (agglutinative, vowel harmony)
-    'zh-Hans', // Chinese (no conjugation, contextual)
-    'ru', // Russian (cases, aspects, Cyrillic)
-    'th', // Thai (no spaces, tonal)
-    'vi', // Vietnamese (tonal, different grammar)
-    'hi', // Hindi (Devanagari script)
-    'pl', // Polish (7 cases, complex conjugation)
+    'ja', // Japanese
+    'ar', // Arabic
+    'fi', // Finnish
+    'tr', // Turkish
+    'zh-Hans', // Chinese (Simplified)
+    'ru', // Russian
+    'hi', // Hindi
+    'pl', // Polish
+    'hu', // Hungarian
+    'ko', // Korean
+    'th', // Thai
+    'vi', // Vietnamese
   ],
 };
