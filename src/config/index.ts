@@ -35,7 +35,7 @@ export const config = {
     'hu', // Hungarian (agglutinative, different word order)
     'ko', // Korean (honorifics, SOV order)
     'tr', // Turkish (agglutinative, vowel harmony)
-    'zh', // Chinese (no conjugation, contextual)
+    'zh-Hans', // Chinese (no conjugation, contextual)
     'ru', // Russian (cases, aspects, Cyrillic)
     'th', // Thai (no spaces, tonal)
     'vi', // Vietnamese (tonal, different grammar)
