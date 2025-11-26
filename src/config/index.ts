@@ -26,18 +26,8 @@ export const config = {
   // Translation chain reordered to move problematic/short-output languages later:
   // English → Japanese → Arabic → Finnish → Turkish → Chinese → Russian → Hindi → Polish → Hungarian → Korean → Thai → Vietnamese → English
   // Vietnamese, Thai, Hungarian, Korean moved later due to frequent short/failing outputs
+  // Expanded translation chain: all supported LibreTranslate languages
   LANGUAGES: [
-    'ja', // Japanese
-    'ar', // Arabic
-    'fi', // Finnish
-    'tr', // Turkish
-    'zh-Hans', // Chinese (Simplified)
-    'ru', // Russian
-    'hi', // Hindi
-    'pl', // Polish
-    'hu', // Hungarian
-    'ko', // Korean
-    'th', // Thai
-    'vi', // Vietnamese
+    'en', 'ar', 'az', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'ga', 'gl', 'he', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ky', 'lt', 'lv', 'ms', 'nb', 'nl', 'pt-BR', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv', 'th', 'tl', 'tr', 'uk', 'ur', 'vi', 'zh-Hans', 'zh-Hant'
   ],
 };

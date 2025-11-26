@@ -248,7 +248,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
         let finalResult = '';
         let chainInput = tweet.text;
-        const minRelativeLength = 0.25; // If output is less than 25% of input, consider it too short
+        const minRelativeLength = 0.5; // If output is less than 50% of input, consider it too short
         // Prepare to collect translation steps for detailed logging
         const translationLogSteps: { lang: string, text: string }[] = [];
         let duplicate = false;
