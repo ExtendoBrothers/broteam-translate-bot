@@ -208,7 +208,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let translationChain = tweet.text;
       let translationAttempted = false;
 
-      const randomizedLangs = shuffleArray(config.LANGUAGES);
+      // Select 12 random languages from the list
+      const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+      logger.info(`[LANG_CHAIN] Main chain languages: ${randomizedLangs.join(', ')}`);
       for (const lang of randomizedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
@@ -260,17 +262,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         } catch (e) {
           logger.warn(`Could not read posted-outputs.log: ${e}`);
         }
-        const maxChainRetries = 3;
-        const maxLangOrderRetries = 3;
+        const maxChainRetries = 9;
+        const maxLangOrderRetries = 9;
         let chainRetries = 0;
         let shouldRetry = false;
         do {
           let tries = 0;
           let problematic = false;
           let tooShort = false;
+          logger.info(`[RETRY] Starting chain attempt ${chainRetries + 1}/${maxChainRetries}`);
           do {
-            // Shuffle language order for each attempt
-            const randomizedLangs = shuffleArray(config.LANGUAGES);
+            // Shuffle and select 12 random languages for each attempt
+            const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+            logger.info(`[LANG_CHAIN] Retry chain attempt ${chainRetries + 1}: ${randomizedLangs.join(', ')}`);
             let chain = chainInput;
             for (const lang of randomizedLangs) {
               if (isCircuitOpen(lang)) {
@@ -298,7 +302,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               }
               await delay(jitteredTranslationDelay());
             }
-            // Always translate back to English
+            // Always translate back to English as the 13th step
             finalResult = await translateText(chain, 'en');
             translationLogSteps.push({ lang: 'en', text: finalResult });
             const trimmedFinal = finalResult.trim();
@@ -310,19 +314,38 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               logger.warn(`Language detection failed: ${e}`);
             }
             tooShort = trimmedFinal.length > 0 && (trimmedFinal.length < Math.ceil(minRelativeLength * tweet.text.length));
+            // Flag outputs that are only punctuation or symbols (e.g., '·,')
+            const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(trimmedFinal);
             problematic = (
               trimmedFinal.length <= 1 ||
               ['/', ':', '.', '', ' '].includes(trimmedFinal) ||
               trimmedFinal.startsWith('/') ||
               detectedLang !== 'eng' ||
-              tooShort
+              tooShort ||
+              punctuationOnly
             );
+            logger.info(`[RETRY] Lang order attempt ${tries + 1}/${maxLangOrderRetries} | problematic=${problematic} | tooShort=${tooShort} | punctuationOnly=${punctuationOnly} | detectedLang=${detectedLang} | finalLength=${trimmedFinal.length} | inputLength=${tweet.text.length}`);
+            if (punctuationOnly) {
+              logger.warn(`Final EN translation is only punctuation/symbols: '${finalResult}'. Retrying chain.`);
+            }
             if (problematic) {
               let reason = '';
               if (tooShort) {
-                reason = ` (too short: ${trimmedFinal.length} chars vs input ${tweet.text.length})`;
+                reason += `Too short: ${trimmedFinal.length} chars vs input ${tweet.text.length}. `;
               }
-              logger.warn(`Final EN translation returned problematic, non-English, or too short result (lang=${detectedLang}): '${finalResult}'${reason}. Retrying chain.`);
+              if (punctuationOnly) {
+                reason += 'Output is only punctuation/symbols. ';
+              }
+              if (detectedLang !== 'eng') {
+                reason += `Detected language is not English: ${detectedLang}. `;
+              }
+              if (trimmedFinal.length <= 1) {
+                reason += 'Output length <= 1. ';
+              }
+              if (["/", ":", ".", "", " "].includes(trimmedFinal) || trimmedFinal.startsWith("/")) {
+                reason += 'Output is a problematic character or empty. ';
+              }
+              logger.warn(`[RETRY_REASON] Tweet ${tweet.id}: ${reason}Final result: '${finalResult}'. Retrying chain.`);
             } else if (['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/')) {
               logger.warn(`Final EN translation returned problematic result: '${finalResult}'. Retrying with different intermediate language.`);
               const altResult = await retryWithDifferentLang(chain, trimmedFinal, ['en']);
@@ -332,15 +355,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             }
             duplicate = postedOutputs.includes(trimmedFinal);
             if (duplicate) {
-              logger.warn(`Duplicate translation result detected. Retrying with a new language order. Attempt ${tries + 1}/${maxLangOrderRetries}`);
+              logger.warn(`[RETRY] Duplicate translation result detected. Retrying with a new language order. Attempt ${tries + 1}/${maxLangOrderRetries}`);
             }
             tries++;
           } while ((duplicate || problematic) && tries < maxLangOrderRetries);
           // If still duplicate or problematic after all language order tries, retry the whole chain with the previous result as input
           shouldRetry = (duplicate || problematic) && (chainRetries + 1 < maxChainRetries);
           if (shouldRetry) {
-            logger.warn(`Still duplicate, problematic, or too short after ${maxLangOrderRetries} language order retries. Retrying the entire chain with previous result as input. Chain retry ${chainRetries + 1}/${maxChainRetries}`);
+            logger.warn(`[RETRY] Still duplicate, problematic, or too short after ${maxLangOrderRetries} language order retries. Retrying the entire chain with previous result as input. Chain retry ${chainRetries + 1}/${maxChainRetries}`);
             chainInput = finalResult;
+          } else {
+            logger.info(`[RETRY] Stopping retries. duplicate=${duplicate}, problematic=${problematic}, chainRetries=${chainRetries + 1}, maxChainRetries=${maxChainRetries}`);
           }
           chainRetries++;
         } while (shouldRetry);
@@ -392,6 +417,45 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             } else {
               logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
               continue;
+            }
+          }
+          // Log if posted tweet is less than 50% of input length
+          const inputLength = tweet.text.length;
+          const outputLength = finalResult.length;
+          if (outputLength < Math.ceil(0.5 * inputLength)) {
+            logger.warn(`[LENGTH CHECK] Posted tweet ${tweet.id} is less than 50% of input length. Input: ${inputLength}, Output: ${outputLength}, Text: '${finalResult}'. Retrying with a new random chain.`);
+            // Retry with a new random chain
+            let retryCount = 0;
+            let retrySuccess = false;
+            while (retryCount < 9 && !retrySuccess) {
+              const retryLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+              logger.info(`[LENGTH CHECK] Retry chain languages: ${retryLangs.join(', ')}`);
+              let retryChain = tweet.text;
+              for (const lang of retryLangs) {
+                try {
+                  let result = await translateText(retryChain, lang);
+                  retryChain = result;
+                } catch (error) {
+                  logger.error(`[LENGTH CHECK] Retry failed for ${lang}: ${error}`);
+                }
+              }
+              // Always translate back to English
+              let retryFinal = '';
+              try {
+                retryFinal = await translateText(retryChain, 'en');
+              } catch (error) {
+                logger.error(`[LENGTH CHECK] Retry final EN failed: ${error}`);
+              }
+              const retryOutputLength = retryFinal.length;
+              if (retryOutputLength >= Math.ceil(0.5 * inputLength)) {
+                logger.info(`[LENGTH CHECK] Retry succeeded for tweet ${tweet.id}. Output: '${retryFinal}'`);
+                finalResult = retryFinal;
+                retrySuccess = true;
+                break;
+              } else {
+                logger.warn(`[LENGTH CHECK] Retry ${retryCount + 1} failed for tweet ${tweet.id}. Output: '${retryFinal}'`);
+              }
+              retryCount++;
             }
           }
           try {

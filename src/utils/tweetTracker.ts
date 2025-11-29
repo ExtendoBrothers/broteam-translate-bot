@@ -69,6 +69,10 @@ class TweetTracker {
       for (const [id, dt] of this.processed.entries()) {
         processedObj[id] = dt.toISOString();
       }
+      if (Object.keys(processedObj).length === 0) {
+        logger.warn('[SAFEGUARD] Attempted to save processed tweets file with zero entries. Save aborted to prevent data loss.');
+        return;
+      }
       const state: TweetTrackerStateV2 = {
         processed: processedObj,
         lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
