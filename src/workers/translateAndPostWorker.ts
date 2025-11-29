@@ -342,7 +342,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               if (trimmedFinal.length <= 1) {
                 reason += 'Output length <= 1. ';
               }
-              if (["/", ":", ".", "", " "].includes(trimmedFinal) || trimmedFinal.startsWith("/")) {
+              if (['/', ':', '.', '', ' '].includes(trimmedFinal) || trimmedFinal.startsWith('/')) {
                 reason += 'Output is a problematic character or empty. ';
               }
               logger.warn(`[RETRY_REASON] Tweet ${tweet.id}: ${reason}Final result: '${finalResult}'. Retrying chain.`);
@@ -433,7 +433,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               let retryChain = tweet.text;
               for (const lang of retryLangs) {
                 try {
-                  let result = await translateText(retryChain, lang);
+                  const result = await translateText(retryChain, lang);
                   retryChain = result;
                 } catch (error) {
                   logger.error(`[LENGTH CHECK] Retry failed for ${lang}: ${error}`);
