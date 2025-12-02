@@ -208,6 +208,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let translationChain = tweet.text;
       let translationAttempted = false;
 
+      // Log original input at the start of the main chain
+      logTranslationStep('original', tweet.text);
+
       // Select 12 random languages from the list
       const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
       logger.info(`[LANG_CHAIN] Main chain languages: ${randomizedLangs.join(', ')}`);
@@ -272,6 +275,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           let tooShort = false;
           logger.info(`[RETRY] Starting chain attempt ${chainRetries + 1}/${maxChainRetries}`);
           do {
+            // Log original input at the start of each retry chain
+            logTranslationStep('original', chainInput);
             // Shuffle and select 12 random languages for each attempt
             const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
             logger.info(`[LANG_CHAIN] Retry chain attempt ${chainRetries + 1}: ${randomizedLangs.join(', ')}`);
@@ -427,6 +432,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Retry with a new random chain
             let retryCount = 0;
             let retrySuccess = false;
+            let retryResult = finalResult;
             while (retryCount < 9 && !retrySuccess) {
               const retryLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
               logger.info(`[LENGTH CHECK] Retry chain languages: ${retryLangs.join(', ')}`);
@@ -449,7 +455,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               const retryOutputLength = retryFinal.length;
               if (retryOutputLength >= Math.ceil(0.5 * inputLength)) {
                 logger.info(`[LENGTH CHECK] Retry succeeded for tweet ${tweet.id}. Output: '${retryFinal}'`);
-                finalResult = retryFinal;
+                retryResult = retryFinal;
                 retrySuccess = true;
                 break;
               } else {
@@ -457,31 +463,44 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               }
               retryCount++;
             }
-          }
-          try {
-            await postTweet(client, finalResult, tweet.id);
-            logger.info(`Posted final translation to Twitter for tweet ${tweet.id}`);
-            // Log posted output to a dedicated file
-            try {
-              const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-              const entry = `${new Date().toISOString()} [tweet ${tweet.id}] ${finalResult.replace(/\n/g, ' ')}\n`;
-              fs.appendFileSync(postedLogPath, entry, 'utf8');
-            } catch (logErr) {
-              logger.warn(`Failed to log posted output for tweet ${tweet.id}: ${logErr}`);
+            // Final duplicate check before posting
+            if (!retrySuccess) {
+              logger.error(`[LENGTH CHECK] All retries failed for tweet ${tweet.id}. Output is still less than 50% of input length. Skipping post and queueing for manual review.`);
+              tweetQueue.enqueue(tweet.id, retryResult);
+              continue;
+            } else if (postedOutputs.includes(retryResult.trim())) {
+              logger.error(`[DUPLICATE CHECK] Final result for tweet ${tweet.id} matches a previously posted output. Skipping post and queueing for manual review.`);
+              tweetQueue.enqueue(tweet.id, retryResult);
+              continue;
+            } else {
+              finalResult = retryResult;
+              // Only post if the retry succeeded and the result is long enough and not a duplicate
+              try {
+                await postTweet(client, finalResult, tweet.id);
+                logger.info(`Posted final translation to Twitter for tweet ${tweet.id}`);
+                // Log posted output to a dedicated file
+                try {
+                  const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+                  const entry = `${new Date().toISOString()} [tweet ${tweet.id}] ${finalResult.replace(/\n/g, ' ')}\n`;
+                  fs.appendFileSync(postedLogPath, entry, 'utf8');
+                } catch (logErr) {
+                  logger.warn(`Failed to log posted output for tweet ${tweet.id}: ${logErr}`);
+                }
+                postTracker.recordPost();
+                lastPostTime = Date.now();
+                await delay(5000);
+              } catch (error: unknown) {
+                const err = error as { code?: number; message?: string };
+                if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+                  logger.error(`Rate limit hit (${err?.code || 'unknown'}) on post. Queueing tweet ${tweet.id} for later.`);
+                  tweetQueue.enqueue(tweet.id, finalResult);
+                  blockedByPostLimit = true;
+                  break;
+                }
+                logger.error(`Failed to post final translation for tweet ${tweet.id}: ${error}`);
+                tweetQueue.enqueue(tweet.id, finalResult);
+              }
             }
-            postTracker.recordPost();
-            lastPostTime = Date.now();
-            await delay(5000);
-          } catch (error: unknown) {
-            const err = error as { code?: number; message?: string };
-            if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
-              logger.error(`Rate limit hit (${err?.code || 'unknown'}) on post. Queueing tweet ${tweet.id} for later.`);
-              tweetQueue.enqueue(tweet.id, finalResult);
-              blockedByPostLimit = true;
-              break;
-            }
-            logger.error(`Failed to post final translation for tweet ${tweet.id}: ${error}`);
-            tweetQueue.enqueue(tweet.id, finalResult);
           }
         }
       } catch (error: unknown) {
