@@ -134,18 +134,18 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       try {
         fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] [original] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`, 'utf8');
       } catch (err) {
-        console.error(`[ERROR] Failed to write to translation-debug.log:`, err);
+        console.error('[ERROR] Failed to write to translation-debug.log:', err);
       }
     }
     try {
       fs.appendFileSync(translationLogPath, entry, 'utf8');
     } catch (err) {
-      console.error(`[ERROR] Failed to write to translation-steps.log:`, err);
+      console.error('[ERROR] Failed to write to translation-steps.log:', err);
       if (lang === 'original') {
         try {
           fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] [original] ${new Date().toISOString()} ${err}\n`, 'utf8');
         } catch (e2) {
-          console.error(`[ERROR] Failed to write error to translation-debug.log:`, e2);
+          console.error('[ERROR] Failed to write error to translation-debug.log:', e2);
         }
       }
     }
@@ -179,99 +179,99 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   }
 
   // Periodically prune processed tweet IDs to keep storage healthy
-    tweetTracker.prune(90, 50000);
-    // Check 24-hour post limit status
-    const remainingPosts = postTracker.getRemainingPosts();
-    logger.info(`Post limit status: ${postTracker.getPostCount24h()}/17 posts in last 24h, ${remainingPosts} remaining`);
+  tweetTracker.prune(90, 50000);
+  // Check 24-hour post limit status
+  const remainingPosts = postTracker.getRemainingPosts();
+  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/17 posts in last 24h, ${remainingPosts} remaining`);
         
-    if (!postTracker.canPost()) {
-      const waitSeconds = postTracker.getTimeUntilNextSlot();
-      logger.warn(`24-hour post limit reached (17/17). Next slot available in ${waitSeconds} seconds`);
+  if (!postTracker.canPost()) {
+    const waitSeconds = postTracker.getTimeUntilNextSlot();
+    logger.warn(`24-hour post limit reached (17/17). Next slot available in ${waitSeconds} seconds`);
+  }
+        
+  // First, try to post any queued tweets from previous runs
+  while (!tweetQueue.isEmpty() && postTracker.canPost()) {
+    // Check if we're rate limited for posting
+    if (rateLimitTracker.isRateLimited('post')) {
+      const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
+      logger.info(`Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
+      blockedByPostLimit = true;
+      break;
     }
-        
-    // First, try to post any queued tweets from previous runs
-    while (!tweetQueue.isEmpty() && postTracker.canPost()) {
-      // Check if we're rate limited for posting
-      if (rateLimitTracker.isRateLimited('post')) {
-        const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
-        logger.info(`Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
+
+    const queuedTweet = tweetQueue.peek();
+    if (!queuedTweet) break;
+
+    try {
+      // Enforce minimum interval between posts
+      const timeSinceLastPost = Date.now() - lastPostTime;
+      if (lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS) {
+        const waitMs = MIN_POST_INTERVAL_MS - timeSinceLastPost;
+        logger.info(`Enforcing minimum post interval. Waiting ${Math.ceil(waitMs / 1000)}s before next post`);
         blockedByPostLimit = true;
         break;
       }
 
-      const queuedTweet = tweetQueue.peek();
-      if (!queuedTweet) break;
-
-      try {
-        // Enforce minimum interval between posts
-        const timeSinceLastPost = Date.now() - lastPostTime;
-        if (lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS) {
-          const waitMs = MIN_POST_INTERVAL_MS - timeSinceLastPost;
-          logger.info(`Enforcing minimum post interval. Waiting ${Math.ceil(waitMs / 1000)}s before next post`);
-          blockedByPostLimit = true;
-          break;
-        }
-
-        logger.info(`Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
-        await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
-        logger.info(`Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
+      logger.info(`Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
+      await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
+      logger.info(`Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
                 
-        // Record the post - tweet tracker updated inside postTweet
-        postTracker.recordPost();
-        tweetQueue.dequeue();
-        lastPostTime = Date.now();
+      // Record the post - tweet tracker updated inside postTweet
+      postTracker.recordPost();
+      tweetQueue.dequeue();
+      lastPostTime = Date.now();
                 
-        // Add delay between posts
-        await delay(5000);
-      } catch (error: unknown) {
-        // If rate limit hit (429 or 403), stop processing queue
-        const err = error as { code?: number; message?: string };
-        if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
-          logger.error(`Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
-          tweetQueue.incrementAttempt();
-          blockedByPostLimit = true;
-          break;
-        }
-        // For other errors, increment attempt count but keep in queue
-        logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+      // Add delay between posts
+      await delay(5000);
+    } catch (error: unknown) {
+      // If rate limit hit (429 or 403), stop processing queue
+      const err = error as { code?: number; message?: string };
+      if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+        logger.error(`Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
-                
-        // If too many failures, remove from queue and let it be re-fetched/retried later
-        if (queuedTweet.attemptCount >= 5) {
-          logger.error(`Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
-          tweetQueue.dequeue();
-          // Do NOT mark as processed - allow retry in future runs
-        }
+        blockedByPostLimit = true;
         break;
       }
+      // For other errors, increment attempt count but keep in queue
+      logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+      tweetQueue.incrementAttempt();
+                
+      // If too many failures, remove from queue and let it be re-fetched/retried later
+      if (queuedTweet.attemptCount >= 5) {
+        logger.error(`Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
+        tweetQueue.dequeue();
+        // Do NOT mark as processed - allow retry in future runs
+      }
+      break;
     }
+  }
 
-    // Check if blocked by pre-existing cooldown before deciding about fetch
-    const wasBlockedBefore = rateLimitTracker.isRateLimited('timeline');
+  // Check if blocked by pre-existing cooldown before deciding about fetch
+  const wasBlockedBefore = rateLimitTracker.isRateLimited('timeline');
 
-    // Always fetch (worker runs every 30 minutes)
-    // fetchTweets() handles monthly Twitter API limit internally and uses fallbacks
-    let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
-    const monthKey = monthlyUsageTracker.getCurrentMonthKey();
-    const used = monthlyUsageTracker.getFetchCount(monthKey);
-    const limit = config.MONTHLY_FETCH_LIMIT;
+  // Always fetch (worker runs every 30 minutes)
+  // fetchTweets() handles monthly Twitter API limit internally and uses fallbacks
+  let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
+  const monthKey = monthlyUsageTracker.getCurrentMonthKey();
+  const used = monthlyUsageTracker.getFetchCount(monthKey);
+  const limit = config.MONTHLY_FETCH_LIMIT;
     
-    logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
-    tweets = await fetchTweets();
+  logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
+  tweets = await fetchTweets();
     
-    // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
+  // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
 
-    if (tweets.length === 0) {
-      logger.info('No new tweets to process');
-      // Only mark as blocked if cooldown existed BEFORE the fetch attempt
-      blockedByCooldown = wasBlockedBefore;
-      return { didWork: false, blockedByCooldown, blockedByPostLimit };
-    }
+  if (tweets.length === 0) {
+    logger.info('No new tweets to process');
+    // Only mark as blocked if cooldown existed BEFORE the fetch attempt
+    blockedByCooldown = wasBlockedBefore;
+    return { didWork: false, blockedByCooldown, blockedByPostLimit };
+  }
         
-    logger.info(`Processing ${tweets.length} new tweet(s)`);
+  logger.info(`Processing ${tweets.length} new tweet(s)`);
         
-    for (const tweet of tweets) {
-      {
+  for (const tweet of tweets) {
+    {
       logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
 
       // Log original tweet input to a dedicated file for easy retry
@@ -327,178 +327,178 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // Always translate final result back to English
       logger.info(`Translation chain before final EN: ${translationChain}`);
       const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-        let finalResult = '';
-        const translationLogSteps: { lang: string, text: string }[] = [];
-        let postedOutputs: string[] = [];
-        try {
-          if (fs.existsSync(postedLogPath)) {
-            postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
-          }
-        } catch (e) {
-          logger.warn(`Could not read posted-outputs.log: ${e}`);
+      let finalResult = '';
+      const translationLogSteps: { lang: string, text: string }[] = [];
+      let postedOutputs: string[] = [];
+      try {
+        if (fs.existsSync(postedLogPath)) {
+          postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
         }
-        const maxRetries = 18; // Maximum retry attempts with different language chains
-        let attempts = 0;
-        let acceptable = false;
-        logTranslationStep('original', tweet.text);
-        // Retry loop: Try up to maxRetries times with different 12-language chains until result passes all checks
-        do {
-          logger.info(`[RETRY] Starting attempt ${attempts + 1}/${maxRetries}`);
-          // Select 12 random languages
-          const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-          logger.info(`[LANG_CHAIN] Attempt ${attempts + 1}: ${randomizedLangs.join(', ')}`);
-          let chain = tweet.text;
-          for (const lang of randomizedLangs) {
-            if (isCircuitOpen(lang)) {
-              logger.warn(`Skipping language ${lang} due to open circuit`);
-              continue;
-            }
-            try {
-              let result = await translateText(chain, lang);
-              const trimmedResult = result.trim();
-              if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
-                logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
-                const altResult = await retryWithDifferentLang(chain, trimmedResult, [lang]);
-                if (altResult) {
-                  result = altResult;
-                }
+      } catch (e) {
+        logger.warn(`Could not read posted-outputs.log: ${e}`);
+      }
+      const maxRetries = 18; // Maximum retry attempts with different language chains
+      let attempts = 0;
+      let acceptable = false;
+      logTranslationStep('original', tweet.text);
+      // Retry loop: Try up to maxRetries times with different 12-language chains until result passes all checks
+      do {
+        logger.info(`[RETRY] Starting attempt ${attempts + 1}/${maxRetries}`);
+        // Select 12 random languages
+        const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+        logger.info(`[LANG_CHAIN] Attempt ${attempts + 1}: ${randomizedLangs.join(', ')}`);
+        let chain = tweet.text;
+        for (const lang of randomizedLangs) {
+          if (isCircuitOpen(lang)) {
+            logger.warn(`Skipping language ${lang} due to open circuit`);
+            continue;
+          }
+          try {
+            let result = await translateText(chain, lang);
+            const trimmedResult = result.trim();
+            if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+              logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
+              const altResult = await retryWithDifferentLang(chain, trimmedResult, [lang]);
+              if (altResult) {
+                result = altResult;
               }
-              chain = result;
-              recordSuccess(lang);
-              translationAttempted = true;
-              logger.info(`Translated through ${lang}: ${chain.substring(0, 50)}...`);
-              logTranslationStep(lang, chain);
-              translationLogSteps.push({ lang, text: chain });
-            } catch (error: unknown) {
-              logger.error(`Failed to translate for ${lang}: ${error}`);
-              recordFailure(lang);
             }
-            await delay(jitteredTranslationDelay());
+            chain = result;
+            recordSuccess(lang);
+            translationAttempted = true;
+            logger.info(`Translated through ${lang}: ${chain.substring(0, 50)}...`);
+            logTranslationStep(lang, chain);
+            translationLogSteps.push({ lang, text: chain });
+          } catch (error: unknown) {
+            logger.error(`Failed to translate for ${lang}: ${error}`);
+            recordFailure(lang);
           }
-          // Translate to English
-          finalResult = await translateText(chain, 'en');
-          logTranslationStep('en', finalResult);
-          translationLogSteps.push({ lang: 'en', text: finalResult });
-          // Evaluate the final result against all quality criteria
-          const check = isAcceptable(finalResult, tweet.text, postedOutputs);
-          acceptable = check.acceptable;
-          // Log detailed evaluation of each criterion for debugging
-          const trimmed = finalResult.trim();
-          const originalTrimmed = tweet.text.trim();
-          const tooShort = trimmed.length < Math.ceil(0.5 * originalTrimmed.length);
-          const empty = trimmed.length <= 1;
-          const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(trimmed);
-          const duplicate = postedOutputs.includes(trimmed);
-          const sameAsInput = trimmed === originalTrimmed;
-          const problematicChar = ['/', ':', '.', '', ' '].includes(trimmed) || trimmed.startsWith('/');
-          let detectedLang = 'und';
-          try {
-            detectedLang = franc.franc(trimmed, { minLength: 3 });
-          } catch (e) {
-            // already handled
-          }
-          const notEnglish = detectedLang !== 'eng';
-          try {
-            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} full evaluation: acceptable=${check.acceptable}, tooShort=${tooShort} (${trimmed.length}/${originalTrimmed.length}), empty=${empty}, punctuationOnly=${punctuationOnly}, duplicate=${duplicate}, sameAsInput=${sameAsInput}, problematicChar=${problematicChar}, notEnglish=${notEnglish} (${detectedLang}), finalResult='${finalResult}'\n`, 'utf8');
-          } catch (err) {
-            console.error(`[ERROR] Failed to write full evaluation to translation-debug.log:`, err);
-          }
-          if (!acceptable) {
-            logger.warn(`Attempt ${attempts + 1} failed checks: ${check.reason}`);
-          }
-          attempts++;
-        } while (!acceptable && attempts < maxRetries);
-        logger.info(`Final translation result: ${finalResult}`);
-
-        // Write detailed translation log to a single log file (append)
-        try {
-          const logDir = path.join(process.cwd(), 'translation-logs');
-          if (!fs.existsSync(logDir)) {
-            fs.mkdirSync(logDir);
-          }
-          const logFile = path.join(logDir, 'all-translations.log');
-          const timestamp = new Date().toISOString();
-          let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nSteps:\n`;
-          for (const step of translationLogSteps) {
-            logContent += `  [${step.lang}] ${step.text}\n`;
-          }
-          logContent += `Final Result: ${finalResult}\n`;
-          fs.appendFileSync(logFile, logContent, 'utf8');
-        } catch (e) {
-          logger.warn(`Failed to write detailed translation log: ${e}`);
+          await delay(jitteredTranslationDelay());
         }
+        // Translate to English
+        finalResult = await translateText(chain, 'en');
+        logTranslationStep('en', finalResult);
+        translationLogSteps.push({ lang: 'en', text: finalResult });
+        // Evaluate the final result against all quality criteria
+        const check = isAcceptable(finalResult, tweet.text, postedOutputs);
+        acceptable = check.acceptable;
+        // Log detailed evaluation of each criterion for debugging
+        const trimmed = finalResult.trim();
+        const originalTrimmed = tweet.text.trim();
+        const tooShort = trimmed.length < Math.ceil(0.5 * originalTrimmed.length);
+        const empty = trimmed.length <= 1;
+        const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(trimmed);
+        const duplicate = postedOutputs.includes(trimmed);
+        const sameAsInput = trimmed === originalTrimmed;
+        const problematicChar = ['/', ':', '.', '', ' '].includes(trimmed) || trimmed.startsWith('/');
+        let detectedLang = 'und';
+        try {
+          detectedLang = franc.franc(trimmed, { minLength: 3 });
+        } catch (e) {
+          // already handled
+        }
+        const notEnglish = detectedLang !== 'eng';
+        try {
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} full evaluation: acceptable=${check.acceptable}, tooShort=${tooShort} (${trimmed.length}/${originalTrimmed.length}), empty=${empty}, punctuationOnly=${punctuationOnly}, duplicate=${duplicate}, sameAsInput=${sameAsInput}, problematicChar=${problematicChar}, notEnglish=${notEnglish} (${detectedLang}), finalResult='${finalResult}'\n`, 'utf8');
+        } catch (err) {
+          console.error('[ERROR] Failed to write full evaluation to translation-debug.log:', err);
+        }
+        if (!acceptable) {
+          logger.warn(`Attempt ${attempts + 1} failed checks: ${check.reason}`);
+        }
+        attempts++;
+      } while (!acceptable && attempts < maxRetries);
+      logger.info(`Final translation result: ${finalResult}`);
 
-        const timeSinceLastPost = Date.now() - lastPostTime;
-        const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
+      // Write detailed translation log to a single log file (append)
+      try {
+        const logDir = path.join(process.cwd(), 'translation-logs');
+        if (!fs.existsSync(logDir)) {
+          fs.mkdirSync(logDir);
+        }
+        const logFile = path.join(logDir, 'all-translations.log');
+        const timestamp = new Date().toISOString();
+        let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nSteps:\n`;
+        for (const step of translationLogSteps) {
+          logContent += `  [${step.lang}] ${step.text}\n`;
+        }
+        logContent += `Final Result: ${finalResult}\n`;
+        fs.appendFileSync(logFile, logContent, 'utf8');
+      } catch (e) {
+        logger.warn(`Failed to write detailed translation log: ${e}`);
+      }
 
-        // Decide whether to post immediately, queue, or skip based on conditions
-        if (acceptable) {
-          if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
-            const reason = !tweetQueue.isEmpty() ? 'queue not empty' :
-              !postTracker.canPost() ? '24h limit reached' :
-                rateLimitTracker.isRateLimited('post') ? 'rate limited' :
-                  'minimum interval enforcement';
-            logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
-            logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
-            tweetQueue.enqueue(tweet.id, finalResult);
-          } else {
-            // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
-            if (!finalResult || finalResult.trim() === '/') {
-              const queued = tweetQueue.peek();
-              if (queued && queued.sourceTweetId === tweet.id) {
-                queued.attemptCount = (queued.attemptCount || 0) + 1;
-                if (queued.attemptCount >= 3) {
-                  logger.warn(`Tweet ${tweet.id} failed translation ${queued.attemptCount} times. Removing from queue.`);
-                  tweetQueue.dequeue();
-                  continue;
-                } else {
-                  logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}' (attempt ${queued.attemptCount}/3)`);
-                  continue;
-                }
+      const timeSinceLastPost = Date.now() - lastPostTime;
+      const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
+
+      // Decide whether to post immediately, queue, or skip based on conditions
+      if (acceptable) {
+        if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
+          const reason = !tweetQueue.isEmpty() ? 'queue not empty' :
+            !postTracker.canPost() ? '24h limit reached' :
+              rateLimitTracker.isRateLimited('post') ? 'rate limited' :
+                'minimum interval enforcement';
+          logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
+          logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
+          tweetQueue.enqueue(tweet.id, finalResult);
+        } else {
+          // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
+          if (!finalResult || finalResult.trim() === '/') {
+            const queued = tweetQueue.peek();
+            if (queued && queued.sourceTweetId === tweet.id) {
+              queued.attemptCount = (queued.attemptCount || 0) + 1;
+              if (queued.attemptCount >= 3) {
+                logger.warn(`Tweet ${tweet.id} failed translation ${queued.attemptCount} times. Removing from queue.`);
+                tweetQueue.dequeue();
+                continue;
               } else {
-                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
+                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}' (attempt ${queued.attemptCount}/3)`);
                 continue;
               }
-            }
-            // Post the tweet
-            try {
-              await postTweet(client, finalResult, tweet.id);
-              logger.info(`Successfully posted translated tweet ${tweet.id}`);
-              // Record the post
-              postTracker.recordPost();
-              tweetTracker.markProcessed(tweet.id);
-              lastPostTime = Date.now();
-              didWork = true;
-              // Log posted output
-              try {
-                fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${tweet.id}] ${finalResult}\n`, 'utf8');
-              } catch (err) {
-                logger.warn(`Failed to log posted output: ${err}`);
-              }
-              // Add delay between posts
-              await delay(5000);
-            } catch (error: unknown) {
-              const err = error as { code?: number; message?: string };
-              if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
-                logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
-                tweetQueue.enqueue(tweet.id, finalResult);
-              } else {
-                logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
-                // Enqueue for retry
-                tweetQueue.enqueue(tweet.id, finalResult);
-              }
+            } else {
+              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
+              continue;
             }
           }
-        } else {
-          // After max retries, still unacceptable - enqueue for manual review
-          logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing.`);
-          tweetQueue.enqueue(tweet.id, finalResult);
+          // Post the tweet
+          try {
+            await postTweet(client, finalResult, tweet.id);
+            logger.info(`Successfully posted translated tweet ${tweet.id}`);
+            // Record the post
+            postTracker.recordPost();
+            tweetTracker.markProcessed(tweet.id);
+            lastPostTime = Date.now();
+            didWork = true;
+            // Log posted output
+            try {
+              fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${tweet.id}] ${finalResult}\n`, 'utf8');
+            } catch (err) {
+              logger.warn(`Failed to log posted output: ${err}`);
+            }
+            // Add delay between posts
+            await delay(5000);
+          } catch (error: unknown) {
+            const err = error as { code?: number; message?: string };
+            if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+              logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
+              tweetQueue.enqueue(tweet.id, finalResult);
+            } else {
+              logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
+              // Enqueue for retry
+              tweetQueue.enqueue(tweet.id, finalResult);
+            }
+          }
         }
+      } else {
+        // After max retries, still unacceptable - enqueue for manual review
+        logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing.`);
+        tweetQueue.enqueue(tweet.id, finalResult);
       }
     }
+  }
   return {
     didWork,
     blockedByCooldown,
     blockedByPostLimit
   };
-}
+};
