@@ -437,5 +437,38 @@ export async function fetchTweets(): Promise<Tweet[]> {
     }
   }
 
+  // Try tweet-inputs.log as a manual/manual retry fallback
+  try {
+    const inputLogPath = path.resolve(process.cwd(), 'tweet-inputs.log');
+    if (fs.existsSync(inputLogPath)) {
+      const content = fs.readFileSync(inputLogPath, 'utf8');
+      const lines = content.split('\n').filter(line => line.trim());
+      let addedCount = 0;
+      for (const line of lines) {
+        const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z) \[(\d+)\] (.+)$/);
+        if (match) {
+          const [, , idStr, text] = match;
+          const id = idStr;
+          if (tweetTracker.shouldProcess(id, new Date().toISOString())) {
+            tweets.push({
+              id,
+              text,
+              createdAt: new Date(),
+              user: {
+                id: targetUsername, // placeholder
+                username: targetUsername,
+                displayName: targetUsername
+              }
+            });
+            addedCount++;
+          }
+        }
+      }
+      logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
+    }
+  } catch (err) {
+    logger.error(`Tweet inputs log fallback failed: ${err}`);
+  }
+
   return tweets;
 }
