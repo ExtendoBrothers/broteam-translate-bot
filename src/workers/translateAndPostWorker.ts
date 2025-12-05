@@ -122,9 +122,9 @@ export interface WorkerResult {
 }
 
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
-    try {
-      require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
-    } catch {}
+  try {
+    require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
+  } catch {}
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;

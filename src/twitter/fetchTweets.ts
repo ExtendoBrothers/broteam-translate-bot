@@ -38,9 +38,9 @@ function recordTwitterApiFetch(when: Date) {
 }
 
 export async function fetchTweets(): Promise<Tweet[]> {
-    try {
-      require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
-    } catch {}
+  try {
+    require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
+  } catch {}
   const tweets: Tweet[] = [];
   const targetUsername = config.SOURCE_USERNAME || 'BroTeamPills';
   
@@ -122,10 +122,10 @@ export async function fetchTweets(): Promise<Tweet[]> {
   
   // Always process manual tweet inputs
   try {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Entered manual input block in fetchTweets\n`, 'utf8');
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] Entered manual input block in fetchTweets\n', 'utf8');
     const inputLogPath = path.resolve(process.cwd(), 'tweet-inputs.log');
     if (fs.existsSync(inputLogPath)) {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log exists, reading file\n`, 'utf8');
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log exists, reading file\n', 'utf8');
       const content = fs.readFileSync(inputLogPath, 'utf8');
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log content length: ${content.length}\n`, 'utf8');
       const lines = content.split('\n').map(line => line.trim());
@@ -161,7 +161,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input block completed, addedCount=${addedCount}\n`, 'utf8');
     } else {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log does NOT exist\n`, 'utf8');
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log does NOT exist\n', 'utf8');
     }
   } catch (err) {
     logger.error(`Tweet inputs log fallback failed: ${err}`);
