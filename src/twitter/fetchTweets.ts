@@ -38,29 +38,12 @@ function recordTwitterApiFetch(when: Date) {
 }
 
 export async function fetchTweets(): Promise<Tweet[]> {
+    try {
+      require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
+    } catch {}
   const tweets: Tweet[] = [];
   const targetUsername = config.SOURCE_USERNAME || 'BroTeamPills';
   
-  // Use Nitter RSS feed by default (no API limits, no monthly cap)
-  if (config.FETCH_METHOD === 'nitter') {
-    logger.info(`Fetching tweets via Nitter RSS feed for @${targetUsername}`);
-    const nitterTweets = await fetchTweetsFromNitter(targetUsername, 40);
-    
-    // Filter based on tracker (same logic as Twitter API)
-    for (const tweet of nitterTweets) {
-      if (tweetTracker.shouldProcess(tweet.id, tweet.createdAt.toISOString())) {
-        tweets.push(tweet);
-      }
-    }
-    
-    logger.info(`Filtered to ${tweets.length} new tweets from Nitter`);
-    
-    // Set a cooldown to avoid hammering Nitter instances (45 min, same as Twitter)
-    rateLimitTracker.setCooldown('timeline', 45 * 60, 'post-fetch cadence (Nitter)');
-    
-    return tweets;
-  }
-
   // Always run fallback sources every 30 minutes (called by worker)
   logger.info('Fetching from fallback sources...');
   
@@ -135,6 +118,58 @@ export async function fetchTweets(): Promise<Tweet[]> {
     logger.info(`Google Search added ${addedCount} additional tweet(s)`);
   } catch (err) {
     logger.error(`Google Search failed: ${err}`);
+  }
+  
+  // Always process manual tweet inputs
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Entered manual input block in fetchTweets\n`, 'utf8');
+    const inputLogPath = path.resolve(process.cwd(), 'tweet-inputs.log');
+    if (fs.existsSync(inputLogPath)) {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log exists, reading file\n`, 'utf8');
+      const content = fs.readFileSync(inputLogPath, 'utf8');
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log content length: ${content.length}\n`, 'utf8');
+      const lines = content.split('\n').map(line => line.trim());
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log lines count: ${lines.length}\n`, 'utf8');
+      let addedCount = 0;
+      for (const line of lines) {
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Processing line: '${line}'\n`, 'utf8');
+        const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) \[(\d+)\] (.+)$/);
+        if (match) {
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Regex matched: ${JSON.stringify(match)}\n`, 'utf8');
+          const [, , idStr, text] = match;
+          const id = idStr;
+          const trimmedText = text.trim();
+          const shouldProc = tweetTracker.shouldProcess(id, new Date().toISOString());
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${trimmedText}, shouldProcess=${shouldProc}\n`, 'utf8');
+          if (shouldProc) {
+            tweets.push({
+              id,
+              text: trimmedText,
+              createdAt: new Date(),
+              user: {
+                id: targetUsername, // placeholder
+                username: targetUsername,
+                displayName: targetUsername
+              }
+            });
+            addedCount++;
+          }
+        } else {
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Regex did NOT match line: '${line}'\n`, 'utf8');
+        }
+      }
+      logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input block completed, addedCount=${addedCount}\n`, 'utf8');
+    } else {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log does NOT exist\n`, 'utf8');
+    }
+  } catch (err) {
+    logger.error(`Tweet inputs log fallback failed: ${err}`);
+    try {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] Manual input block exception: ${err}\n`, 'utf8');
+    } catch (e2) {
+      console.error('[ERROR] Failed to write manual input block exception debug log:', e2);
+    }
   }
   
   // Check if we should also use Twitter API based on monthly spacing
@@ -435,39 +470,6 @@ export async function fetchTweets(): Promise<Tweet[]> {
     } else {
       logger.error(`Error fetching tweets: ${error}`);
     }
-  }
-
-  // Try tweet-inputs.log as a manual/manual retry fallback
-  try {
-    const inputLogPath = path.resolve(process.cwd(), 'tweet-inputs.log');
-    if (fs.existsSync(inputLogPath)) {
-      const content = fs.readFileSync(inputLogPath, 'utf8');
-      const lines = content.split('\n').filter(line => line.trim());
-      let addedCount = 0;
-      for (const line of lines) {
-        const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z) \[(\d+)\] (.+)$/);
-        if (match) {
-          const [, , idStr, text] = match;
-          const id = idStr;
-          if (tweetTracker.shouldProcess(id, new Date().toISOString())) {
-            tweets.push({
-              id,
-              text,
-              createdAt: new Date(),
-              user: {
-                id: targetUsername, // placeholder
-                username: targetUsername,
-                displayName: targetUsername
-              }
-            });
-            addedCount++;
-          }
-        }
-      }
-      logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
-    }
-  } catch (err) {
-    logger.error(`Tweet inputs log fallback failed: ${err}`);
   }
 
   return tweets;

@@ -89,25 +89,32 @@ class TweetTracker {
      * Check if tweet should be processed
      */
   public shouldProcess(tweetId: string, createdAt: string): boolean {
-    // Check if already processed
+    // Debug: log every check
     if (this.processed.has(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
+      try {
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already processed\n`, 'utf8');
+      } catch {}
       return false;
     }
-
-    // Check if already in queue (being retried)
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
+      try {
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already in posting queue\n`, 'utf8');
+      } catch {}
       return false;
     }
-
-    // Check if tweet is before start date
     const tweetDate = new Date(createdAt);
     if (tweetDate < START_DATE) {
       logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
+      try {
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} created before start date\n`, 'utf8');
+      } catch {}
       return false;
     }
-
+    try {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} will be processed\n`, 'utf8');
+    } catch {}
     return true;
   }
 

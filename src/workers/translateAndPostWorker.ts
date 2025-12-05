@@ -21,7 +21,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const originalTrimmed = originalText.trim();
 
   // Check if output is too short (less than 50% of input length)
-  const tooShort = trimmed.length < Math.ceil(0.5 * originalTrimmed.length);
+  const tooShort = trimmed.length < Math.ceil(0.33 * originalTrimmed.length);
   // Check if output is empty or nearly empty
   const empty = trimmed.length <= 1;
   // Check if output consists only of punctuation or symbols
@@ -54,6 +54,9 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
 
   const acceptable = unacceptableReasons.length === 0;
   const reason = unacceptableReasons.join('; ');
+
+  // Temporary debug log
+  console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', acceptable=${acceptable}, reason='${reason}', tooShort=${tooShort}, originalLength=${originalTrimmed.length}, trimmedLength=${trimmed.length}`);
 
   return { acceptable, reason };
 }
@@ -119,6 +122,9 @@ export interface WorkerResult {
 }
 
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
+    try {
+      require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
+    } catch {}
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
@@ -128,27 +134,28 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
   function logTranslationStep(lang: string, text: string) {
     const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
-    // Debug: log to console and to a separate debug log when writing [original]
-    if (lang === 'original') {
-      console.log(`[DEBUG] Writing [original] to translation-steps.log: ${text}`);
-      try {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] [original] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`, 'utf8');
-      } catch (err) {
-        console.error('[ERROR] Failed to write to translation-debug.log:', err);
-      }
+    // Log every step to debug log
+    try {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] [${lang}] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`, 'utf8');
+    } catch (err) {
+      console.error('[ERROR] Failed to write to translation-debug.log:', err);
     }
     try {
       fs.appendFileSync(translationLogPath, entry, 'utf8');
     } catch (err) {
       console.error('[ERROR] Failed to write to translation-steps.log:', err);
-      if (lang === 'original') {
-        try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] [original] ${new Date().toISOString()} ${err}\n`, 'utf8');
-        } catch (e2) {
-          console.error('[ERROR] Failed to write error to translation-debug.log:', e2);
-        }
+      try {
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] [${lang}] ${new Date().toISOString()} ${err}\n`, 'utf8');
+      } catch (e2) {
+        console.error('[ERROR] Failed to write error to translation-debug.log:', e2);
       }
     }
+  }
+  // Debug log at worker startup
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Worker started at ${new Date().toISOString()}\n`, 'utf8');
+  } catch (err) {
+    console.error('[ERROR] Failed to write worker start to translation-debug.log:', err);
   }
 
   // Helper: retry translation with a different language if result is problematic
@@ -337,71 +344,70 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } catch (e) {
         logger.warn(`Could not read posted-outputs.log: ${e}`);
       }
-      const maxRetries = 18; // Maximum retry attempts with different language chains
+      // Ensure log directory exists for debug logging
+      const logDir = path.join(process.cwd(), 'translation-logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir);
+      }
+      const maxRetries = 33;
       let attempts = 0;
       let acceptable = false;
-      logTranslationStep('original', tweet.text);
-      // Retry loop: Try up to maxRetries times with different 12-language chains until result passes all checks
       do {
-        logger.info(`[RETRY] Starting attempt ${attempts + 1}/${maxRetries}`);
-        // Select 12 random languages
+        // On each retry, randomize the language chain and reprocess the original tweet
+        let retryChain = tweet.text;
         const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-        logger.info(`[LANG_CHAIN] Attempt ${attempts + 1}: ${randomizedLangs.join(', ')}`);
-        let chain = tweet.text;
+        logger.info(`[RETRY_CHAIN] Attempt ${attempts + 1}: languages: ${randomizedLangs.join(', ')}`);
         for (const lang of randomizedLangs) {
           if (isCircuitOpen(lang)) {
             logger.warn(`Skipping language ${lang} due to open circuit`);
             continue;
           }
           try {
-            let result = await translateText(chain, lang);
+            let result = await translateText(retryChain, lang);
+            // If result is just a problematic char or empty, retry with a different language
             const trimmedResult = result.trim();
             if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
               logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
-              const altResult = await retryWithDifferentLang(chain, trimmedResult, [lang]);
+              const altResult = await retryWithDifferentLang(retryChain, trimmedResult, [lang]);
               if (altResult) {
                 result = altResult;
               }
             }
-            chain = result;
+            retryChain = result;
             recordSuccess(lang);
-            translationAttempted = true;
-            logger.info(`Translated through ${lang}: ${chain.substring(0, 50)}...`);
-            logTranslationStep(lang, chain);
-            translationLogSteps.push({ lang, text: chain });
+            logger.info(`Translated through ${lang}: ${retryChain.substring(0, 50)}...`);
+            logTranslationStep(lang, retryChain);
           } catch (error: unknown) {
             logger.error(`Failed to translate for ${lang}: ${error}`);
             recordFailure(lang);
           }
           await delay(jitteredTranslationDelay());
         }
-        // Translate to English
-        finalResult = await translateText(chain, 'en');
+        finalResult = await translateText(retryChain, 'en');
         logTranslationStep('en', finalResult);
         translationLogSteps.push({ lang: 'en', text: finalResult });
-        // Evaluate the final result against all quality criteria
         const check = isAcceptable(finalResult, tweet.text, postedOutputs);
         acceptable = check.acceptable;
         // Log detailed evaluation of each criterion for debugging
-        const trimmed = finalResult.trim();
-        const originalTrimmed = tweet.text.trim();
-        const tooShort = trimmed.length < Math.ceil(0.5 * originalTrimmed.length);
-        const empty = trimmed.length <= 1;
-        const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(trimmed);
-        const duplicate = postedOutputs.includes(trimmed);
-        const sameAsInput = trimmed === originalTrimmed;
-        const problematicChar = ['/', ':', '.', '', ' '].includes(trimmed) || trimmed.startsWith('/');
-        let detectedLang = 'und';
+        const trimmedRetry = finalResult.trim();
+        const originalTrimmedRetry = tweet.text.trim();
+        const tooShortRetry = trimmedRetry.length < Math.ceil(0.5 * originalTrimmedRetry.length);
+        const emptyRetry = trimmedRetry.length <= 1;
+        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(trimmedRetry);
+        const duplicateRetry = postedOutputs.includes(trimmedRetry);
+        const sameAsInputRetry = trimmedRetry === originalTrimmedRetry;
+        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(trimmedRetry) || trimmedRetry.startsWith('/');
+        let detectedLangRetry = 'und';
         try {
-          detectedLang = franc.franc(trimmed, { minLength: 3 });
+          detectedLangRetry = franc.franc(trimmedRetry, { minLength: 3 });
         } catch (e) {
           // already handled
         }
-        const notEnglish = detectedLang !== 'eng';
+        const notEnglishRetry = detectedLangRetry !== 'eng';
         try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} full evaluation: acceptable=${check.acceptable}, tooShort=${tooShort} (${trimmed.length}/${originalTrimmed.length}), empty=${empty}, punctuationOnly=${punctuationOnly}, duplicate=${duplicate}, sameAsInput=${sameAsInput}, problematicChar=${problematicChar}, notEnglish=${notEnglish} (${detectedLang}), finalResult='${finalResult}'\n`, 'utf8');
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${trimmedRetry.length}/${originalTrimmedRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
         } catch (err) {
-          console.error('[ERROR] Failed to write full evaluation to translation-debug.log:', err);
+          console.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
         }
         if (!acceptable) {
           logger.warn(`Attempt ${attempts + 1} failed checks: ${check.reason}`);

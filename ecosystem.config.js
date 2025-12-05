@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-      name: 'broteam-translate-bot',
-      script: 'dist/index.js',
+        name: 'broteam-translate-bot',
+        script: 'dist/src/index.js',
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
