@@ -39,8 +39,10 @@ function recordTwitterApiFetch(when: Date) {
 
 export async function fetchTweets(): Promise<Tweet[]> {
   try {
-    require('fs').appendFileSync(require('path').join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
-  } catch {}
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
+  } catch (err) {
+    // Logging failed
+  }
   const tweets: Tweet[] = [];
   const targetUsername = config.SOURCE_USERNAME || 'BroTeamPills';
   
