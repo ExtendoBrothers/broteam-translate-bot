@@ -122,11 +122,11 @@ export interface WorkerResult {
 }
 
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
-    } catch (err) {
-      // Logging failed
-    }
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
+  } catch (err) {
+    // Logging failed
+  }
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
@@ -154,11 +154,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     }
   }
   // Debug log at worker startup
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Worker started at ${new Date().toISOString()}\n`, 'utf8');
-    } catch (err) {
-      // Logging failed
-    }
+  try {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Worker started at ${new Date().toISOString()}\n`, 'utf8');
+  } catch (err) {
+    // Logging failed
+  }
 
   // Helper: retry translation with a different language if result is problematic
   async function retryWithDifferentLang(input: string, badResult: string, excludeLangs: string[]): Promise<string | null> {

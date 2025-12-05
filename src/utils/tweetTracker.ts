@@ -94,14 +94,18 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
       try {
         fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already processed\n`, 'utf8');
-      } catch {}
+      } catch {
+        // intentionally empty: debug log failure is non-critical
+      }
       return false;
     }
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       try {
         fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already in posting queue\n`, 'utf8');
-      } catch {}
+      } catch {
+        // intentionally empty: debug log failure is non-critical
+      }
       return false;
     }
     const tweetDate = new Date(createdAt);
@@ -109,12 +113,16 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
       try {
         fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} created before start date\n`, 'utf8');
-      } catch {}
+      } catch {
+        // intentionally empty: debug log failure is non-critical
+      }
       return false;
     }
     try {
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} will be processed\n`, 'utf8');
-    } catch {}
+    } catch {
+      // intentionally empty: debug log failure is non-critical
+    }
     return true;
   }
 
