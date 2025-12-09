@@ -262,3 +262,100 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
   }
 }
 
+/**
+ * Fetch via Google search results (searches for tweets from user)
+ */
+export async function fetchFromGoogleSearch(username: string, max = 20): Promise<Tweet[]> {
+  if (rateLimitTracker.isRateLimited('google-search')) {
+    const waitSeconds = rateLimitTracker.getSecondsUntilReset('google-search');
+    logger.info(`Google Search rate limited for ${waitSeconds} more seconds`);
+    return [];
+  }
+  try {
+    // Search for recent tweets from the user
+    const searchQuery = encodeURIComponent(`site:x.com/${username} OR site:twitter.com/${username}`);
+    const url = `https://www.google.com/search?q=${searchQuery}&num=50`;
+    logger.info(`Trying Google Search for @${username}`);
+    const resp = await fetch(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+        'Accept-Language': 'en-US,en;q=0.9'
+      },
+      timeout: 15000
+    });
+    if (!resp.ok) {
+      logger.warn(`Google Search returned ${resp.status}`);
+      rateLimitTracker.setCooldown('google-search', 30 * 60, 'failed');
+      return [];
+    }
+    const html = await resp.text();
+    const tweets: Tweet[] = [];
+    // Extract status URLs from search results
+    const statusRegex = new RegExp(`https://(?:twitter\.com|x\.com)/${username}/status/(\d+)`, 'g');
+    const seenIds = new Set<string>();
+    let match;
+    while ((match = statusRegex.exec(html)) && tweets.length < max) {
+      const id = match[1];
+      if (seenIds.has(id)) continue;
+      seenIds.add(id);
+      // Try to extract snippet/description from Google result
+      const idx = html.indexOf(id);
+      if (idx === -1) continue;
+      // Look for text in the surrounding area (Google shows snippets)
+      const snippet = html.slice(Math.max(0, idx - 500), Math.min(html.length, idx + 500));
+      // Try to find content in common Google snippet tags
+      let text = '';
+      const snippetPatterns = [
+        /<div class="[^\"]*VwiC3b[^\"]*"[^>]*>([^<]+)<\/div>/,
+        /<span class="[^\"]*aCOpRe[^\"]*"[^>]*>([^<]+)<\/span>/,
+        /<div[^>]*data-content-feature[^>]*>([^<]+)<\/div>/,
+      ];
+      for (const pattern of snippetPatterns) {
+        const snippetMatch = snippet.match(pattern);
+        if (snippetMatch?.[1]) {
+          text = snippetMatch[1];
+          break;
+        }
+      }
+      // Fallback: extract any text near the URL
+      if (!text) {
+        text = snippet
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/https?:\/\/[^\s]+/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+      }
+      // Remove any leftover HTML attributes/fragments
+      if (/class=|style=|data-|<img|<script|<div|<span|<[a-zA-Z]+|\bjsaction\b|\bved=|\bhveid=|\bmax-width|\bwidth:|\bdisplayName/.test(text)) {
+        logger.debug(`Google Search: Discarded garbage snippet for id=${id}: ${JSON.stringify(text)}`);
+        continue;
+      }
+      // Discard if text contains angle brackets or is mostly symbols
+      if (/[<>]/.test(text) || /[\W_]{10,}/.test(text)) {
+        logger.debug(`Google Search: Discarded suspicious snippet for id=${id}: ${JSON.stringify(text)}`);
+        continue;
+      }
+      if (!text || text.length < 10) continue;
+      if (text.length > 280) text = text.slice(0, 277) + '...';
+      tweets.push({
+        id,
+        text,
+        createdAt: snowflakeToDate(id),
+        user: { id: username, username, displayName: username }
+      });
+    }
+    logger.info(`Google Search extracted ${tweets.length} tweets`);
+    rateLimitTracker.setCooldown('google-search', 15 * 60, 'post-fetch cooldown');
+    return tweets;
+  } catch (err) {
+    logger.error(`Google Search fetch failed: ${err}`);
+    rateLimitTracker.setCooldown('google-search', 20 * 60, 'error');
+    return [];
+  }
+}
+
