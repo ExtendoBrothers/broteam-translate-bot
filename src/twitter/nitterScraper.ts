@@ -214,7 +214,7 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
       return [];
     }
     const tweets: Tweet[] = [];
-    const statusRegex = new RegExp(`https://(?:twitter\\.com|x\\.com)/${username}/status/(\\d+)`, 'g');
+    const statusRegex = new RegExp(`https://(?:twitter.com|x.com)/${username}/status/(\d+)`, 'g');
     const seenIds = new Set<string>();
     let match;
     while ((match = statusRegex.exec(html)) && tweets.length < max) {
@@ -292,7 +292,7 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
     const html = await resp.text();
     const tweets: Tweet[] = [];
     // Extract status URLs from search results
-    const statusRegex = new RegExp(`https://(?:twitter\.com|x\.com)/${username}/status/(\d+)`, 'g');
+    const statusRegex = new RegExp(`https://(?:twitter.com|x.com)/${username}/status/(\d+)`, 'g');
     const seenIds = new Set<string>();
     let match;
     while ((match = statusRegex.exec(html)) && tweets.length < max) {
@@ -307,8 +307,8 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
       // Try to find content in common Google snippet tags
       let text = '';
       const snippetPatterns = [
-        /<div class="[^\"]*VwiC3b[^\"]*"[^>]*>([^<]+)<\/div>/,
-        /<span class="[^\"]*aCOpRe[^\"]*"[^>]*>([^<]+)<\/span>/,
+        /<div class="[^"]*VwiC3b[^"]*"[^>]*>([^<]+)<\/div>/,
+        /<span class="[^"]*aCOpRe[^"]*"[^>]*>([^<]+)<\/span>/,
         /<div[^>]*data-content-feature[^>]*>([^<]+)<\/div>/,
       ];
       for (const pattern of snippetPatterns) {
