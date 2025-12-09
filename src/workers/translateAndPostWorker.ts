@@ -59,14 +59,14 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', acceptable=${acceptable}, reason='${reason}', tooShort=${tooShort}, originalLength=${originalTrimmed.length}, trimmedLength=${trimmed.length}`);
 
   return { acceptable, reason };
-}
+  // End of file
 
-// Helper to add delay between operations to respect rate limits
-const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+  // Helper to add delay between operations to respect rate limits
+  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Minimum delay between posts to avoid rapid-fire posting (15 minutes)
-const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-let lastPostTime = 0;
+  // Minimum delay between posts to avoid rapid-fire posting (15 minutes)
+  const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+  let lastPostTime = 0;
 
 // Circuit breaker to temporarily skip languages that are failing repeatedly.
 // Prevents wasting time on broken language pairs.
@@ -377,7 +377,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           try {
             let result = await translateText(retryChain, lang);
             const trimmedResult = result.trim();
-            if (["/", ":", ".", "", " "].includes(trimmedResult) || trimmedResult.startsWith("/")) {
+            if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
               logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
               const altResult = await retryWithDifferentLang(retryChain, trimmedResult, [lang]);
               if (altResult) {
@@ -388,7 +388,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             let detectedLang = 'und';
             try {
               detectedLang = franc.franc(result, { minLength: 3 });
-            } catch {}
+            } catch {
+              // ignore
+            }
             if (detectedLang === 'eng') {
               englishResults.push(result);
             }
@@ -409,7 +411,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         let detectedLangFinal = 'und';
         try {
           detectedLangFinal = franc.franc(finalResult, { minLength: 3 });
-        } catch {}
+        } catch {
+          // ignore
+        }
         if (detectedLangFinal === 'eng') {
           englishResults.push(finalResult);
         }
@@ -427,8 +431,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         let detectedLangRetry = 'und';
         try {
           detectedLangRetry = franc.franc(trimmedRetry, { minLength: 3 });
-        } catch (e) {
-          // already handled
+        } catch {
+          // ignore
         }
         const notEnglishRetry = detectedLangRetry !== 'eng';
         try {
@@ -526,30 +530,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // After max retries, still unacceptable - pick the funniest English result if available
         let chosenResult = finalResult;
         if (englishResults.length > 0) {
-          // Score each English result for "funniness": most different from original, most unexpected words
-          function differenceScore(a: string, b: string): number {
-            // Jaccard distance on word sets
-            const setA = new Set(a.toLowerCase().split(/\W+/));
-            const setB = new Set(b.toLowerCase().split(/\W+/));
-            const union = new Set([...setA, ...setB]);
-            const intersection = new Set([...setA].filter(x => setB.has(x)));
-            return union.size - intersection.size;
-          }
-          function unexpectednessScore(result: string): number {
-            // Count words not in the original
-            const origWords = new Set(tweet.text.toLowerCase().split(/\W+/));
-            const resultWords = new Set(result.toLowerCase().split(/\W+/));
-            let unexpected = 0;
-            for (const w of resultWords) {
-              if (!origWords.has(w) && w.length > 2) unexpected++;
-            }
-            return unexpected;
-          }
+          // Score each English result for 'funniness': most different from original, most unexpected words
           let bestScore = -1;
           let funniest = englishResults[0];
           for (const res of englishResults) {
             const diff = differenceScore(res, tweet.text);
-            const unexp = unexpectednessScore(res);
+            const unexp = unexpectednessScore(res, tweet.text);
             const score = diff + unexp * 2; // Weight unexpectedness higher
             if (score > bestScore) {
               bestScore = score;
@@ -571,3 +557,26 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     blockedByPostLimit
   };
 };
+
+// Utility functions moved to root for lint compliance
+function differenceScore(a: string, b: string): number {
+  // Jaccard distance on word sets
+  const setA = new Set(a.toLowerCase().split(/\W+/));
+  const setB = new Set(b.toLowerCase().split(/\W+/));
+  const union = new Set([...setA, ...setB]);
+  const intersection = new Set([...setA].filter(x => setB.has(x)));
+  return union.size - intersection.size;
+}
+
+function unexpectednessScore(result: string, original: string): number {
+  // Count words not in the original
+  const origWords = new Set(original.toLowerCase().split(/\W+/));
+  const resultWords = new Set(result.toLowerCase().split(/\W+/));
+  let unexpected = 0;
+  for (const w of resultWords) {
+    if (!origWords.has(w) && w.length > 2) unexpected++;
+  }
+  return unexpected;
+}
+
+}
