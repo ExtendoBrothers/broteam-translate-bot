@@ -59,14 +59,14 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', acceptable=${acceptable}, reason='${reason}', tooShort=${tooShort}, originalLength=${originalTrimmed.length}, trimmedLength=${trimmed.length}`);
 
   return { acceptable, reason };
-  // End of file
+}
 
-  // Helper to add delay between operations to respect rate limits
-  const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+// Helper to add delay between operations to respect rate limits
+const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-  // Minimum delay between posts to avoid rapid-fire posting (15 minutes)
-  const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
-  let lastPostTime = 0;
+// Minimum delay between posts to avoid rapid-fire posting (15 minutes)
+const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+let lastPostTime = 0;
 
 // Circuit breaker to temporarily skip languages that are failing repeatedly.
 // Prevents wasting time on broken language pairs.
@@ -577,6 +577,4 @@ function unexpectednessScore(result: string, original: string): number {
     if (!origWords.has(w) && w.length > 2) unexpected++;
   }
   return unexpected;
-}
-
 }
