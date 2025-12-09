@@ -179,29 +179,34 @@ export async function fetchTweets(): Promise<Tweet[]> {
   const used = monthlyUsageTracker.getFetchCount(monthKey);
   const limit = config.MONTHLY_FETCH_LIMIT;
   const remaining = Math.max(0, limit - used);
-  
+
   let shouldUseTwitterApi = false;
+  const now = new Date();
+  const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+  const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
+  const intervalHours = remaining > 0 ? hoursLeft / remaining : 24;
+  const clampedHours = Math.min(Math.max(intervalHours, 0.5), 24); // min 30m, max 24h
+  const targetMs = clampedHours * 3600000;
+
+  let lastTwitterApiFetch = readLastTwitterApiFetch();
+  let elapsedMs = lastTwitterApiFetch ? (now.getTime() - lastTwitterApiFetch.getTime()) : Number.MAX_SAFE_INTEGER;
+
+  // Safeguard: If file is missing or corrupted, treat as never fetched this month
+  if (!lastTwitterApiFetch || isNaN(lastTwitterApiFetch.getTime()) || lastTwitterApiFetch < new Date(now.getFullYear(), now.getMonth(), 1)) {
+    logger.warn('[SPACING] .last-twitter-api-fetch.json missing, corrupted, or from previous month. Treating as no fetches this month.');
+    lastTwitterApiFetch = null;
+    elapsedMs = Number.MAX_SAFE_INTEGER;
+  }
+
   if (remaining === 0) {
     logger.info(`Twitter API monthly limit (${limit}) reached. Skipping Twitter API this run.`);
+  } else if (elapsedMs >= targetMs) {
+    logger.info(`Twitter API fetch interval met (${Math.ceil(elapsedMs/3600000)}h elapsed, need ${clampedHours.toFixed(1)}h). Using ${used}/${limit} this month.`);
+    shouldUseTwitterApi = true;
   } else {
-    // Calculate if enough time has passed for next Twitter API fetch
-    const now = new Date();
-    const endOfMonth = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
-    const hoursLeft = (endOfMonth.getTime() - now.getTime()) / 3600000;
-    const intervalHours = hoursLeft / remaining; // spread evenly across month
-    const clampedHours = Math.min(Math.max(intervalHours, 0.5), 24); // min 30m, max 24h
-    const targetMs = clampedHours * 3600000;
-    
-    const lastTwitterApiFetch = readLastTwitterApiFetch();
-    const elapsedMs = lastTwitterApiFetch ? (now.getTime() - lastTwitterApiFetch.getTime()) : Number.MAX_SAFE_INTEGER;
-    
-    if (elapsedMs >= targetMs) {
-      logger.info(`Twitter API fetch interval met (${Math.ceil(elapsedMs/3600000)}h elapsed, need ${clampedHours.toFixed(1)}h). Using ${used}/${limit} this month.`);
-      shouldUseTwitterApi = true;
-    } else {
-      const waitHours = (targetMs - elapsedMs) / 3600000;
-      logger.info(`Twitter API spacing: need ${clampedHours.toFixed(1)}h between fetches, ${waitHours.toFixed(1)}h remaining. Skipping Twitter API. (${used}/${limit} this month)`);
-    }
+    const waitHours = (targetMs - elapsedMs) / 3600000;
+    const nextAllowed = lastTwitterApiFetch ? new Date(lastTwitterApiFetch.getTime() + targetMs) : new Date(now.getTime() + targetMs);
+    logger.info(`[SPACING] Twitter API spacing: need ${clampedHours.toFixed(1)}h between fetches, ${waitHours.toFixed(1)}h remaining. Next allowed fetch: ${nextAllowed.toISOString()}. Skipping Twitter API. (${used}/${limit} this month)`);
   }
   
   // If Twitter API spacing not met or limit reached, return fallback results

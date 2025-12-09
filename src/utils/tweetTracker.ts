@@ -92,11 +92,6 @@ class TweetTracker {
     // Debug: log every check
     if (this.processed.has(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
-      try {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already processed\n`, 'utf8');
-      } catch {
-        // intentionally empty: debug log failure is non-critical
-      }
       return false;
     }
     if (tweetQueue.isQueued(tweetId)) {
@@ -111,11 +106,6 @@ class TweetTracker {
     const tweetDate = new Date(createdAt);
     if (tweetDate < START_DATE) {
       logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
-      try {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} created before start date\n`, 'utf8');
-      } catch {
-        // intentionally empty: debug log failure is non-critical
-      }
       return false;
     }
     try {

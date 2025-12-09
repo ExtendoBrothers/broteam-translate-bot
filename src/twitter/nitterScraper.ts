@@ -22,12 +22,56 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
   }
 
   // Try RSS feeds - more reliable than HTML scraping
-  // nitter.lucabased.xyz is currently the most reliable working instance
+  // Expanded list of public Nitter instances (some may be unreliable or rate-limited)
   const instances = [
     'nitter.lucabased.xyz',
     'nitter.net',
-    'nitter.poast.org', 
+    'nitter.poast.org',
     'nitter.cz',
+    'nitter.privacydev.net',
+    'nitter.moomoo.me',
+    'nitter.1d4.us',
+    'nitter.nixnet.services',
+    'nitter.pussthecat.org',
+    'nitter.unixfox.eu',
+    'nitter.42l.fr',
+    'nitter.fdn.fr',
+    'nitter.13ad.de',
+    'nitter.mha.fi',
+    'nitter.kavin.rocks',
+    'nitter.bus-hit.me',
+    'nitter.tedomum.net',
+    'nitter.inpt.fr',
+    'nitter.it',
+    'nitter.mint.lgbt',
+    'nitter.nohost.network',
+    'nitter.catsarch.com',
+    'nitter.privacy.com.de',
+    'nitter.pw',
+    'nitter.domain.glass',
+    'nitter.mastodon.pro',
+    'nitter.koehlerweb.org',
+    'nitter.mha.fi',
+    'nitter.1d4.us',
+    'nitter.privacydev.net',
+    'nitter.bus-hit.me',
+    'nitter.unixfox.eu',
+    'nitter.42l.fr',
+    'nitter.fdn.fr',
+    'nitter.13ad.de',
+    'nitter.kavin.rocks',
+    'nitter.tedomum.net',
+    'nitter.inpt.fr',
+    'nitter.it',
+    'nitter.mint.lgbt',
+    'nitter.nohost.network',
+    'nitter.catsarch.com',
+    'nitter.privacy.com.de',
+    'nitter.pw',
+    'nitter.domain.glass',
+    'nitter.mastodon.pro',
+    'nitter.koehlerweb.org',
+    // Add/remove as needed; some may be down or rate-limited
   ];
 
   for (const instance of instances) {
@@ -197,14 +241,25 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
       
       const snippet = html.slice(Math.max(0, idx - 400), Math.min(html.length, idx + 100));
       let text = snippet
-        .replace(/<[^>]+>/g, ' ')
-        .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
-        .replace(/&lt;/g, '<')
-        .replace(/&gt;/g, '>')
-        .replace(/https?:\/\/[^\s]+/g, '')
-        .replace(/\s+/g, ' ')
-        .trim();
+          .replace(/<[^>]+>/g, ' ')
+          .replace(/&quot;/g, '"')
+          .replace(/&amp;/g, '&')
+          .replace(/&lt;/g, '<')
+          .replace(/&gt;/g, '>')
+          .replace(/https?:\/\/[^\s]+/g, '')
+          .replace(/\s+/g, ' ')
+          .trim();
+
+        // Remove any leftover HTML attributes/fragments
+        if (/class=|style=|data-|<img|<script|<div|<span|<[a-zA-Z]+|\bjsaction\b|\bved=|\bhveid=|\bmax-width|\bwidth:|\bdisplayName/.test(text)) {
+          logger.debug(`Google Cache: Discarded garbage snippet for id=${id}: ${JSON.stringify(text)}`);
+          continue;
+        }
+        // Discard if text contains angle brackets or is mostly symbols
+        if (/[<>]/.test(text) || /[\W_]{10,}/.test(text)) {
+          logger.debug(`Google Cache: Discarded suspicious snippet for id=${id}: ${JSON.stringify(text)}`);
+          continue;
+        }
       
       if (!text || text.length < 10) continue;
       if (text.length > 280) text = text.slice(0, 277) + '...';
@@ -262,7 +317,7 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
     const tweets: Tweet[] = [];
     
     // Extract status URLs from search results
-    const statusRegex = new RegExp(`https://(?:twitter\\.com|x\\.com)/${username}/status/(\\d+)`, 'g');
+    const statusRegex = new RegExp(`https://(?:twitter\.com|x\.com)/${username}/status/(\d+)`, 'g');
     const seenIds = new Set<string>();
     
     let match;
@@ -305,6 +360,16 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
           .replace(/https?:\/\/[^\s]+/g, '')
           .replace(/\s+/g, ' ')
           .trim();
+      }
+      // Remove any leftover HTML attributes/fragments
+      if (/class=|style=|data-|<img|<script|<div|<span|<[a-zA-Z]+|\bjsaction\b|\bved=|\bhveid=|\bmax-width|\bwidth:|\bdisplayName/.test(text)) {
+        logger.debug(`Google Search: Discarded garbage snippet for id=${id}: ${JSON.stringify(text)}`);
+        continue;
+      }
+      // Discard if text contains angle brackets or is mostly symbols
+      if (/[<>]/.test(text) || /[\W_]{10,}/.test(text)) {
+        logger.debug(`Google Search: Discarded suspicious snippet for id=${id}: ${JSON.stringify(text)}`);
+        continue;
       }
       
       if (!text || text.length < 10) continue;

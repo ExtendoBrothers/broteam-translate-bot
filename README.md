@@ -4,7 +4,34 @@ This project retrieves tweets from @BroTeamPills, translates them into 13 langua
 
 ## Features
 
+   - Translation retry logic is now randomized and more robust, with up to 33 attempts per tweet.
+   - Output validation is strictly enforced: translations must meet length, language, and uniqueness criteria before posting. Unacceptable outputs are retried with new language chains and logged for review.
+   - Length check for translation acceptability relaxed to 33% of the original tweet.
+   - Expanded translation chain to all supported LibreTranslate languages (except Greek, which is disabled due to model issues).
+   - Improved language detection and reliability for translations.
+   - Improved logging for translation steps, retries, and output validation.
+   - Safeguards added to prevent data loss in tweet tracking.
    - Note: the client now supports rotated OAuth2 refresh tokens and will persist new refresh tokens to `.env` when Twitter returns a rotated refresh token during refresh. It also retries transient refresh failures with exponential backoff (configurable via `OAUTH2_REFRESH_MAX_RETRIES` and `OAUTH2_REFRESH_BACKOFF_MS`), and avoids retries on HTTP 400 responses which indicate invalid grant or revoked refresh tokens.
+
+## Project Structure
+
+```
+broteam-translate-bot
+
+# BroTeam Translate Bot
+
+This project retrieves tweets from @BroTeamPills, translates them through a randomized chain of supported LibreTranslate languages (self-hosted), and posts validated translations to @BroTeamForeign.
+
+## Features
+
+- Translation retry logic is now randomized and more robust, with up to 33 attempts per tweet.
+- Output validation is strictly enforced: translations must meet length, language, and uniqueness criteria before posting. Unacceptable outputs are retried with new language chains and logged for review.
+- Length check for translation acceptability relaxed to 33% of the original tweet.
+- Expanded translation chain to all supported LibreTranslate languages (except Greek, which is disabled due to model issues).
+- Improved language detection and reliability for translations.
+- Improved logging for translation steps, retries, and output validation.
+- Safeguards added to prevent data loss in tweet tracking.
+- Note: the client now supports rotated OAuth2 refresh tokens and will persist new refresh tokens to `.env` when Twitter returns a rotated refresh token during refresh. It also retries transient refresh failures with exponential backoff (configurable via `OAUTH2_REFRESH_MAX_RETRIES` and `OAUTH2_REFRESH_BACKOFF_MS`), and avoids retries on HTTP 400 responses which indicate invalid grant or revoked refresh tokens.
 
 ## Project Structure
 
@@ -19,7 +46,7 @@ broteam-translate-bot
 │   │   └── postTweets.ts       # Post translations to @BroTeamForeign
 │   ├── translator/
 │   │   ├── googleTranslate.ts  # LibreTranslate integration
-│   │   └── languages.ts        # Supported languages
+│   │   └── languages.ts        # Deprecated (use config.LANGUAGES)
 │   ├── scheduler/jobs.ts       # Scheduled tasks
 │   ├── workers/translateAndPostWorker.ts # Main processing worker
 │   └── utils/logger.ts         # Winston logging
@@ -43,6 +70,7 @@ npm install
 ```powershell
 docker-compose up -d
 ```
+LibreTranslate must be running and accessible at the URL specified in your `.env` (`LIBRETRANSLATE_URL`).
 
 ### 3. Configure Environment
 Copy `.env.example` to `.env` and add your Twitter credentials.
@@ -71,6 +99,7 @@ FETCH_METHOD=nitter
 
 # LibreTranslate
 LIBRETRANSLATE_URL=http://127.0.0.1:5000/translate
+LIBRETRANSLATE_API_KEY=your_api_key   # optional
 
 # Safety
 DRY_RUN=1  # Set to 0 to enable real posting
@@ -111,6 +140,7 @@ TWITTER_ACCESS_TOKEN=your_token
 TWITTER_ACCESS_SECRET=your_token_secret
 
 LIBRETRANSLATE_URL=http://127.0.0.1:5000/translate
+LIBRETRANSLATE_API_KEY=your_api_key   # optional
 DRY_RUN=1
 ```
 
@@ -133,15 +163,15 @@ npm run translate:one -- "hello world"
 - Fetches up to 40 tweets per run (timeline batch size)
 - Enforces a strict 17 posts per rolling 24 hours (excess translations are queued)
 - Persists API cooldowns across restarts and differentiates API vs. cooldown blocks in logs
-- Scheduler runs every 30 minutes from the last completion; on startup, first run is delayed until cooldown expiry + ~20s
-- Automatic rate-limit detection; see [RATE_LIMITS.md](RATE_LIMITS.md) for details
+- Scheduler runs every 30–45 minutes from the last completion; on startup, first run is delayed until cooldown expiry + ~20s
+- Automatic rate-limit detection and dynamic monthly fetch spacing; see [RATE_LIMITS.md](RATE_LIMITS.md) for details
 
 ## Fetching Tweets & Monthly Limit
 
 Two fetch modes are supported:
 
 1. `FETCH_METHOD=nitter` – Uses Twitter's public syndication/Nitter-like method (no auth). Returns engagement-sorted tweets that may be older; unlimited but not ideal for real-time.
-2. `FETCH_METHOD=twitter` – Uses authenticated X API (timeline endpoint). Subject to a strict monthly product cap (≈100 timeline fetches) and per-15-minute limits.
+2. `FETCH_METHOD=twitter` – Uses authenticated X API (timeline endpoint). Subject to a strict monthly product cap (default: 100 timeline fetches) and per-15-minute limits.
 
 To avoid exhausting the monthly cap early, the scheduler dynamically spaces fetches across the remaining days of the month:
 
@@ -158,15 +188,17 @@ Logs include monthly usage: `monthly usage X/100` to help monitoring.
 
 1. **Dry-run mode** (default): Translates but doesn't post
    - Set `DRY_RUN=1` in `.env`
-   - Check logs to verify translations
+   - Check logs to verify translations and output validation steps
 
 2. **Production mode**: Enables posting
    - Set `DRY_RUN=0` in `.env`
    - Monitor `combined.log` and `error.log`
+   - Only translations passing all output validation checks (length, language, uniqueness, and content) are posted. Failed outputs are retried and logged.
 
 3. **Logs**:
    - `combined.log` - All activity
    - `error.log` - Errors only
+   - `translation-debug.log` - Detailed output validation, retry attempts, and translation steps
 
 ## Environment Variables
 
@@ -184,9 +216,10 @@ Logs include monthly usage: `monthly usage X/100` to help monitoring.
 | `SOURCE_USERNAME` | No | Source Twitter username (default: BroTeamPills) |
 | `SOURCE_USER_ID` | No | Source Twitter user ID (cached to avoid lookups) |
 | `LIBRETRANSLATE_URL` | No | LibreTranslate endpoint (default: `http://127.0.0.1:5000/translate`) |
+| `LIBRETRANSLATE_API_KEY` | No | LibreTranslate API key (optional, if required by your instance) |
 | `DRY_RUN` | No | Set to `1` to prevent posting (default: 1) |
 | `RATE_LIMIT_BUFFER_SECONDS` | No | Safety buffer after rate limit reset (default: 10) |
-| `LANGUAGES` | No | Comma-separated language codes for telephone-game chain (default: ja,ar,fi,hu,ko,tr,zh,ru,th,vi,hi,pl,el) |
+| `LANGUAGES` | No | Comma-separated language codes for translation chain (see config for full list; Greek is disabled by default) |
 
 ## Troubleshooting
 
@@ -241,6 +274,81 @@ git push --no-verify
 
 ## Available npm Scripts
 
+* `npm run admin` - Interactive admin CLI for OAuth2 token management
+* `npm run dev` - Development mode with auto-reload
+* `npm start` - Production mode
+* `npm run build` - Compile TypeScript
+* `npm run lint` - ESLint checks
+* `npm run oauth2:auth` - Manual OAuth2 authorization flow
+* `npm run oauth2:handle` - Handle OAuth2 callback
+* `npm run translate:one` - Test translation chain with a single text
+* `npm run resolve:user` - Resolve Twitter username to user ID
+* `npm run test:tokens` - Test tokenizer for tweet splitting
+* `npm run dryrun-language-check` - Test output validation and language detection
+* `npm run test-language-support` - Test LibreTranslate support for all configured languages
+* `npm run test-translation-dryrun` - Run a full randomized translation chain dry run
+See [ADMIN_CLI.md](ADMIN_CLI.md) for detailed admin CLI documentation.
+
+## Output Validation Details
+
+Before posting, every translation undergoes strict output validation:
+
+- **Length**: Must be at least 33% of the original tweet's length.
+- **Language**: Must be detected as English (using `franc`).
+- **Uniqueness**: Must not duplicate previously posted outputs.
+- **Content**: Must not be empty, only punctuation, or problematic (e.g., starting with `/`).
+
+If a translation fails any check, it is retried with a new randomized language chain (up to 33 times). All attempts and validation results are logged in `translation-debug.log` for transparency and review.
+
+## License
+
+MIT License
+
+## Security Notes
+
+- Never commit real secrets or tokens. Files like `.env`, `.twitter-oauth2-tokens.json`, `.rate-limit-state.json`, `.tweet-queue.json`, `.processed-tweets.json`, `.post-tracker.json`, `.last-run.json`, and `.oauth2-meta.json` are gitignored on purpose.
+- OAuth2 tokens are refreshed automatically. If compromised, revoke/rotate in the Twitter Developer Portal and remove local token files.
+- The OAuth2 PKCE verifier/state (`.oauth2-meta.json`) is deleted after successful login; if present, delete and re-run auth.
+- Logs may contain error details. We avoid logging secrets, but always treat logs as sensitive and rotate regularly.
+- Use `DRY_RUN=1` when testing changes.
+
+### LibreTranslate not reachable
+```powershell
+# Check container status
+docker ps --filter "name=libretranslate"
+
+# View logs
+docker logs libretranslate
+
+# Restart container
+docker-compose restart
+```
+
+### Translation errors
+- Ensure LibreTranslate is running on port 5000
+- Test with: `npm run translate:one -- "test"`
+
+## Contributing
+
+Contributions welcome! Please:
+1. Test changes with `DRY_RUN=1`
+2. Respect rate limits
+3. Document environment variables
+4. Ensure code passes `npm run build` and `npm run lint` before pushing
+
+### Pre-Push Hook
+
+A git pre-push hook is installed at `.git/hooks/pre-push` that automatically runs:
+- `npm run build` (TypeScript compilation)
+- `npm run lint` (ESLint checks)
+
+If either fails, the push is blocked. To bypass in emergencies (not recommended):
+```powershell
+git push --no-verify
+```
+
+## Available npm Scripts
+
 - `npm run admin` - Interactive admin CLI for OAuth2 token management
 - `npm run dev` - Development mode with auto-reload
 - `npm start` - Production mode
@@ -253,6 +361,17 @@ git push --no-verify
 - `npm run test:tokens` - Test tokenizer for tweet splitting
 
 See [ADMIN_CLI.md](ADMIN_CLI.md) for detailed admin CLI documentation.
+
+## Output Validation Details
+
+Before posting, every translation undergoes strict output validation:
+
+- **Length**: Must be at least 33% of the original tweet's length.
+- **Language**: Must be detected as English (using `franc`).
+- **Uniqueness**: Must not duplicate previously posted outputs.
+- **Content**: Must not be empty, only punctuation, or problematic (e.g., starting with `/`).
+
+If a translation fails any check, it is retried with a new randomized language chain (up to 33 times). All attempts and validation results are logged in `translation-debug.log` for transparency and review.
 
 ## License
 

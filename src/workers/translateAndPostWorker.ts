@@ -72,8 +72,8 @@ let lastPostTime = 0;
 // Prevents wasting time on broken language pairs.
 interface CircuitState { failures: number; openedAt?: number; }
 const circuit: Record<string, CircuitState> = {};
-const FAILURE_THRESHOLD = 3; // Open circuit after 3 failures
-const CIRCUIT_COOLDOWN_MS = 15 * 60 * 1000; // 15 minutes cooldown
+const FAILURE_THRESHOLD = 2; // Open circuit after 2 failures
+const CIRCUIT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days cooldown
 
 // Check if circuit is open for a language (skip if too many recent failures)
 function isCircuitOpen(lang: string): boolean {
@@ -199,36 +199,44 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   }
         
   // First, try to post any queued tweets from previous runs
+  logger.info(`[QUEUE_DEBUG] Starting post queue processing. Queue size: ${tweetQueue.size()}`);
   while (!tweetQueue.isEmpty() && postTracker.canPost()) {
+    logger.info(`[QUEUE_DEBUG] Queue not empty and can post. Queue size: ${tweetQueue.size()}`);
     // Check if we're rate limited for posting
     if (rateLimitTracker.isRateLimited('post')) {
       const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
-      logger.info(`Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
+      logger.info(`[QUEUE_DEBUG] Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
       blockedByPostLimit = true;
       break;
     }
 
     const queuedTweet = tweetQueue.peek();
-    if (!queuedTweet) break;
+    logger.info(`[QUEUE_DEBUG] Peeked queued tweet: ${queuedTweet ? queuedTweet.sourceTweetId : 'none'}, attemptCount: ${queuedTweet ? queuedTweet.attemptCount : 'n/a'}`);
+    if (!queuedTweet) {
+      logger.info('[QUEUE_DEBUG] No queued tweet found after peek, breaking loop.');
+      break;
+    }
 
     try {
       // Enforce minimum interval between posts
       const timeSinceLastPost = Date.now() - lastPostTime;
+      logger.info(`[QUEUE_DEBUG] Time since last post: ${timeSinceLastPost}ms, lastPostTime: ${lastPostTime}`);
       if (lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS) {
         const waitMs = MIN_POST_INTERVAL_MS - timeSinceLastPost;
-        logger.info(`Enforcing minimum post interval. Waiting ${Math.ceil(waitMs / 1000)}s before next post`);
+        logger.info(`[QUEUE_DEBUG] Enforcing minimum post interval. Waiting ${Math.ceil(waitMs / 1000)}s before next post`);
         blockedByPostLimit = true;
         break;
       }
 
-      logger.info(`Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
+      logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
       await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
-      logger.info(`Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
+      logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
                 
       // Record the post - tweet tracker updated inside postTweet
       postTracker.recordPost();
       tweetQueue.dequeue();
       lastPostTime = Date.now();
+      logger.info(`[QUEUE_DEBUG] Dequeued tweet. New queue size: ${tweetQueue.size()}`);
                 
       // Add delay between posts
       await delay(5000);
@@ -236,19 +244,20 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // If rate limit hit (429 or 403), stop processing queue
       const err = error as { code?: number; message?: string };
       if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
-        logger.error(`Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
+        logger.error(`[QUEUE_DEBUG] Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
         blockedByPostLimit = true;
         break;
       }
       // For other errors, increment attempt count but keep in queue
-      logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+      logger.error(`[QUEUE_DEBUG] Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
       tweetQueue.incrementAttempt();
                 
       // If too many failures, remove from queue and let it be re-fetched/retried later
       if (queuedTweet.attemptCount >= 5) {
-        logger.error(`Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
+        logger.error(`[QUEUE_DEBUG] Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
         tweetQueue.dequeue();
+        logger.info(`[QUEUE_DEBUG] Dequeued tweet after too many failures. New queue size: ${tweetQueue.size()}`);
         // Do NOT mark as processed - allow retry in future runs
       }
       break;
@@ -354,6 +363,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const maxRetries = 33;
       let attempts = 0;
       let acceptable = false;
+      const englishResults: string[] = [];
       do {
         // On each retry, randomize the language chain and reprocess the original tweet
         let retryChain = tweet.text;
@@ -366,14 +376,21 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           try {
             let result = await translateText(retryChain, lang);
-            // If result is just a problematic char or empty, retry with a different language
             const trimmedResult = result.trim();
-            if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+            if (["/", ":", ".", "", " "].includes(trimmedResult) || trimmedResult.startsWith("/")) {
               logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
               const altResult = await retryWithDifferentLang(retryChain, trimmedResult, [lang]);
               if (altResult) {
                 result = altResult;
               }
+            }
+            // Collect English results
+            let detectedLang = 'und';
+            try {
+              detectedLang = franc.franc(result, { minLength: 3 });
+            } catch {}
+            if (detectedLang === 'eng') {
+              englishResults.push(result);
             }
             retryChain = result;
             recordSuccess(lang);
@@ -388,6 +405,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         finalResult = await translateText(retryChain, 'en');
         logTranslationStep('en', finalResult);
         translationLogSteps.push({ lang: 'en', text: finalResult });
+        // Collect English final result as well
+        let detectedLangFinal = 'und';
+        try {
+          detectedLangFinal = franc.franc(finalResult, { minLength: 3 });
+        } catch {}
+        if (detectedLangFinal === 'eng') {
+          englishResults.push(finalResult);
+        }
         const check = isAcceptable(finalResult, tweet.text, postedOutputs);
         acceptable = check.acceptable;
         // Log detailed evaluation of each criterion for debugging
@@ -498,9 +523,45 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
         }
       } else {
-        // After max retries, still unacceptable - enqueue for manual review
-        logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing.`);
-        tweetQueue.enqueue(tweet.id, finalResult);
+        // After max retries, still unacceptable - pick the funniest English result if available
+        let chosenResult = finalResult;
+        if (englishResults.length > 0) {
+          // Score each English result for "funniness": most different from original, most unexpected words
+          function differenceScore(a: string, b: string): number {
+            // Jaccard distance on word sets
+            const setA = new Set(a.toLowerCase().split(/\W+/));
+            const setB = new Set(b.toLowerCase().split(/\W+/));
+            const union = new Set([...setA, ...setB]);
+            const intersection = new Set([...setA].filter(x => setB.has(x)));
+            return union.size - intersection.size;
+          }
+          function unexpectednessScore(result: string): number {
+            // Count words not in the original
+            const origWords = new Set(tweet.text.toLowerCase().split(/\W+/));
+            const resultWords = new Set(result.toLowerCase().split(/\W+/));
+            let unexpected = 0;
+            for (const w of resultWords) {
+              if (!origWords.has(w) && w.length > 2) unexpected++;
+            }
+            return unexpected;
+          }
+          let bestScore = -1;
+          let funniest = englishResults[0];
+          for (const res of englishResults) {
+            const diff = differenceScore(res, tweet.text);
+            const unexp = unexpectednessScore(res);
+            const score = diff + unexp * 2; // Weight unexpectedness higher
+            if (score > bestScore) {
+              bestScore = score;
+              funniest = res;
+            }
+          }
+          logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing funniest English result.`);
+          chosenResult = funniest;
+        } else {
+          logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing last result.`);
+        }
+        tweetQueue.enqueue(tweet.id, chosenResult);
       }
     }
   }
