@@ -302,7 +302,9 @@ If a translation fails any check, it is retried with a new randomized language c
 
 ## License
 
-MIT License
+This project is licensed under the [WTFPL](https://en.wikipedia.org/wiki/WTFPL) - Do What The Fuck You Want To Public License.
+
+See the [LICENSE](LICENSE) file for details.
 
 ## Security Notes
 
@@ -375,7 +377,9 @@ If a translation fails any check, it is retried with a new randomized language c
 
 ## License
 
-MIT License
+This project is licensed under the [WTFPL](https://en.wikipedia.org/wiki/WTFPL) - Do What The Fuck You Want To Public License.
+
+See the [LICENSE](LICENSE) file for details.
 
 ## Security Notes
 
