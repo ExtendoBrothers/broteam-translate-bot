@@ -11,7 +11,14 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import fs from 'fs';
 import path from 'path';
-import * as franc from 'franc';
+// Type declarations for langdetect
+interface DetectionResult {
+  lang: string;
+  prob: number;
+}
+
+// @ts-expect-error - langdetect has no TypeScript definitions
+import * as langdetect from 'langdetect';
 
 // Helper function to evaluate if a translation result meets all quality criteria for posting.
 // Checks for length, content validity, duplicates, language, and problematic characters.
@@ -38,14 +45,17 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Check for problematic starting characters or empty-like strings
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
-  // Detect language using franc library on text-only content (expects 'eng' for English)
+  // Detect language using langdetect library on text-only content (expects 'en' for English)
   let detectedLang = 'und';
   try {
-    detectedLang = franc.franc(textOnly, { minLength: 3 });
+    const detections = langdetect.detect(textOnly);
+    if (detections && detections.length > 0) {
+      detectedLang = detections[0].lang;
+    }
   } catch (e) {
     logger.warn(`Language detection failed: ${e}`);
   }
-  const notEnglish = detectedLang !== 'eng';
+  const notEnglish = detectedLang !== 'en';
 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
@@ -431,11 +441,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Collect English results
             let detectedLang = 'und';
             try {
-              detectedLang = franc.franc(result, { minLength: 3 });
+              const detections = langdetect.detect(result);
+              if (detections && detections.length > 0) {
+                detectedLang = detections[0].lang;
+              }
             } catch {
               // ignore
             }
-            if (detectedLang === 'eng') {
+            if (detectedLang === 'en') {
               englishResults.push(result);
             }
             retryChain = result;
@@ -454,11 +467,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // Collect English final result as well
         let detectedLangFinal = 'und';
         try {
-          detectedLangFinal = franc.franc(finalResult, { minLength: 3 });
+          const detections = langdetect.detect(finalResult);
+          if (detections && detections.length > 0) {
+            detectedLangFinal = detections[0].lang;
+          }
         } catch {
           // ignore
         }
-        if (detectedLangFinal === 'eng') {
+        if (detectedLangFinal === 'en') {
           englishResults.push(finalResult);
         }
         const check = isAcceptable(finalResult, tweet.text, postedOutputs);
@@ -474,11 +490,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const problematicCharRetry = ['/', ':', '.', '', ' '].includes(trimmedRetry) || trimmedRetry.startsWith('/');
         let detectedLangRetry = 'und';
         try {
-          detectedLangRetry = franc.franc(trimmedRetry, { minLength: 3 });
+          const detections = langdetect.detect(trimmedRetry);
+          if (detections && detections.length > 0) {
+            detectedLangRetry = detections[0].lang;
+          }
         } catch {
           // ignore
         }
-        const notEnglishRetry = detectedLangRetry !== 'eng';
+        const notEnglishRetry = detectedLangRetry !== 'en';
         try {
           fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${trimmedRetry.length}/${originalTrimmedRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
         } catch (err) {

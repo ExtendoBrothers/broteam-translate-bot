@@ -19,10 +19,11 @@
   },
   "dependencies": {
     "dotenv": "^17.2.3",
-    "franc": "^6.2.0",
+    "langdetect": "^0.2.1",
     "node-cron": "^3.0.2",
     "node-fetch": "^2.6.7",
     "pm2": "^6.0.13",
+    "tinyld": "^1.3.4",
     "twitter-api-v2": "^1.14.0",
     "winston": "^3.8.2"
   },
