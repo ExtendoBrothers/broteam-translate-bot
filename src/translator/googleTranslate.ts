@@ -8,7 +8,17 @@
 
 import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
-import * as franc from 'franc';
+// Type declarations for langdetect
+interface DetectionResult {
+  lang: string;
+  prob: number;
+}
+
+interface LangDetectModule {
+  detect(text: string): DetectionResult[];
+}
+
+const langdetect = require('langdetect') as LangDetectModule;
 
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)
 const LIBRE_URL = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000/translate';
@@ -87,29 +97,26 @@ function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[]
   return finalChunks;
 }
 
-// Map franc ISO 639-3 codes to LibreTranslate supported language codes
+// LibreTranslate supported language codes (ISO 639-1)
 const LIBRE_SUPPORTED = [
   'en', 'ar', 'az', 'zh', 'cs', 'de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'nl', 'el', 'he', 'id', 'fa', 'sv', 'fi', 'hu', 'ro', 'sk', 'th', 'bg', 'hr', 'lt', 'sl', 'et', 'sr', 'ms', 'bn', 'ur', 'ta', 'te', 'ml', 'kn', 'gu', 'mr', 'pa', 'sw', 'tl', 'my', 'km', 'lo', 'am', 'zu', 'xh', 'st', 'so', 'yo', 'ig', 'ha', 'eu', 'gl', 'ca', 'is', 'ga', 'mt', 'lb', 'mk', 'sq', 'bs', 'af', 'hy', 'ka', 'be', 'mn', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb'
 ];
-const FRANC_TO_LIBRE: Record<string, string> = {
-  'eng': 'en', 'ara': 'ar', 'aze': 'az', 'zho': 'zh', 'ces': 'cs', 'deu': 'de', 'spa': 'es', 'fra': 'fr', 'hin': 'hi', 'ita': 'it', 'jpn': 'ja', 'kor': 'ko', 'pol': 'pl', 'por': 'pt', 'rus': 'ru', 'tur': 'tr', 'ukr': 'uk', 'vie': 'vi', 'nld': 'nl', 'ell': 'el', 'heb': 'he', 'ind': 'id', 'fas': 'fa', 'swe': 'sv', 'fin': 'fi', 'hun': 'hu', 'ron': 'ro', 'slk': 'sk', 'tha': 'th', 'bul': 'bg', 'hrv': 'hr', 'lit': 'lt', 'slv': 'sl', 'est': 'et', 'srp': 'sr', 'msa': 'ms', 'ben': 'bn', 'urd': 'ur', 'tam': 'ta', 'tel': 'te', 'mal': 'ml', 'kan': 'kn', 'guj': 'gu', 'mar': 'mr', 'pan': 'pa', 'swa': 'sw', 'tgl': 'tl', 'mya': 'my', 'khm': 'km', 'lao': 'lo', 'amh': 'am', 'zul': 'zu', 'xho': 'xh', 'sot': 'st', 'som': 'so', 'yor': 'yo', 'ibo': 'ig', 'hau': 'ha', 'eus': 'eu', 'glg': 'gl', 'cat': 'ca', 'isl': 'is', 'gle': 'ga', 'mlt': 'mt', 'ltz': 'lb', 'mkd': 'mk', 'sqi': 'sq', 'bos': 'bs', 'afr': 'af', 'hye': 'hy', 'kat': 'ka', 'bel': 'be', 'mon': 'mn', 'kir': 'ky', 'kaz': 'kk', 'uzb': 'uz', 'tat': 'tt', 'tuk': 'tk', 'pus': 'ps', 'snd': 'sd', 'sin': 'si', 'nep': 'ne', 'asm': 'as', 'ori': 'or', 'dzo': 'dz', 'bod': 'bo', 'uig': 'ug', 'kur': 'ku', 'ckb': 'ckb'
-};
 
 async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {
-  // Use franc to detect the source language (ISO 639-3)
+  // Use langdetect to detect the source language (ISO 639-1)
   let detectedSource = 'auto';
   try {
-    const francCode = franc.franc(q, { minLength: 3 });
-    if (francCode && francCode !== 'und') {
-      const libreCode = FRANC_TO_LIBRE[francCode];
-      if (libreCode && LIBRE_SUPPORTED.includes(libreCode)) {
-        detectedSource = libreCode;
+    const detections = langdetect.detect(q);
+    if (detections && detections.length > 0 && detections[0].prob > 0.5) {
+      const detectedCode = detections[0].lang;
+      if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
+        detectedSource = detectedCode;
       } else {
         detectedSource = 'auto';
       }
     }
   } catch (e) {
-    logger.warn(`franc language detection failed: ${e}`);
+    logger.warn(`langdetect language detection failed: ${e}`);
   }
   let lastError: any = null;
   for (const trySource of [detectedSource, 'auto']) {

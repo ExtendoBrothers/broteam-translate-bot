@@ -1,10 +1,11 @@
 import { translateText } from '../src/translator/googleTranslate';
-import * as franc from 'franc';
+import * as langdetect from 'langdetect';
 
 async function main() {
   const input = 'нет, нет, нет, нет, тв/брата';
   const result = await translateText(input, 'en');
-  const detectedLang = franc.franc(result, { minLength: 3 });
+  const detections = langdetect.detect(result);
+  const detectedLang = detections && detections.length > 0 ? detections[0].lang : 'und';
   console.log('Input:', input);
   console.log('Translated to EN:', result);
   console.log('Detected language:', detectedLang);
