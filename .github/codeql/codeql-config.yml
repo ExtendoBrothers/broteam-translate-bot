@@ -1,0 +1,31 @@
+name: "CodeQL Configuration"
+
+disable-default-queries: false
+
+queries:
+  - uses: security-and-quality
+  - uses: security-experimental
+
+paths-ignore:
+  - node_modules
+  - dist
+  - build
+  - coverage
+  - "**/*.test.js"
+  - "**/*.test.ts"
+  - "**/*.spec.js"
+  - "**/*.spec.ts"
+  - "**/test/**"
+  - "**/tests/**"
+  - ".vscode/**"
+  - "scripts/**"
+  - "translation-logs/**"
+  - "*.log"
+
+paths:
+  - src
+  - "*.ts"
+  - "*.js"
+  - "*.json"
+  - "*.yml"
+  - "*.yaml"
