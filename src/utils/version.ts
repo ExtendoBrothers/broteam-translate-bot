@@ -4,7 +4,7 @@ import * as path from 'path';
 let cachedVersion: string | null = null;
 
 export function getVersion(): string {
-  if (cachedVersion) {
+  if (cachedVersion !== null) {
     return cachedVersion;
   }
 
