@@ -229,6 +229,26 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
+      
+      // Check for duplicates before posting queued tweet
+      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+      let postedOutputs: string[] = [];
+      try {
+        if (fs.existsSync(postedLogPath)) {
+          postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
+        }
+      } catch (e) {
+        logger.warn(`Could not read posted-outputs.log for duplicate check: ${e}`);
+      }
+      
+      const trimmedQueued = queuedTweet.finalTranslation.trim();
+      if (postedOutputs.includes(trimmedQueued)) {
+        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - content is duplicate of previously posted tweet`);
+        tweetQueue.dequeue();
+        logger.info(`[QUEUE_DEBUG] Dequeued duplicate tweet. New queue size: ${tweetQueue.size()}`);
+        continue;
+      }
+      
       await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
       logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
                 
@@ -246,6 +266,15 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
         logger.error(`[QUEUE_DEBUG] Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
+        
+        // Check if too many attempts after rate limit
+        const updatedQueuedTweet = tweetQueue.peek();
+        if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
+          logger.error(`[QUEUE_DEBUG] Removing rate-limited tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts`);
+          tweetQueue.dequeue();
+          logger.info(`[QUEUE_DEBUG] Dequeued rate-limited tweet after too many failures. New queue size: ${tweetQueue.size()}`);
+        }
+        
         blockedByPostLimit = true;
         break;
       }
@@ -254,8 +283,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       tweetQueue.incrementAttempt();
                 
       // If too many failures, remove from queue and let it be re-fetched/retried later
-      if (queuedTweet.attemptCount >= 5) {
-        logger.error(`[QUEUE_DEBUG] Removing tweet ${queuedTweet.sourceTweetId} from queue after ${queuedTweet.attemptCount} failed attempts - will retry on next fetch`);
+      const updatedQueuedTweet = tweetQueue.peek();
+      if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
+        logger.error(`[QUEUE_DEBUG] Removing tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts - will retry on next fetch`);
         tweetQueue.dequeue();
         logger.info(`[QUEUE_DEBUG] Dequeued tweet after too many failures. New queue size: ${tweetQueue.size()}`);
         // Do NOT mark as processed - allow retry in future runs
