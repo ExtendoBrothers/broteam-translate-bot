@@ -10,6 +10,26 @@ const execPromise = util.promisify(exec);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9615;
 
+function getVersion() {
+  // First try to get version from git tags
+  try {
+    const gitVersion = execPromise('git describe --tags --abbrev=0 2>/dev/null');
+    if (gitVersion && gitVersion.startsWith && gitVersion.startsWith('v')) {
+      return gitVersion.substring(1); // Remove 'v' prefix
+    }
+  } catch (error) {
+    // Git command failed, fall back to package.json
+  }
+
+  // Fall back to package.json
+  try {
+    const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
+    return packageJson.version || 'unknown';
+  } catch (error) {
+    return 'unknown';
+  }
+}
+
 async function getPM2Data() {
   const list = await new Promise(resolve => {
     try {
@@ -229,12 +249,13 @@ async function handleRequest(req, res) {
         .join('\n')
     : '';
   const escapedLog = filteredLog ? (filteredLog.replace(/&/g,'&amp;').replace(/</g,'&lt;')) : '';
+  const version = getVersion();
 
   const html = `
 <!DOCTYPE html>
 <html>
 <head>
-  <title>PM2 Dashboard - broteam-translate-bot</title>
+  <title>PM2 Dashboard - broteam-translate-bot v${version}</title>
   <meta charset="utf-8">
   <style>
     body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
@@ -259,7 +280,7 @@ async function handleRequest(req, res) {
   </style>
 </head>
 <body>
-  <h1>🚀 PM2 Dashboard</h1>
+  <h1>🚀 PM2 Dashboard - v${version}</h1>
   <p class="meta">Local only • Page auto-refreshes every 60s</p>
   <div class="row">
     <div class="card">

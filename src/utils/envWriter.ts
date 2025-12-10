@@ -11,7 +11,7 @@ export function setEnvVar(key: string, value: string) {
       content = fs.readFileSync(ENV_PATH, 'utf-8');
     }
     const line = `${key}=${value}`;
-    const pattern = new RegExp(`^${key}=.*$`, 'm');
+    const pattern = new RegExp(`^${key.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}=.*$`, 'm');
     if (pattern.test(content)) {
       content = content.replace(pattern, line);
     } else {

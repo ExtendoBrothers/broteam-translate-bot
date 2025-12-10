@@ -41,7 +41,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     
     // Only look for status links from BroTeamPills, not quoted/embedded tweets from other users
     // Pattern matches image links that go to BroTeamPills' own status
-    const statusRegex = new RegExp(`\\[!\\[Image[^\\]]*\\]\\([^)]+\\)\\]\\(https://x\\.com/${username}/status/(\\d+)/photo`, 'g');
+    const statusRegex = new RegExp(`\\[!\\[Image[^\\]]*\\]\\([^)]+\\)\\]\\(https://x\\.com/${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/status/(\\d+)/photo`, 'g');
     
     // Also need to avoid quoted tweets - they have pattern like @username status links
     const quotedTweetRegex = /https:\/\/x\.com\/(?!BroTeamPills)[^/]+\/status\/\d+/;
