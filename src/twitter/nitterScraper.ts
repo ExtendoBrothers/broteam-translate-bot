@@ -214,7 +214,7 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
       return [];
     }
     const tweets: Tweet[] = [];
-    const statusRegex = new RegExp(`https://(?:twitter[.]com|x[.]com)/${username}/status/([0-9]+)`, 'g');
+    const statusRegex = new RegExp(`https://(?:twitter[.]com|x[.]com)/${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/status/([0-9]+)`, 'g');
     const seenIds = new Set<string>();
     let match;
     while ((match = statusRegex.exec(html)) && tweets.length < max) {
@@ -292,7 +292,7 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
     const html = await resp.text();
     const tweets: Tweet[] = [];
     // Extract status URLs from search results
-    const statusRegex = new RegExp(`https://(?:twitter[.]com|x[.]com)/${username}/status/([0-9]+)`, 'g');
+    const statusRegex = new RegExp(`https://(?:twitter[.]com|x[.]com)/${username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}/status/([0-9]+)`, 'g');
     const seenIds = new Set<string>();
     let match;
     while ((match = statusRegex.exec(html)) && tweets.length < max) {
