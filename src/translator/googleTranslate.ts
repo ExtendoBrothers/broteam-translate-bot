@@ -27,55 +27,23 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 
 // Split text by tokens and translate only non-token segments
 async function translateWithTokenProtection(text: string, targetLanguage: string): Promise<string> {
-  // Split by token pattern
-  const tokenPattern = /(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g;
-  const segments = text.split(tokenPattern);
+  // Split text by tokens, preserving both text and tokens
+  const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g);
   
-  // Group segments into chunks that respect token boundaries and size limits
-  const chunks: string[] = [];
-  let currentChunk = '';
-  
-  for (const segment of segments) {
-    if (tokenPattern.test(segment)) {
-      // This is a token - check if adding it would exceed limit
-      if (currentChunk && (currentChunk + segment).length > 200) {
-        chunks.push(currentChunk);
-        currentChunk = segment;
-      } else {
-        currentChunk += segment;
+  // Translate only the text segments (odd indices after split)
+  const translatedSegments = await Promise.all(
+    segments.map(async (segment, index) => {
+      // Even indices are text segments, odd indices are tokens
+      if (index % 2 === 0 && segment.trim()) {
+        // This is a text segment - translate it
+        return await doTranslateOnce(segment, targetLanguage, 15000);
       }
-    } else if (segment.trim()) {
-      // This is text - check if it needs chunking
-      if (currentChunk && (currentChunk + segment).length > 200) {
-        // Split the text segment if it's too long
-        const words = segment.split(' ');
-        for (const word of words) {
-          if ((currentChunk + ' ' + word).length > 200) {
-            if (currentChunk) chunks.push(currentChunk);
-            currentChunk = word;
-          } else {
-            currentChunk += (currentChunk ? ' ' : '') + word;
-          }
-        }
-      } else {
-        currentChunk += segment;
-      }
-    }
-  }
-  if (currentChunk) chunks.push(currentChunk);
-  
-  // Translate each chunk
-  const translatedChunks = await Promise.all(
-    chunks.map(async (chunk) => {
-      // Check if chunk contains only tokens (no text to translate)
-      if (tokenPattern.test(chunk) && !chunk.replace(tokenPattern, '').trim()) {
-        return chunk;
-      }
-      return await doTranslateOnce(chunk, targetLanguage, 15000);
+      // This is a token or empty segment - return as-is
+      return segment;
     })
   );
   
-  return translatedChunks.join('');
+  return translatedSegments.join('');
 }
 function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[] {
   if (protectedText.length <= maxLen) return [protectedText];

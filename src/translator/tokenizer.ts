@@ -42,8 +42,8 @@ export function restoreTokens(text: string): string {
   restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, type, _idx, b64) => {
     try { 
       const original = Buffer.from(b64, 'base64').toString('utf8');
-      // Add space before URLs if not preceded by whitespace
-      if (type === 'URL') {
+      // Add space before URLs and mentions if not preceded by whitespace
+      if (type === 'URL' || type === 'MENTION') {
         const beforeMatch = restored.substring(0, restored.indexOf(_m));
         if (beforeMatch && !/\s$/.test(beforeMatch)) {
           return ' ' + original;
