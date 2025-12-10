@@ -254,6 +254,15 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 
       // Record the post - tweet tracker updated inside postTweet
       postTracker.recordPost();
+      
+      // Log posted output for duplicate tracking
+      try {
+        const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+        fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${queuedTweet.sourceTweetId}] ${queuedTweet.finalTranslation}\n`, 'utf8');
+      } catch (err) {
+        logger.warn(`Failed to log posted queued output: ${err}`);
+      }
+      
       tweetQueue.dequeue();
       lastPostTime = Date.now();
       logger.info(`[QUEUE_DEBUG] Dequeued tweet. New queue size: ${tweetQueue.size()}`);
