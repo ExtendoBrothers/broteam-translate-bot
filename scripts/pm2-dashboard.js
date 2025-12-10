@@ -11,6 +11,17 @@ const execPromise = util.promisify(exec);
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9615;
 
 function getVersion() {
+  // First try to get version from git tags
+  try {
+    const gitVersion = execPromise('git describe --tags --abbrev=0 2>/dev/null');
+    if (gitVersion && gitVersion.startsWith && gitVersion.startsWith('v')) {
+      return gitVersion.substring(1); // Remove 'v' prefix
+    }
+  } catch (error) {
+    // Git command failed, fall back to package.json
+  }
+
+  // Fall back to package.json
   try {
     const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
     return packageJson.version || 'unknown';
