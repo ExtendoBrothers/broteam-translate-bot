@@ -1,5 +1,5 @@
 import { translateText } from '../src/translator/googleTranslate';
-import * as langdetect from 'langdetect';
+const langdetect = require('langdetect');
 
 async function main() {
   const input = 'нет, нет, нет, нет, тв/брата';
