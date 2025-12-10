@@ -22,6 +22,8 @@ Thumbs.db
 # Runtime state files
 .bot-lock
 .last-run.json
+.last-twitter-api-fetch.json
+.monthly-fetch-usage.json
 .rate-limit-state.json
 .tweet-queue.json
 .processed-tweets.json
