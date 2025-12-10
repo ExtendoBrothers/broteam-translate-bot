@@ -130,34 +130,28 @@ export async function fetchTweets(): Promise<Tweet[]> {
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log exists, reading file\n', 'utf8');
       const content = fs.readFileSync(inputLogPath, 'utf8');
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log content length: ${content.length}\n`, 'utf8');
-      const lines = content.split('\n').map(line => line.trim());
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log lines count: ${lines.length}\n`, 'utf8');
+      // Parse multiline entries: timestamp [id] text (text can span multiple lines until next timestamp)
+      const entryRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) \[(\d+)\] ([\s\S]*?)(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}|$)/g;
+      let match;
       let addedCount = 0;
-      for (const line of lines) {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Processing line: '${line}'\n`, 'utf8');
-        const match = line.match(/^(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) \[(\d+)\] (.+)$/);
-        if (match) {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Regex matched: ${JSON.stringify(match)}\n`, 'utf8');
-          const [, , idStr, text] = match;
-          const id = idStr;
-          const trimmedText = text.trim();
-          const shouldProc = tweetTracker.shouldProcess(id, new Date().toISOString());
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${trimmedText}, shouldProcess=${shouldProc}\n`, 'utf8');
-          if (shouldProc) {
-            tweets.push({
-              id,
-              text: trimmedText,
-              createdAt: new Date(),
-              user: {
-                id: targetUsername, // placeholder
-                username: targetUsername,
-                displayName: targetUsername
-              }
-            });
-            addedCount++;
-          }
-        } else {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Regex did NOT match line: '${line}'\n`, 'utf8');
+      while ((match = entryRegex.exec(content)) !== null) {
+        const [, timestamp, idStr, text] = match;
+        const id = idStr;
+        const trimmedText = text.trim();
+        const shouldProc = tweetTracker.shouldProcess(id, new Date().toISOString());
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
+        if (shouldProc) {
+          tweets.push({
+            id,
+            text: trimmedText,
+            createdAt: new Date(),
+            user: {
+              id: targetUsername, // placeholder
+              username: targetUsername,
+              displayName: targetUsername
+            }
+          });
+          addedCount++;
         }
       }
       logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
