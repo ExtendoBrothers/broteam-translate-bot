@@ -5,6 +5,7 @@ import { translateAndPostWorker } from './workers/translateAndPostWorker';
 import { logger } from './utils/logger';
 import { config } from './config';
 import { acquireLock } from './utils/instanceLock';
+import { getVersion } from './utils/version';
 
 function validateEnv(): boolean {
   const missing: string[] = [];
@@ -51,7 +52,9 @@ async function main() {
       process.exit(1);
     }
         
-    logger.info('Starting BroTeam Translate Bot...');
+    // Log version information
+    const version = getVersion();
+    logger.info(`Starting BroTeam Translate Bot v${version}...`);
         
     // Run an immediate initial pass
     await translateAndPostWorker();
