@@ -21,7 +21,8 @@ interface LangDetectModule {
   detect(text: string): DetectionResult[];
 }
 
-const langdetect = require('langdetect') as LangDetectModule;
+// @ts-ignore - langdetect has no TypeScript definitions
+import * as langdetect from 'langdetect';
 
 // Helper function to evaluate if a translation result meets all quality criteria for posting.
 // Checks for length, content validity, duplicates, language, and problematic characters.

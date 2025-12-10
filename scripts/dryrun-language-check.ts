@@ -1,5 +1,6 @@
 import { translateText } from '../src/translator/googleTranslate';
-const langdetect = require('langdetect');
+// @ts-ignore - langdetect has no TypeScript definitions
+import * as langdetect from 'langdetect';
 
 async function main() {
   const input = 'нет, нет, нет, нет, тв/брата';

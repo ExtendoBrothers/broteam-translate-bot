@@ -18,7 +18,8 @@ interface LangDetectModule {
   detect(text: string): DetectionResult[];
 }
 
-const langdetect = require('langdetect') as LangDetectModule;
+// @ts-ignore - langdetect has no TypeScript definitions
+import * as langdetect from 'langdetect';
 
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)
 const LIBRE_URL = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000/translate';
