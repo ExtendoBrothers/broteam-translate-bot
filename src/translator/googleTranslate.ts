@@ -14,11 +14,7 @@ interface DetectionResult {
   prob: number;
 }
 
-interface LangDetectModule {
-  detect(text: string): DetectionResult[];
-}
-
-// @ts-ignore - langdetect has no TypeScript definitions
+// @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)

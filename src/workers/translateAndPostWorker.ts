@@ -17,11 +17,7 @@ interface DetectionResult {
   prob: number;
 }
 
-interface LangDetectModule {
-  detect(text: string): DetectionResult[];
-}
-
-// @ts-ignore - langdetect has no TypeScript definitions
+// @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
 // Helper function to evaluate if a translation result meets all quality criteria for posting.

@@ -1,5 +1,5 @@
 import { translateText } from '../src/translator/googleTranslate';
-// @ts-ignore - langdetect has no TypeScript definitions
+// @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
 async function main() {
