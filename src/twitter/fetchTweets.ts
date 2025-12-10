@@ -275,8 +275,8 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const expanded = u?.unwound_url || u?.expanded_url || u?.display_url;
         if (short && expanded && typeof short === 'string' && typeof expanded === 'string') {
           // Replace all occurrences of the t.co URL with the expanded URL
-          const rx = new RegExp(short.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'g');
-          out = out.replace(rx, expanded);
+          // Use string replacement instead of regex to avoid potential ReDoS
+          out = out.split(short).join(expanded);
         }
       }
       return out;
