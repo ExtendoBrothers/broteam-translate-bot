@@ -39,13 +39,33 @@ export function restoreTokens(text: string): string {
   });
 
   // Restore all XTOK placeholders in new format
-  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, _type, _idx, b64) => {
-    try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return _m; }
+  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, type, _idx, b64) => {
+    try { 
+      const original = Buffer.from(b64, 'base64').toString('utf8');
+      // Add space before URLs if not preceded by whitespace
+      if (type === 'URL') {
+        const beforeMatch = restored.substring(0, restored.indexOf(_m));
+        if (beforeMatch && !/\s$/.test(beforeMatch)) {
+          return ' ' + original;
+        }
+      }
+      return original;
+    } catch { return _m; }
   });
 
   // Backward compatibility for old format
-  restored = restored.replace(/XTOK:([A-Z]+):(\d+):([A-Za-z0-9+/=]+)/g, (_m, _type, _idx, b64) => {
-    try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return _m; }
+  restored = restored.replace(/XTOK:([A-Z]+):(\d+):([A-Za-z0-9+/=]+)/g, (_m, type, _idx, b64) => {
+    try { 
+      const original = Buffer.from(b64, 'base64').toString('utf8');
+      // Add space before URLs if not preceded by whitespace
+      if (type === 'URL') {
+        const beforeMatch = restored.substring(0, restored.indexOf(_m));
+        if (beforeMatch && !/\s$/.test(beforeMatch)) {
+          return ' ' + original;
+        }
+      }
+      return original;
+    } catch { return _m; }
   });
 
   // Clean up any leftover wrapper chars that translators might add around tokens

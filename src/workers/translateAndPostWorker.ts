@@ -20,23 +20,28 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const trimmed = finalResult.trim();
   const originalTrimmed = originalText.trim();
 
-  // Check if output is too short (less than 50% of input length)
-  const tooShort = trimmed.length < Math.ceil(0.33 * originalTrimmed.length);
+  // Extract text content without tokens for quality checks
+  const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+  const textOnly = trimmed.replace(tokenPattern, '').trim();
+  const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+
+  // Check if output is too short (less than 33% of input text length)
+  const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
   // Check if output is empty or nearly empty
-  const empty = trimmed.length <= 1;
+  const empty = textOnly.length <= 1;
   // Check if output consists only of punctuation or symbols
-  const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(trimmed);
+  const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
   // Check if output is a duplicate of previously posted tweets
   const duplicate = postedOutputs.includes(trimmed);
   // Check if output is identical to input
-  const sameAsInput = trimmed === originalTrimmed;
+  const sameAsInput = textOnly === originalTextOnly;
   // Check for problematic starting characters or empty-like strings
-  const problematicChar = ['/', ':', '.', '', ' '].includes(trimmed) || trimmed.startsWith('/');
+  const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
-  // Detect language using franc library (expects 'eng' for English)
+  // Detect language using franc library on text-only content (expects 'eng' for English)
   let detectedLang = 'und';
   try {
-    detectedLang = franc.franc(trimmed, { minLength: 3 });
+    detectedLang = franc.franc(textOnly, { minLength: 3 });
   } catch (e) {
     logger.warn(`Language detection failed: ${e}`);
   }
@@ -44,7 +49,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
-  if (tooShort) unacceptableReasons.push(`Too short: ${trimmed.length} < 50% of input (${originalTrimmed.length})`);
+  if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
   if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
@@ -56,7 +61,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const reason = unacceptableReasons.join('; ');
 
   // Temporary debug log
-  console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', acceptable=${acceptable}, reason='${reason}', tooShort=${tooShort}, originalLength=${originalTrimmed.length}, trimmedLength=${trimmed.length}`);
+  console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', textOnly='${textOnly}', acceptable=${acceptable}, reason='${reason}'`);
 
   return { acceptable, reason };
 }
