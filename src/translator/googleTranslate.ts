@@ -25,7 +25,58 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
   }
 }
 
-// Improved chunker: prefer sentence boundaries; fallback to word splits only when necessary
+// Split text by tokens and translate only non-token segments
+async function translateWithTokenProtection(text: string, targetLanguage: string): Promise<string> {
+  // Split by token pattern
+  const tokenPattern = /(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g;
+  const segments = text.split(tokenPattern);
+  
+  // Group segments into chunks that respect token boundaries and size limits
+  const chunks: string[] = [];
+  let currentChunk = '';
+  
+  for (const segment of segments) {
+    if (tokenPattern.test(segment)) {
+      // This is a token - check if adding it would exceed limit
+      if (currentChunk && (currentChunk + segment).length > 200) {
+        chunks.push(currentChunk);
+        currentChunk = segment;
+      } else {
+        currentChunk += segment;
+      }
+    } else if (segment.trim()) {
+      // This is text - check if it needs chunking
+      if (currentChunk && (currentChunk + segment).length > 200) {
+        // Split the text segment if it's too long
+        const words = segment.split(' ');
+        for (const word of words) {
+          if ((currentChunk + ' ' + word).length > 200) {
+            if (currentChunk) chunks.push(currentChunk);
+            currentChunk = word;
+          } else {
+            currentChunk += (currentChunk ? ' ' : '') + word;
+          }
+        }
+      } else {
+        currentChunk += segment;
+      }
+    }
+  }
+  if (currentChunk) chunks.push(currentChunk);
+  
+  // Translate each chunk
+  const translatedChunks = await Promise.all(
+    chunks.map(async (chunk) => {
+      // Check if chunk contains only tokens (no text to translate)
+      if (tokenPattern.test(chunk) && !chunk.replace(tokenPattern, '').trim()) {
+        return chunk;
+      }
+      return await doTranslateOnce(chunk, targetLanguage, 15000);
+    })
+  );
+  
+  return translatedChunks.join('');
+}
 function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[] {
   if (protectedText.length <= maxLen) return [protectedText];
   // Split into sentence-like segments including trailing punctuation + whitespace
@@ -140,7 +191,7 @@ export async function translateText(text: string, targetLanguage: string): Promi
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const raw = await doTranslateOnce(sanitized, targetLanguage, BASE_TIMEOUT_MS);
+      const raw = await translateWithTokenProtection(sanitized, targetLanguage);
       return restoreTokens(raw);
     } catch (error: unknown) {
       lastErr = error;
