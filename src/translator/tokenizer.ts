@@ -24,7 +24,7 @@ export function protectTokens(text: string): string {
     sanitized = sanitized.replace(regex, (match: string) => {
       tokenIndex += 1;
       const b64 = Buffer.from(match, 'utf8').toString('base64');
-      return `{{XTOK:${type}:${tokenIndex}:${b64}}}`;
+      return `__XTOK_${type}_${tokenIndex}_${b64}__`;
     });
   }
   return sanitized;
@@ -38,7 +38,12 @@ export function restoreTokens(text: string): string {
     try { return Buffer.from(p1, 'base64').toString('utf8'); } catch { return _m; }
   });
 
-  // Restore all XTOK placeholders regardless of surrounding punctuation/braces
+  // Restore all XTOK placeholders in new format
+  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, _type, _idx, b64) => {
+    try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return _m; }
+  });
+
+  // Backward compatibility for old format
   restored = restored.replace(/XTOK:([A-Z]+):(\d+):([A-Za-z0-9+/=]+)/g, (_m, _type, _idx, b64) => {
     try { return Buffer.from(b64, 'base64').toString('utf8'); } catch { return _m; }
   });
@@ -50,51 +55,23 @@ export function restoreTokens(text: string): string {
     .replace(/<+\s*([^<>\s][^<>]*?)\s*>+/g, '$1')
     .replace(/\(+\s*([^()\s][^()]*)\s*\)+/g, '$1');
 
-  // Explicitly strip wrappers (with optional spaces) around common token types
-  const urlPart = '(?:https?:\\/\\/\\S+|www\\.\\S+)';
-  const emailPart = '(?:[A-Z0-9._%+-]+@[A-Z0-9.-]+\\.[A-Z]{2,})';
-  const mentionPart = '(?:@[a-zA-Z0-9_]{1,15}\\b)';
-  const hashtagPart = '(?:#[\\p{L}0-9_]+)';
-  const cashtagPart = '(?:\\$[A-Za-z]{1,6}\\b)';
-
-  const pairs: Array<[RegExp, string]> = [
-    [new RegExp(`\\{\\s*(${urlPart})\\s*\\}`, 'gi'), '$1'],
-    [new RegExp(`\\[\\s*(${urlPart})\\s*\\]`, 'gi'), '$1'],
-    [new RegExp(`<\\s*(${urlPart})\\s*>`, 'gi'), '$1'],
-    [new RegExp(`\\(\\s*(${urlPart})\\s*\\)`, 'gi'), '$1'],
-
-    [new RegExp(`\\{\\s*(${emailPart})\\s*\\}`, 'gi'), '$1'],
-    [new RegExp(`\\[\\s*(${emailPart})\\s*\\]`, 'gi'), '$1'],
-    [new RegExp(`<\\s*(${emailPart})\\s*>`, 'gi'), '$1'],
-    [new RegExp(`\\(\\s*(${emailPart})\\s*\\)`, 'gi'), '$1'],
-
-    [new RegExp(`\\{\\s*(${mentionPart})\\s*\\}`, 'g'), '$1'],
-    [new RegExp(`\\[\\s*(${mentionPart})\\s*\\]`, 'g'), '$1'],
-    [new RegExp(`<\\s*(${mentionPart})\\s*>`, 'g'), '$1'],
-    [new RegExp(`\\(\\s*(${mentionPart})\\s*\\)`, 'g'), '$1'],
-
-    [new RegExp(`\\{\\s*(${hashtagPart})\\s*\\}`, 'gu'), '$1'],
-    [new RegExp(`\\[\\s*(${hashtagPart})\\s*\\]`, 'gu'), '$1'],
-    [new RegExp(`<\\s*(${hashtagPart})\\s*>`, 'gu'), '$1'],
-    [new RegExp(`\\(\\s*(${hashtagPart})\\s*\\)`, 'gu'), '$1'],
-
-    [new RegExp(`\\{\\s*(${cashtagPart})\\s*\\}`, 'g'), '$1'],
-    [new RegExp(`\\[\\s*(${cashtagPart})\\s*\\]`, 'g'), '$1'],
-    [new RegExp(`<\\s*(${cashtagPart})\\s*>`, 'g'), '$1'],
-    [new RegExp(`\\(\\s*(${cashtagPart})\\s*\\)`, 'g'), '$1'],
-
-    // Code spans and blocks
-    [new RegExp('\\{\\s*(`[^`]+`)\\s*\\}', 'g'), '$1'],
-    [new RegExp('\\[\\s*(`[^`]+`)\\s*\\]', 'g'), '$1'],
-    [new RegExp('<\\s*(`[^`]+`)\\s*>', 'g'), '$1'],
-    [new RegExp('\\(\\s*(`[^`]+`)\\s*\\)', 'g'), '$1'],
-    // Fenced code blocks
-    [new RegExp('\\{\\s*(```[\\s\\S]*?```)\\s*\\}', 'g'), '$1'],
-    [new RegExp('\\[\\s*(```[\\s\\S]*?```)\\s*\\]', 'g'), '$1'],
-    [new RegExp('<\\s*(```[\\s\\S]*?```)\\s*>', 'g'), '$1'],
-    [new RegExp('\\(\\s*(```[\\s\\S]*?```)\\s*\\)', 'g'), '$1'],
-  ];
-  for (const [re, rep] of pairs) restored = restored.replace(re, rep);
+  // Try to restore tokens that got mangled by translators
+  // Look for patterns that might contain the base64 part
+  const b64Pattern = /[A-Za-z0-9+/=]{8,}/g;
+  let b64Match;
+  while ((b64Match = b64Pattern.exec(restored)) !== null) {
+    const b64 = b64Match[0];
+    try {
+      const decoded = Buffer.from(b64, 'base64').toString('utf8');
+      // Check if it's a valid token type
+      if (decoded.startsWith('@') || decoded.startsWith('#') || decoded.startsWith('$') || 
+          decoded.includes('@') || decoded.includes('http') || decoded.includes('```') || decoded.includes('`')) {
+        restored = restored.replace(b64, decoded);
+      }
+    } catch {
+      // Not valid base64, skip
+    }
+  }
 
   return normalizeNFC(restored);
 }
