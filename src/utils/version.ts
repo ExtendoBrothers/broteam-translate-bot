@@ -9,11 +9,21 @@ export function getVersion(): string {
     return cachedVersion;
   }
 
-  // First try to get version from git tags
+  // First try to get version from git tags (get the latest tag)
   try {
-    const gitVersion = execSync('git describe --tags --abbrev=0 2>/dev/null', { encoding: 'utf-8' }).trim();
-    if (gitVersion && gitVersion.startsWith('v')) {
-      cachedVersion = gitVersion.substring(1); // Remove 'v' prefix
+    const allTags = execSync('git tag', { encoding: 'utf-8' }).trim().split('\n');
+    const versionTags = allTags.filter(tag => tag.startsWith('v')).sort((a, b) => {
+      const aVersion = a.substring(1).split('.').map(Number);
+      const bVersion = b.substring(1).split('.').map(Number);
+      for (let i = 0; i < Math.max(aVersion.length, bVersion.length); i++) {
+        const aNum = aVersion[i] || 0;
+        const bNum = bVersion[i] || 0;
+        if (aNum !== bNum) return bNum - aNum; // Sort descending
+      }
+      return 0;
+    });
+    if (versionTags.length > 0) {
+      cachedVersion = versionTags[0].substring(1); // Remove 'v' prefix
       return cachedVersion;
     }
   } catch (error) {
