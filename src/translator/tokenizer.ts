@@ -11,9 +11,9 @@ export function protectTokens(text: string): string {
   const patterns: Array<{ type: string; regex: RegExp }> = [
     { type: 'CODEBLK', regex: /```[\s\S]*?```/g },
     { type: 'CODE', regex: /`[^`]+`/g },
-    { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]}]*)?)/gi },
     { type: 'EMAIL', regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
-    { type: 'MENTION', regex: /\B@[a-zA-Z0-9_]{1,15}\b/g },
+    { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]}]*)?)/gi },
+    { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?=\W|$)/g },
     { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
     { type: 'CASHTAG', regex: /\B\$[A-Za-z]{1,6}\b/g },
   ];
@@ -21,6 +21,7 @@ export function protectTokens(text: string): string {
   let tokenIndex = 0;
   let sanitized = nfc;
   for (const { type, regex } of patterns) {
+    const before = sanitized;
     sanitized = sanitized.replace(regex, (match: string) => {
       tokenIndex += 1;
       const b64 = Buffer.from(match, 'utf8').toString('base64');
