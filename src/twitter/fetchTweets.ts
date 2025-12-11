@@ -139,7 +139,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const id = idStr;
         const trimmedText = text.trim();
         const shouldProc = tweetTracker.shouldProcess(id, new Date().toISOString());
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
+        // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
         if (shouldProc) {
           tweets.push({
             id,
