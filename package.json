@@ -1,6 +1,5 @@
 {
   "name": "broteam-translate-bot",
-  "version": "0.7.0",
   "private": true,
   "license": "WTFPL",
   "main": "dist/src/index.js",
