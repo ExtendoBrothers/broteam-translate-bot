@@ -13,7 +13,13 @@ module.exports = {
       watch: false,
       autorestart: true,
       max_memory_restart: '300M',
-      time: true
+      time: true,
+      windowsHide: true,
+      kill_timeout: 3000,
+      env_windows: {
+        NODE_ENV: 'production',
+        DRY_RUN: '0'
+      }
     },
     {
       name: 'pm2-dashboard',
@@ -27,7 +33,13 @@ module.exports = {
       exec_mode: 'fork',
       watch: false,
       autorestart: true,
-      time: true
+      time: true,
+      windowsHide: true,
+      kill_timeout: 3000,
+      env_windows: {
+        NODE_ENV: 'production',
+        PORT: '9615'
+      }
     }
   ]
 };

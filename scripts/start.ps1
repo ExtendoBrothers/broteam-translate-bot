@@ -21,7 +21,7 @@ Write-Host "Starting BroTeam Translate Bot with auto-restart..."
 # Run the bot with auto-restart on non-zero exit
 while ($true) {
 	try {
-		$proc = Start-Process -FilePath "node" -ArgumentList "dist/index.js" -NoNewWindow -PassThru -Wait
+		$proc = Start-Process -FilePath "node" -ArgumentList "dist/src/index.js" -NoNewWindow -PassThru -Wait
 		$code = $proc.ExitCode
 	} catch {
 		$code = -1

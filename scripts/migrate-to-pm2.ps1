@@ -62,8 +62,8 @@ if (Test-Path $ecos) {
   Write-Host "[migrate-to-pm2] Starting with PM2 (ecosystem.config.js)..."
   pm2 start $ecos | Out-Host
 } else {
-  Write-Host "[migrate-to-pm2] ecosystem.config.js not found; starting dist/index.js directly..."
-  pm2 start (Join-Path $repoRoot 'dist/index.js') --name broteam-translate-bot --cwd $repoRoot --update-env --time --no-autorestart:$false | Out-Host
+  Write-Host "[migrate-to-pm2] ecosystem.config.js not found; starting dist/src/index.js directly..."
+  pm2 start (Join-Path $repoRoot 'dist/src/index.js') --name broteam-translate-bot --cwd $repoRoot --update-env --time --no-autorestart:$false | Out-Host
 }
 
 pm2 status | Out-Host
