@@ -23,6 +23,7 @@ Thumbs.db
 .bot-lock
 .last-run.json
 .last-twitter-api-fetch.json
+.last-fetch.json
 .monthly-fetch-usage.json
 .rate-limit-state.json
 .tweet-queue.json
@@ -35,6 +36,12 @@ Thumbs.db
 # Logs (explicit)
 combined.log
 error.log
+*.log
+translation-logs/
+oauth2-health.log
+posted-outputs.log
+translation-steps.log
+tweet-inputs.log
 
 # Coverage / test
 coverage/
