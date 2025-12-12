@@ -312,13 +312,46 @@ export async function fetchTweets(): Promise<Tweet[]> {
     logger.error(`Twitter API Error (raw): ${JSON.stringify(error, null, 2)}`);
     
     // Handle rate limit errors and extract reset time
-    const err = error as { code?: number; rateLimit?: { reset?: number }; headers?: Record<string, string>; message?: string };
-    if (err?.code === 429 || err?.rateLimit?.reset) {
-      const resetTime = err?.rateLimit?.reset || (err?.headers?.['x-rate-limit-reset'] ? Number(err.headers['x-rate-limit-reset']) : undefined);
-      rateLimitTracker.setRateLimit('timeline', resetTime);
+    const err = error as { 
+      code?: number; 
+      rateLimit?: { reset?: number }; 
+      headers?: Record<string, string>; 
+      message?: string;
+      statusCode?: number;
+      data?: any;
+    };
+    
+    // Check for rate limit indicators
+    const isRateLimited = err?.code === 429 || 
+                         err?.statusCode === 429 ||
+                         err?.rateLimit?.reset ||
+                         err?.headers?.['x-rate-limit-reset'] ||
+                         err?.message?.includes('429') ||
+                         err?.message?.includes('rate limit') ||
+                         err?.message?.includes('Rate limit');
+    
+    if (isRateLimited) {
+      // Try multiple ways to extract reset time
+      let resetTime: number | undefined;
       
-      // Try Jina fallback when we hit 429 rate limit
-      logger.warn('Twitter API rate limited (429). Attempting Jina fallback.');
+      // Method 1: From error.rateLimit.reset
+      if (err?.rateLimit?.reset) {
+        resetTime = err.rateLimit.reset;
+      }
+      
+      // Method 2: From headers
+      if (!resetTime && err?.headers?.['x-rate-limit-reset']) {
+        resetTime = Number(err.headers['x-rate-limit-reset']);
+      }
+      
+      // Method 3: From error data
+      if (!resetTime && err?.data?.rateLimit?.reset) {
+        resetTime = err.data.rateLimit.reset;
+      }
+      
+      rateLimitTracker.setRateLimit('timeline', resetTime);
+      const resetInfo = resetTime ? `Reset time: ${new Date(resetTime * 1000).toISOString()}` : 'Using fallback 15-minute wait';
+      logger.warn(`Twitter API rate limited (429). ${resetInfo}. Attempting Jina fallback.`);
       try {
         const jinaFallbackTweets = await fetchTweetsFromJina(targetUsername, 20);
         for (const t of jinaFallbackTweets) {
