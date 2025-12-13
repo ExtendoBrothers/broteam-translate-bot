@@ -42,8 +42,15 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
     segments.map(async (segment, index) => {
       // Even indices are text segments, odd indices are tokens
       if (index % 2 === 0 && segment.trim()) {
-        // This is a text segment - translate it
-        return await doTranslateOnce(segment, targetLanguage, 15000);
+        // This is a text segment - translate it, preserving leading/trailing whitespace
+        const leadingWhitespace = segment.match(/^\s*/)?.[0] || '';
+        const trailingWhitespace = segment.match(/\s*$/)?.[0] || '';
+        const trimmedSegment = segment.trim();
+        if (trimmedSegment) {
+          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000);
+          return leadingWhitespace + translated + trailingWhitespace;
+        }
+        return segment;
       }
       // This is a token or empty segment - return as-is
       return segment;

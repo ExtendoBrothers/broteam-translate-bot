@@ -29,6 +29,9 @@ function main() {
     'Use `code_snippet()` then visit https://x.com/path?query=1#hash',
     'Fenced code:\n```js\nconst x = 1;\n``` and site www.example.org/docs',
     'Mixed: @bob #Café $EUR test@例子.公司 https://例子.测试',
+    'Mentions with hyphens: @user-name and @another_user should be protected',
+    '@mention at start of tweet',
+    'Multiple @user-1 @user_2 @user-name mentions in one tweet',
   ];
 
   for (const c of cases) runCase(c);

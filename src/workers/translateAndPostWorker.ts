@@ -11,6 +11,8 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import fs from 'fs';
 import path from 'path';
+import { detectLanguageByLexicon } from '../translator/lexicon';
+
 // Type declarations for langdetect
 interface DetectionResult {
   lang: string;
@@ -46,14 +48,17 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
-  let detectedLang = 'und';
-  try {
-    const detections = langdetect.detect(textOnly);
-    if (detections && detections.length > 0) {
-      detectedLang = detections[0].lang;
+  // Try lexicon-based detection first for short texts
+  let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+  if (detectedLang === 'und') {
+    try {
+      const detections = langdetect.detect(textOnly);
+      if (detections && detections.length > 0) {
+        detectedLang = detections[0].lang;
+      }
+    } catch (e) {
+      logger.warn(`Language detection failed: ${e}`);
     }
-  } catch (e) {
-    logger.warn(`Language detection failed: ${e}`);
   }
   const notEnglish = detectedLang !== 'en';
 
@@ -200,6 +205,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       [arr[i], arr[j]] = [arr[j], arr[i]];
     }
     return arr;
+  }
+
+  // Helper function to get languages for translation chain based on mode
+  function getTranslationLanguages(): string[] {
+    if (config.OLDSCHOOL_MODE && config.OLDSCHOOL_LANGUAGES.length > 0) {
+      logger.info(`[OLDSCHOOL_MODE] Using fixed language order: ${config.OLDSCHOOL_LANGUAGES.join(', ')}`);
+      return config.OLDSCHOOL_LANGUAGES;
+    } else {
+      // Select 12 random languages from the list
+      const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+      logger.info(`[LANG_CHAIN] Random languages: ${randomizedLangs.join(', ')}`);
+      return randomizedLangs;
+    }
   }
 
   // Periodically prune processed tweet IDs to keep storage healthy
@@ -360,10 +378,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // Always log the original tweet text as the first step for traceability
       logTranslationStep('original', tweet.text);
 
-      // Select 12 random languages from the list
-      const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-      logger.info(`[LANG_CHAIN] Main chain languages: ${randomizedLangs.join(', ')}`);
-      for (const lang of randomizedLangs) {
+      // Get languages for translation chain (random or fixed based on mode)
+      const selectedLangs = getTranslationLanguages();
+      for (const lang of selectedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
           continue;
@@ -396,11 +413,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         continue;
       }
 
-      // Always translate final result back to English
-      logger.info(`Translation chain before final EN: ${translationChain}`);
-      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-      let finalResult = '';
+      // Use the result from the initial translation chain
+      let finalResult = translationChain;
       const translationLogSteps: { lang: string, text: string }[] = [];
+      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
       let postedOutputs: string[] = [];
       try {
         if (fs.existsSync(postedLogPath)) {
@@ -414,16 +430,101 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (!fs.existsSync(logDir)) {
         fs.mkdirSync(logDir);
       }
+
+      // Check if the initial translation result is acceptable
+      const initialCheck = isAcceptable(finalResult, tweet.text, postedOutputs);
+      let acceptable = initialCheck.acceptable;
+      const englishResults: string[] = [];
+
+      // Log the initial result evaluation
+      try {
+        const trimmedInitial = finalResult.trim();
+        const originalTrimmedInitial = tweet.text.trim();
+        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+        const textOnlyInitial = trimmedInitial.replace(tokenPattern, '').trim();
+        const originalTextOnlyInitial = originalTrimmedInitial.replace(tokenPattern, '').trim();
+        
+        const tooShortInitial = textOnlyInitial.length < Math.ceil(0.33 * originalTextOnlyInitial.length);
+        const emptyInitial = textOnlyInitial.length <= 1;
+        const punctuationOnlyInitial = /^[\p{P}\p{S}]+$/u.test(textOnlyInitial);
+        const duplicateInitial = postedOutputs.includes(trimmedInitial);
+        const sameAsInputInitial = textOnlyInitial === originalTextOnlyInitial;
+        const problematicCharInitial = ['/', ':', '.', '', ' '].includes(textOnlyInitial) || textOnlyInitial.startsWith('/');
+        
+        // Lexicon-based detection first, fallback to langdetect
+        let detectedLangInitial = detectLanguageByLexicon(textOnlyInitial) || 'und';
+        if (detectedLangInitial === 'und') {
+          try {
+            const detections = langdetect.detect(textOnlyInitial);
+            if (detections && detections.length > 0) {
+              detectedLangInitial = detections[0].lang;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        const notEnglishInitial = detectedLangInitial !== 'en';
+
+        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Initial translation evaluation: acceptable=${initialCheck.acceptable}\nLength check: ${tooShortInitial ? 'fail' : 'pass'} (${textOnlyInitial.length}/${originalTextOnlyInitial.length})\nEmpty check: ${emptyInitial ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyInitial ? 'fail' : 'pass'}\nDuplicate check: ${duplicateInitial ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputInitial ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharInitial ? 'fail' : 'pass'}\nLanguage check: ${notEnglishInitial ? 'fail' : 'pass'} (${detectedLangInitial})\nfinalResult='${finalResult}'\n`, 'utf8');
+      } catch (err) {
+        console.error('[ERROR] Failed to write initial evaluation to translation-debug.log:', err);
+      }
+
+      if (!acceptable) {
+        logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Will attempt retries.`);
+      }
+
+      // If initial result is acceptable, collect it for logging
+      if (acceptable) {
+        let detectedLangInitial = detectLanguageByLexicon(finalResult) || 'und';
+        if (detectedLangInitial === 'und') {
+          try {
+            const detections = langdetect.detect(finalResult);
+            if (detections && detections.length > 0) {
+              detectedLangInitial = detections[0].lang;
+            }
+          } catch {
+            // ignore
+          }
+        }
+        if (detectedLangInitial === 'en') {
+          englishResults.push(finalResult);
+        }
+      }
+
       const maxRetries = 33;
       let attempts = 0;
-      let acceptable = false;
-      const englishResults: string[] = [];
-      do {
-        // On each retry, randomize the language chain and reprocess the original tweet
+      let triedFallbackMode = false;
+      const originalMode = config.OLDSCHOOL_MODE; // Store original mode
+
+      // Try with current mode first, then fallback to opposite mode if needed
+      while (!acceptable) {
+        if (attempts >= maxRetries) {
+          if (triedFallbackMode) {
+            // Both modes exhausted, give up
+            logger.error('All retry attempts exhausted in both modes. Final result may not meet quality standards.');
+            break;
+          } else {
+            // Switch to fallback mode
+            triedFallbackMode = true;
+            attempts = 0;
+            const fallbackMode = config.OLDSCHOOL_MODE ? 'random' : 'oldschool';
+            logger.warn(`Primary mode exhausted ${maxRetries} attempts. Switching to ${fallbackMode} mode as fallback.`);
+            // Toggle the mode by temporarily overriding the config
+            config.OLDSCHOOL_MODE = !config.OLDSCHOOL_MODE;
+          }
+        }
+
+        if (!triedFallbackMode) {
+          logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Attempting retry ${attempts + 1}/${maxRetries}`);
+        } else {
+          logger.warn(`Fallback mode retry ${attempts + 1}/${maxRetries}`);
+        }
+
+        // On each retry, get languages for translation chain (random or fixed based on mode)
         let retryChain = tweet.text;
-        const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-        logger.info(`[RETRY_CHAIN] Attempt ${attempts + 1}: languages: ${randomizedLangs.join(', ')}`);
-        for (const lang of randomizedLangs) {
+        const selectedLangs = getTranslationLanguages();
+        for (const lang of selectedLangs) {
           if (isCircuitOpen(lang)) {
             logger.warn(`Skipping language ${lang} due to open circuit`);
             continue;
@@ -439,14 +540,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               }
             }
             // Collect English results
-            let detectedLang = 'und';
-            try {
-              const detections = langdetect.detect(result);
-              if (detections && detections.length > 0) {
-                detectedLang = detections[0].lang;
+            let detectedLang = detectLanguageByLexicon(result) || 'und';
+            if (detectedLang === 'und') {
+              try {
+                const detections = langdetect.detect(result);
+                if (detections && detections.length > 0) {
+                  detectedLang = detections[0].lang;
+                }
+              } catch {
+                // ignore
               }
-            } catch {
-              // ignore
             }
             if (detectedLang === 'en') {
               englishResults.push(result);
@@ -465,49 +568,65 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logTranslationStep('en', finalResult);
         translationLogSteps.push({ lang: 'en', text: finalResult });
         // Collect English final result as well
-        let detectedLangFinal = 'und';
-        try {
-          const detections = langdetect.detect(finalResult);
-          if (detections && detections.length > 0) {
-            detectedLangFinal = detections[0].lang;
+        let detectedLangFinal = detectLanguageByLexicon(finalResult) || 'und';
+        if (detectedLangFinal === 'und') {
+          try {
+            const detections = langdetect.detect(finalResult);
+            if (detections && detections.length > 0) {
+              detectedLangFinal = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         if (detectedLangFinal === 'en') {
           englishResults.push(finalResult);
         }
         const check = isAcceptable(finalResult, tweet.text, postedOutputs);
         acceptable = check.acceptable;
-        // Log detailed evaluation of each criterion for debugging
+        // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
         const trimmedRetry = finalResult.trim();
         const originalTrimmedRetry = tweet.text.trim();
-        const tooShortRetry = trimmedRetry.length < Math.ceil(0.5 * originalTrimmedRetry.length);
-        const emptyRetry = trimmedRetry.length <= 1;
-        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(trimmedRetry);
+        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+        const textOnlyRetry = trimmedRetry.replace(tokenPattern, '').trim();
+        const originalTextOnlyRetry = originalTrimmedRetry.replace(tokenPattern, '').trim();
+        
+        const tooShortRetry = textOnlyRetry.length < Math.ceil(0.33 * originalTextOnlyRetry.length);
+        const emptyRetry = textOnlyRetry.length <= 1;
+        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(textOnlyRetry);
         const duplicateRetry = postedOutputs.includes(trimmedRetry);
-        const sameAsInputRetry = trimmedRetry === originalTrimmedRetry;
-        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(trimmedRetry) || trimmedRetry.startsWith('/');
-        let detectedLangRetry = 'und';
-        try {
-          const detections = langdetect.detect(trimmedRetry);
-          if (detections && detections.length > 0) {
-            detectedLangRetry = detections[0].lang;
+        const sameAsInputRetry = textOnlyRetry === originalTextOnlyRetry;
+        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(textOnlyRetry) || textOnlyRetry.startsWith('/');
+        
+        let detectedLangRetry = detectLanguageByLexicon(textOnlyRetry) || 'und';
+        if (detectedLangRetry === 'und') {
+          try {
+            const detections = langdetect.detect(textOnlyRetry);
+            if (detections && detections.length > 0) {
+              detectedLangRetry = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         const notEnglishRetry = detectedLangRetry !== 'en';
         try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${trimmedRetry.length}/${originalTrimmedRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Retry attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${textOnlyRetry.length}/${originalTextOnlyRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
         } catch (err) {
           console.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
         }
         if (!acceptable) {
-          logger.warn(`Attempt ${attempts + 1} failed checks: ${check.reason}`);
+          logger.warn(`Retry attempt ${attempts + 1} failed checks: ${check.reason}`);
         }
         attempts++;
-      } while (!acceptable && attempts < maxRetries);
+      }
+
+      // Restore original mode if we switched to fallback
+      if (triedFallbackMode) {
+        config.OLDSCHOOL_MODE = originalMode;
+        logger.info('Restored original translation mode');
+      }
+
       logger.info(`Final translation result: ${finalResult}`);
 
       // Write detailed translation log to a single log file (append)

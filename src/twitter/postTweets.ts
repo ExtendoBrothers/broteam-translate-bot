@@ -56,14 +56,57 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     return { id: previousTweetId, threadLength: chunks.length };
   } catch (error: unknown) {
     // Handle rate limit errors (429 and 403) and extract reset time
-    const err = error as { code?: number; rateLimit?: { reset?: number }; headers?: Record<string, string>; message?: string };
-    if (err?.code === 429 || err?.code === 403 || err?.rateLimit?.reset) {
-      const resetTime = err?.rateLimit?.reset || (err?.headers?.['x-rate-limit-reset'] ? Number(err.headers['x-rate-limit-reset']) : undefined);
+    const err = error as { 
+      code?: number; 
+      rateLimit?: { reset?: number }; 
+      headers?: Record<string, string>; 
+      message?: string;
+      statusCode?: number;
+      data?: any;
+    };
+    
+    // Check for rate limit indicators in various ways
+    const isRateLimited = err?.code === 429 || 
+                         err?.code === 403 || 
+                         err?.statusCode === 429 || 
+                         err?.statusCode === 403 ||
+                         err?.rateLimit?.reset ||
+                         err?.headers?.['x-rate-limit-reset'] ||
+                         err?.message?.includes('429') || 
+                         err?.message?.includes('403') ||
+                         err?.message?.includes('rate limit') ||
+                         err?.message?.includes('Rate limit');
+    
+    if (isRateLimited) {
+      // Try multiple ways to extract reset time
+      let resetTime: number | undefined;
+      
+      // Method 1: From error.rateLimit.reset
+      if (err?.rateLimit?.reset) {
+        resetTime = err.rateLimit.reset;
+      }
+      
+      // Method 2: From headers
+      if (!resetTime && err?.headers?.['x-rate-limit-reset']) {
+        resetTime = Number(err.headers['x-rate-limit-reset']);
+      }
+      
+      // Method 3: From error data
+      if (!resetTime && err?.data?.rateLimit?.reset) {
+        resetTime = err.data.rateLimit.reset;
+      }
+      
+      // Method 4: Try to parse from error message
+      if (!resetTime && err?.message) {
+        const resetMatch = err.message.match(/reset[^0-9]*(\d+)/i);
+        if (resetMatch) {
+          resetTime = Number(resetMatch[1]);
+        }
+      }
+      
       rateLimitTracker.setRateLimit('post', resetTime);
-      logger.warn(`Post rate limit hit (${err?.code || 'unknown'}). Reset time: ${resetTime ? new Date(resetTime * 1000).toISOString() : 'unknown'}`);
-    } else if (err?.message?.includes('429') || err?.message?.includes('403')) {
-      rateLimitTracker.setRateLimit('post');
-      logger.warn('Post rate limit detected in error message');
+      const resetInfo = resetTime ? `Reset time: ${new Date(resetTime * 1000).toISOString()}` : 'Using fallback 15-minute wait';
+      logger.warn(`Post rate limit hit (${err?.code || err?.statusCode || 'unknown'}). ${resetInfo}`);
     } else {
       logger.error(`Failed to post tweet: ${error}`);
     }

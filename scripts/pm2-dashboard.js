@@ -10,12 +10,20 @@ const execPromise = util.promisify(exec);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9615;
 
-function getVersion() {
+let cachedVersion = null;
+
+async function getVersion() {
+  if (cachedVersion !== null) {
+    return cachedVersion;
+  }
+
   // First try to get version from git tags
   try {
-    const gitVersion = execPromise('git describe --tags --abbrev=0 2>/dev/null');
-    if (gitVersion && gitVersion.startsWith && gitVersion.startsWith('v')) {
-      return gitVersion.substring(1); // Remove 'v' prefix
+    const { stdout: gitVersion } = await execPromise('git describe --tags --abbrev=0 2>/dev/null', { windowsHide: true });
+    const trimmedVersion = gitVersion.trim();
+    if (trimmedVersion && trimmedVersion.startsWith('v')) {
+      cachedVersion = trimmedVersion.substring(1); // Remove 'v' prefix
+      return cachedVersion;
     }
   } catch (error) {
     // Git command failed, fall back to package.json
@@ -24,9 +32,11 @@ function getVersion() {
   // Fall back to package.json
   try {
     const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
-    return packageJson.version || 'unknown';
+    cachedVersion = packageJson.version || 'unknown';
+    return cachedVersion;
   } catch (error) {
-    return 'unknown';
+    cachedVersion = 'unknown';
+    return cachedVersion;
   }
 }
 
@@ -47,7 +57,7 @@ async function getPM2Data() {
   });
   if (list && list.length) return list;
   try {
-    const { stdout } = await execPromise('pm2 jlist');
+    const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
     return JSON.parse(stdout);
   } catch (err) {
     return [];
@@ -249,7 +259,7 @@ async function handleRequest(req, res) {
         .join('\n')
     : '';
   const escapedLog = filteredLog ? (filteredLog.replace(/&/g,'&amp;').replace(/</g,'&lt;')) : '';
-  const version = getVersion();
+  const version = await getVersion();
 
   const html = `
 <!DOCTYPE html>

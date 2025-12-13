@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import * as path from 'path';
+
 import { scheduleJobs, recordLastRun } from './scheduler/jobs';
 import { rateLimitTracker } from './utils/rateLimitTracker';
 import { translateAndPostWorker } from './workers/translateAndPostWorker';
