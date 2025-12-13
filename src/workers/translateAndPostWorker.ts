@@ -479,18 +479,23 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         const check = isAcceptable(finalResult, tweet.text, postedOutputs);
         acceptable = check.acceptable;
-        // Log detailed evaluation of each criterion for debugging
+        // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
         const trimmedRetry = finalResult.trim();
         const originalTrimmedRetry = tweet.text.trim();
-        const tooShortRetry = trimmedRetry.length < Math.ceil(0.5 * originalTrimmedRetry.length);
-        const emptyRetry = trimmedRetry.length <= 1;
-        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(trimmedRetry);
+        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+        const textOnlyRetry = trimmedRetry.replace(tokenPattern, '').trim();
+        const originalTextOnlyRetry = originalTrimmedRetry.replace(tokenPattern, '').trim();
+        
+        const tooShortRetry = textOnlyRetry.length < Math.ceil(0.33 * originalTextOnlyRetry.length);
+        const emptyRetry = textOnlyRetry.length <= 1;
+        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(textOnlyRetry);
         const duplicateRetry = postedOutputs.includes(trimmedRetry);
-        const sameAsInputRetry = trimmedRetry === originalTrimmedRetry;
-        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(trimmedRetry) || trimmedRetry.startsWith('/');
+        const sameAsInputRetry = textOnlyRetry === originalTextOnlyRetry;
+        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(textOnlyRetry) || textOnlyRetry.startsWith('/');
+        
         let detectedLangRetry = 'und';
         try {
-          const detections = langdetect.detect(trimmedRetry);
+          const detections = langdetect.detect(textOnlyRetry);
           if (detections && detections.length > 0) {
             detectedLangRetry = detections[0].lang;
           }
@@ -499,7 +504,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         const notEnglishRetry = detectedLangRetry !== 'en';
         try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${trimmedRetry.length}/${originalTrimmedRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${textOnlyRetry.length}/${originalTextOnlyRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
         } catch (err) {
           console.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
         }
