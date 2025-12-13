@@ -502,7 +502,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         if (attempts >= maxRetries) {
           if (triedFallbackMode) {
             // Both modes exhausted, give up
-            logger.error(`All retry attempts exhausted in both modes. Final result may not meet quality standards.`);
+            logger.error('All retry attempts exhausted in both modes. Final result may not meet quality standards.');
             break;
           } else {
             // Switch to fallback mode
@@ -624,7 +624,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // Restore original mode if we switched to fallback
       if (triedFallbackMode) {
         config.OLDSCHOOL_MODE = originalMode;
-        logger.info(`Restored original translation mode`);
+        logger.info('Restored original translation mode');
       }
 
       logger.info(`Final translation result: ${finalResult}`);
