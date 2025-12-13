@@ -11,6 +11,8 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import fs from 'fs';
 import path from 'path';
+import { detectLanguageByLexicon } from '../translator/lexicon';
+
 // Type declarations for langdetect
 interface DetectionResult {
   lang: string;
@@ -46,14 +48,17 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
-  let detectedLang = 'und';
-  try {
-    const detections = langdetect.detect(textOnly);
-    if (detections && detections.length > 0) {
-      detectedLang = detections[0].lang;
+  // Try lexicon-based detection first for short texts
+  let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+  if (detectedLang === 'und') {
+    try {
+      const detections = langdetect.detect(textOnly);
+      if (detections && detections.length > 0) {
+        detectedLang = detections[0].lang;
+      }
+    } catch (e) {
+      logger.warn(`Language detection failed: ${e}`);
     }
-  } catch (e) {
-    logger.warn(`Language detection failed: ${e}`);
   }
   const notEnglish = detectedLang !== 'en';
 
@@ -446,14 +451,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const sameAsInputInitial = textOnlyInitial === originalTextOnlyInitial;
         const problematicCharInitial = ['/', ':', '.', '', ' '].includes(textOnlyInitial) || textOnlyInitial.startsWith('/');
         
-        let detectedLangInitial = 'und';
-        try {
-          const detections = langdetect.detect(textOnlyInitial);
-          if (detections && detections.length > 0) {
-            detectedLangInitial = detections[0].lang;
+        // Lexicon-based detection first, fallback to langdetect
+        let detectedLangInitial = detectLanguageByLexicon(textOnlyInitial) || 'und';
+        if (detectedLangInitial === 'und') {
+          try {
+            const detections = langdetect.detect(textOnlyInitial);
+            if (detections && detections.length > 0) {
+              detectedLangInitial = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         const notEnglishInitial = detectedLangInitial !== 'en';
 
@@ -468,14 +476,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       // If initial result is acceptable, collect it for logging
       if (acceptable) {
-        let detectedLangInitial = 'und';
-        try {
-          const detections = langdetect.detect(finalResult);
-          if (detections && detections.length > 0) {
-            detectedLangInitial = detections[0].lang;
+        let detectedLangInitial = detectLanguageByLexicon(finalResult) || 'und';
+        if (detectedLangInitial === 'und') {
+          try {
+            const detections = langdetect.detect(finalResult);
+            if (detections && detections.length > 0) {
+              detectedLangInitial = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         if (detectedLangInitial === 'en') {
           englishResults.push(finalResult);
@@ -530,14 +540,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               }
             }
             // Collect English results
-            let detectedLang = 'und';
-            try {
-              const detections = langdetect.detect(result);
-              if (detections && detections.length > 0) {
-                detectedLang = detections[0].lang;
+            let detectedLang = detectLanguageByLexicon(result) || 'und';
+            if (detectedLang === 'und') {
+              try {
+                const detections = langdetect.detect(result);
+                if (detections && detections.length > 0) {
+                  detectedLang = detections[0].lang;
+                }
+              } catch {
+                // ignore
               }
-            } catch {
-              // ignore
             }
             if (detectedLang === 'en') {
               englishResults.push(result);
@@ -556,14 +568,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logTranslationStep('en', finalResult);
         translationLogSteps.push({ lang: 'en', text: finalResult });
         // Collect English final result as well
-        let detectedLangFinal = 'und';
-        try {
-          const detections = langdetect.detect(finalResult);
-          if (detections && detections.length > 0) {
-            detectedLangFinal = detections[0].lang;
+        let detectedLangFinal = detectLanguageByLexicon(finalResult) || 'und';
+        if (detectedLangFinal === 'und') {
+          try {
+            const detections = langdetect.detect(finalResult);
+            if (detections && detections.length > 0) {
+              detectedLangFinal = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         if (detectedLangFinal === 'en') {
           englishResults.push(finalResult);
@@ -584,14 +598,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const sameAsInputRetry = textOnlyRetry === originalTextOnlyRetry;
         const problematicCharRetry = ['/', ':', '.', '', ' '].includes(textOnlyRetry) || textOnlyRetry.startsWith('/');
         
-        let detectedLangRetry = 'und';
-        try {
-          const detections = langdetect.detect(textOnlyRetry);
-          if (detections && detections.length > 0) {
-            detectedLangRetry = detections[0].lang;
+        let detectedLangRetry = detectLanguageByLexicon(textOnlyRetry) || 'und';
+        if (detectedLangRetry === 'und') {
+          try {
+            const detections = langdetect.detect(textOnlyRetry);
+            if (detections && detections.length > 0) {
+              detectedLangRetry = detections[0].lang;
+            }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
         }
         const notEnglishRetry = detectedLangRetry !== 'en';
         try {
