@@ -3,8 +3,7 @@
 // Add more words for each language as needed
 
 // Dynamically load the large English lexicon from JSON
-// eslint-disable-next-line @typescript-eslint/no-var-requires
-const englishWords: string[] = require('./english-lexicon.json');
+import englishWords from './english-lexicon.json';
 
 export const LEXICONS: Record<string, Set<string>> = {
   en: new Set(englishWords),
