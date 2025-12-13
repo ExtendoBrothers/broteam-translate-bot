@@ -33,5 +33,5 @@ export const config = {
   // Oldschool translation mode: use fixed translation order instead of random selection
   OLDSCHOOL_MODE: (process.env.OLDSCHOOL_MODE || 'false').toLowerCase() === 'true',
   // Fixed translation order for oldschool mode (will be set by user)
-  OLDSCHOOL_LANGUAGES: process.env.OLDSCHOOL_LANGUAGES ? process.env.OLDSCHOOL_LANGUAGES.split(',').map(s => s.trim()) : [],
+  OLDSCHOOL_LANGUAGES: process.env.OLDSCHOOL_LANGUAGES ? process.env.OLDSCHOOL_LANGUAGES.split(',').map(s => s.trim()) : ['en','ja','en','ru','en','zh','en','el','en','fi','en','hu','en','sv','de','en'],
 };

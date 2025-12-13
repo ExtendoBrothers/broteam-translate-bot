@@ -107,7 +107,7 @@ RATE_LIMIT_BUFFER_SECONDS=10
 
 # Translation mode
 OLDSCHOOL_MODE=false  # Set to true to use fixed translation order instead of random
-OLDSCHOOL_LANGUAGES=en,ja,ar,fi,tr,zh,ru,hi,pl,hu,ko,th,vi,en  # Fixed language chain for oldschool mode
+OLDSCHOOL_LANGUAGES=en,ja,en,ru,en,zh,en,el,en,fi,en,hu,en,sv,de,en  # Fixed language chain for oldschool mode
 ```
 
 **Setup OAuth 2.0:**
@@ -196,7 +196,7 @@ For more consistent/deterministic translation chains, enable oldschool mode:
 
 ```env
 OLDSCHOOL_MODE=true
-OLDSCHOOL_LANGUAGES=en,ja,ar,fi,tr,zh,ru,hi,pl,hu,ko,th,vi,en
+OLDSCHOOL_LANGUAGES=en,ja,en,ru,en,zh,en,el,en,fi,en,hu,en,sv,de,en
 ```
 
 This uses a fixed sequence of translations instead of random selection. The chain always ends with English to ensure the final output is readable.
