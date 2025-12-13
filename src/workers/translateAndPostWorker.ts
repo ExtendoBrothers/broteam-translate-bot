@@ -484,10 +484,33 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       const maxRetries = 33;
       let attempts = 0;
+      let triedFallbackMode = false;
+      const originalMode = config.OLDSCHOOL_MODE; // Store original mode
 
-      // Only retry if the initial result failed quality checks
-      while (!acceptable && attempts < maxRetries) {
-        logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Attempting retry ${attempts + 1}/${maxRetries}`);
+      // Try with current mode first, then fallback to opposite mode if needed
+      while (!acceptable) {
+        if (attempts >= maxRetries) {
+          if (triedFallbackMode) {
+            // Both modes exhausted, give up
+            logger.error(`All retry attempts exhausted in both modes. Final result may not meet quality standards.`);
+            break;
+          } else {
+            // Switch to fallback mode
+            triedFallbackMode = true;
+            attempts = 0;
+            const fallbackMode = config.OLDSCHOOL_MODE ? 'random' : 'oldschool';
+            logger.warn(`Primary mode exhausted ${maxRetries} attempts. Switching to ${fallbackMode} mode as fallback.`);
+            // Toggle the mode by temporarily overriding the config
+            config.OLDSCHOOL_MODE = !config.OLDSCHOOL_MODE;
+          }
+        }
+
+        if (!triedFallbackMode) {
+          logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Attempting retry ${attempts + 1}/${maxRetries}`);
+        } else {
+          logger.warn(`Fallback mode retry ${attempts + 1}/${maxRetries}`);
+        }
+
         // On each retry, get languages for translation chain (random or fixed based on mode)
         let retryChain = tweet.text;
         const selectedLangs = getTranslationLanguages();
@@ -581,6 +604,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         attempts++;
       }
+
+      // Restore original mode if we switched to fallback
+      if (triedFallbackMode) {
+        config.OLDSCHOOL_MODE = originalMode;
+        logger.info(`Restored original translation mode`);
+      }
+
       logger.info(`Final translation result: ${finalResult}`);
 
       // Write detailed translation log to a single log file (append)
