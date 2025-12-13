@@ -104,6 +104,10 @@ LIBRETRANSLATE_API_KEY=your_api_key   # optional
 # Safety
 DRY_RUN=1  # Set to 0 to enable real posting
 RATE_LIMIT_BUFFER_SECONDS=10
+
+# Translation mode
+OLDSCHOOL_MODE=false  # Set to true to use fixed translation order instead of random
+OLDSCHOOL_LANGUAGES=en,ja,ar,fi,tr,zh,ru,hi,pl,hu,ko,th,vi,en  # Fixed language chain for oldschool mode
 ```
 
 **Setup OAuth 2.0:**
@@ -184,6 +188,19 @@ When the monthly limit is reached, the bot attempts a lightweight fallback scrap
 
 Logs include monthly usage: `monthly usage X/100` to help monitoring.
 
+### Translation Mode
+
+By default, the bot randomly selects 12 languages from the supported list for each translation chain, creating unpredictable and comedic results.
+
+For more consistent/deterministic translation chains, enable oldschool mode:
+
+```env
+OLDSCHOOL_MODE=true
+OLDSCHOOL_LANGUAGES=en,ja,ar,fi,tr,zh,ru,hi,pl,hu,ko,th,vi,en
+```
+
+This uses a fixed sequence of translations instead of random selection. The chain always ends with English to ensure the final output is readable.
+
 ## Usage
 
 1. **Dry-run mode** (default): Translates but doesn't post
@@ -219,6 +236,8 @@ Logs include monthly usage: `monthly usage X/100` to help monitoring.
 | `LIBRETRANSLATE_API_KEY` | No | LibreTranslate API key (optional, if required by your instance) |
 | `DRY_RUN` | No | Set to `1` to prevent posting (default: 1) |
 | `RATE_LIMIT_BUFFER_SECONDS` | No | Safety buffer after rate limit reset (default: 10) |
+| `OLDSCHOOL_MODE` | No | Set to `true` to use fixed translation order instead of random (default: false) |
+| `OLDSCHOOL_LANGUAGES` | No | Comma-separated language codes for fixed translation chain when oldschool mode is enabled |
 | `LANGUAGES` | No | Comma-separated language codes for translation chain (see config for full list; Greek is disabled by default) |
 
 ## Troubleshooting

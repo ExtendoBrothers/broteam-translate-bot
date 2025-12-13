@@ -30,4 +30,8 @@ export const config = {
   LANGUAGES: [
     'en', 'ar', 'az', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'ga', 'gl', 'he', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ky', 'lt', 'lv', 'ms', 'nb', 'nl', 'pt-BR', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv', 'th', 'tl', 'tr', 'uk', 'ur', 'vi', 'zh-Hans', 'zh-Hant'
   ],
+  // Oldschool translation mode: use fixed translation order instead of random selection
+  OLDSCHOOL_MODE: (process.env.OLDSCHOOL_MODE || 'false').toLowerCase() === 'true',
+  // Fixed translation order for oldschool mode (will be set by user)
+  OLDSCHOOL_LANGUAGES: process.env.OLDSCHOOL_LANGUAGES ? process.env.OLDSCHOOL_LANGUAGES.split(',').map(s => s.trim()) : [],
 };

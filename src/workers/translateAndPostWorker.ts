@@ -202,6 +202,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     return arr;
   }
 
+  // Helper function to get languages for translation chain based on mode
+  function getTranslationLanguages(): string[] {
+    if (config.OLDSCHOOL_MODE && config.OLDSCHOOL_LANGUAGES.length > 0) {
+      logger.info(`[OLDSCHOOL_MODE] Using fixed language order: ${config.OLDSCHOOL_LANGUAGES.join(', ')}`);
+      return config.OLDSCHOOL_LANGUAGES;
+    } else {
+      // Select 12 random languages from the list
+      const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
+      logger.info(`[LANG_CHAIN] Random languages: ${randomizedLangs.join(', ')}`);
+      return randomizedLangs;
+    }
+  }
+
   // Periodically prune processed tweet IDs to keep storage healthy
   tweetTracker.prune(90, 50000);
   // Check 24-hour post limit status
@@ -360,10 +373,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       // Always log the original tweet text as the first step for traceability
       logTranslationStep('original', tweet.text);
 
-      // Select 12 random languages from the list
-      const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-      logger.info(`[LANG_CHAIN] Main chain languages: ${randomizedLangs.join(', ')}`);
-      for (const lang of randomizedLangs) {
+      // Get languages for translation chain (random or fixed based on mode)
+      const selectedLangs = getTranslationLanguages();
+      for (const lang of selectedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
           continue;
@@ -419,11 +431,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let acceptable = false;
       const englishResults: string[] = [];
       do {
-        // On each retry, randomize the language chain and reprocess the original tweet
+        // On each retry, get languages for translation chain (random or fixed based on mode)
         let retryChain = tweet.text;
-        const randomizedLangs = shuffleArray(config.LANGUAGES).slice(0, 12);
-        logger.info(`[RETRY_CHAIN] Attempt ${attempts + 1}: languages: ${randomizedLangs.join(', ')}`);
-        for (const lang of randomizedLangs) {
+        const selectedLangs = getTranslationLanguages();
+        for (const lang of selectedLangs) {
           if (isCircuitOpen(lang)) {
             logger.warn(`Skipping language ${lang} due to open circuit`);
             continue;
