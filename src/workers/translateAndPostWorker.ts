@@ -407,7 +407,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           if (result === previousResult) {
             consecutiveSame++;
             if (consecutiveSame >= 4) {
-              logger.warn(`Chain stuck: 4 consecutive same results. Failing initial chain.`);
+              logger.warn('Chain stuck: 4 consecutive same results. Failing initial chain.');
               translationAttempted = false; // Force retry
               break;
             }
@@ -568,7 +568,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             if (result === previousResult) {
               consecutiveSame++;
               if (consecutiveSame >= 4) {
-                logger.warn(`Retry chain stuck: 4 consecutive same results. Failing this retry attempt.`);
+                logger.warn('Retry chain stuck: 4 consecutive same results. Failing this retry attempt.');
                 break; // Fail this retry, try next
               }
             } else {

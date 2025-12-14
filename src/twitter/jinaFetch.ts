@@ -38,7 +38,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     const html = await resp.text();
     
     // Extract the posts section - split after the posts header
-    const postsSection = html.split("Bro Team Pill's posts")[1] || html;
+    const postsSection = html.split('Bro Team Pill\'s posts')[1] || html;
     
     // Only look for status links from BroTeamPills, not quoted/embedded tweets from other users
     // Pattern matches image links that go to BroTeamPills' own status
