@@ -53,7 +53,8 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   if (detectedLang === 'und') {
     try {
       const detections = langdetect.detect(textOnly);
-      if (detections && detections.length > 0) {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
+      if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
         detectedLang = detections[0].lang;
       }
     } catch (e) {
@@ -456,7 +457,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         if (detectedLangInitial === 'und') {
           try {
             const detections = langdetect.detect(textOnlyInitial);
-            if (detections && detections.length > 0) {
+            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for initial "${textOnlyInitial}": ${JSON.stringify(detections)}\n`, 'utf8');
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
               detectedLangInitial = detections[0].lang;
             }
           } catch {
@@ -480,7 +482,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         if (detectedLangInitial === 'und') {
           try {
             const detections = langdetect.detect(finalResult);
-            if (detections && detections.length > 0) {
+            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for acceptable "${finalResult}": ${JSON.stringify(detections)}\n`, 'utf8');
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
               detectedLangInitial = detections[0].lang;
             }
           } catch {
@@ -544,7 +547,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             if (detectedLang === 'und') {
               try {
                 const detections = langdetect.detect(result);
-                if (detections && detections.length > 0) {
+                fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for retry result "${result}": ${JSON.stringify(detections)}\n`, 'utf8');
+                if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
                   detectedLang = detections[0].lang;
                 }
               } catch {
@@ -572,7 +576,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         if (detectedLangFinal === 'und') {
           try {
             const detections = langdetect.detect(finalResult);
-            if (detections && detections.length > 0) {
+            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for final "${finalResult}": ${JSON.stringify(detections)}\n`, 'utf8');
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
               detectedLangFinal = detections[0].lang;
             }
           } catch {
@@ -602,7 +607,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         if (detectedLangRetry === 'und') {
           try {
             const detections = langdetect.detect(textOnlyRetry);
-            if (detections && detections.length > 0) {
+            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for retry "${textOnlyRetry}": ${JSON.stringify(detections)}\n`, 'utf8');
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
               detectedLangRetry = detections[0].lang;
             }
           } catch {
