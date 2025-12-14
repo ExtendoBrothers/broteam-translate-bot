@@ -8,6 +8,8 @@
 
 import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
+import * as fs from 'fs';
+import * as path from 'path';
 // Type declarations for langdetect
 interface DetectionResult {
   lang: string;
@@ -33,7 +35,7 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 }
 
 // Split text by tokens and translate only non-token segments
-async function translateWithTokenProtection(text: string, targetLanguage: string): Promise<string> {
+async function translateWithTokenProtection(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   // Split text by tokens, preserving both text and tokens
   const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g);
   
@@ -47,7 +49,7 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
         const trailingWhitespace = segment.match(/\s*$/)?.[0] || '';
         const trimmedSegment = segment.trim();
         if (trimmedSegment) {
-          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000);
+          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000, sourceLanguage);
           return leadingWhitespace + translated + trailingWhitespace;
         }
         return segment;
@@ -106,21 +108,23 @@ const LIBRE_SUPPORTED = [
   'en', 'ar', 'az', 'zh', 'cs', 'de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'nl', 'el', 'he', 'id', 'fa', 'sv', 'fi', 'hu', 'ro', 'sk', 'th', 'bg', 'hr', 'lt', 'sl', 'et', 'sr', 'ms', 'bn', 'ur', 'ta', 'te', 'ml', 'kn', 'gu', 'mr', 'pa', 'sw', 'tl', 'my', 'km', 'lo', 'am', 'zu', 'xh', 'st', 'so', 'yo', 'ig', 'ha', 'eu', 'gl', 'ca', 'is', 'ga', 'mt', 'lb', 'mk', 'sq', 'bs', 'af', 'hy', 'ka', 'be', 'mn', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb'
 ];
 
-async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {
-  // Use langdetect to detect the source language (ISO 639-1)
-  let detectedSource = 'auto';
-  try {
-    const detections = langdetect.detect(q);
-    if (detections && detections.length > 0 && detections[0].prob > 0.5) {
-      const detectedCode = detections[0].lang;
-      if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
-        detectedSource = detectedCode;
-      } else {
-        detectedSource = 'auto';
+async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number, sourceLanguage?: string): Promise<string> {
+  // Use provided source language, or detect it
+  let detectedSource = sourceLanguage || 'auto';
+  if (!sourceLanguage) {
+    try {
+      const detections = langdetect.detect(q);
+      if (detections && detections.length > 0 && detections[0].prob > 0.5) {
+        const detectedCode = detections[0].lang;
+        if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
+          detectedSource = detectedCode;
+        } else {
+          detectedSource = 'auto';
+        }
       }
+    } catch (e) {
+      logger.warn(`langdetect language detection failed: ${e}`);
     }
-  } catch (e) {
-    logger.warn(`langdetect language detection failed: ${e}`);
   }
   let lastError: any = null;
   for (const trySource of [detectedSource, 'auto']) {
@@ -131,6 +135,9 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
       format: 'text',
     };
     if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
+
+    // Debug log the API request
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`, 'utf8');
 
     const res = await fetchWithTimeout(LIBRE_URL, {
       method: 'POST',
@@ -156,7 +163,7 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
   throw new Error('LibreTranslate failed for all source language attempts');
 }
 
-export async function translateText(text: string, targetLanguage: string): Promise<string> {
+export async function translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   if (!text) return '';
 
   // Normalize and protect tokens before translation
@@ -170,7 +177,7 @@ export async function translateText(text: string, targetLanguage: string): Promi
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const raw = await translateWithTokenProtection(sanitized, targetLanguage);
+      const raw = await translateWithTokenProtection(sanitized, targetLanguage, sourceLanguage);
       return restoreTokens(raw);
     } catch (error: unknown) {
       lastErr = error;
@@ -198,7 +205,7 @@ export async function translateText(text: string, targetLanguage: string): Promi
           const chunks = splitProtectedIntoChunks(sanitized, 220);
           const outPieces: string[] = [];
           for (const ch of chunks) {
-            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS);
+            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, sourceLanguage);
             outPieces.push(piece);
             await new Promise(r => setTimeout(r, 150));
           }

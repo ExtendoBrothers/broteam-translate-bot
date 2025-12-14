@@ -154,8 +154,6 @@ export async function fetchTweets(): Promise<Tweet[]> {
           addedCount++;
         }
       }
-      logger.info(`Tweet inputs log added ${addedCount} additional tweet(s)`);
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input block completed, addedCount=${addedCount}\n`, 'utf8');
     } else {
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log does NOT exist\n', 'utf8');
     }

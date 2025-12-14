@@ -50,6 +50,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Try lexicon-based detection first for short texts
   let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${detectedLang}\n`, 'utf8');
   if (detectedLang === 'und') {
     try {
       const detections = langdetect.detect(textOnly);
@@ -58,6 +59,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
         detectedLang = detections[0].lang;
       }
     } catch (e) {
+      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect error for "${textOnly}": ${e}\n`, 'utf8');
       logger.warn(`Language detection failed: ${e}`);
     }
   }
@@ -77,7 +79,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const reason = unacceptableReasons.join('; ');
 
   // Temporary debug log
-  console.log(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', textOnly='${textOnly}', acceptable=${acceptable}, reason='${reason}'`);
+  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', textOnly='${textOnly}', acceptable=${acceptable}, reason='${reason}'\n`, 'utf8');
 
   return { acceptable, reason };
 }
@@ -381,13 +383,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       // Get languages for translation chain (random or fixed based on mode)
       const selectedLangs = getTranslationLanguages();
+      let currentSource = 'en';
+      let consecutiveSame = 0;
+      let previousResult = translationChain;
       for (const lang of selectedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
           continue;
         }
         try {
-          let result = await translateText(translationChain, lang);
+          let result = await translateText(translationChain, lang, currentSource);
           // If result is just a problematic char or empty, retry with a different language
           const trimmedResult = result.trim();
           if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
@@ -398,6 +403,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             }
           }
           translationChain = result;
+          // Check for consecutive same results
+          if (result === previousResult) {
+            consecutiveSame++;
+            if (consecutiveSame >= 4) {
+              logger.warn(`Chain stuck: 4 consecutive same results. Failing initial chain.`);
+              translationAttempted = false; // Force retry
+              break;
+            }
+          } else {
+            consecutiveSame = 0;
+          }
+          previousResult = result;
+          currentSource = lang;
           recordSuccess(lang);
           translationAttempted = true;
           logger.info(`Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
@@ -527,13 +545,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // On each retry, get languages for translation chain (random or fixed based on mode)
         let retryChain = tweet.text;
         const selectedLangs = getTranslationLanguages();
+        let currentSource = 'en';
+        let consecutiveSame = 0;
+        let previousResult = retryChain;
         for (const lang of selectedLangs) {
           if (isCircuitOpen(lang)) {
             logger.warn(`Skipping language ${lang} due to open circuit`);
             continue;
           }
           try {
-            let result = await translateText(retryChain, lang);
+            let result = await translateText(retryChain, lang, currentSource);
             const trimmedResult = result.trim();
             if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
               logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
@@ -542,23 +563,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 result = altResult;
               }
             }
-            // Collect English results
-            let detectedLang = detectLanguageByLexicon(result) || 'und';
-            if (detectedLang === 'und') {
-              try {
-                const detections = langdetect.detect(result);
-                fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for retry result "${result}": ${JSON.stringify(detections)}\n`, 'utf8');
-                if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-                  detectedLang = detections[0].lang;
-                }
-              } catch {
-                // ignore
-              }
-            }
-            if (detectedLang === 'en') {
-              englishResults.push(result);
-            }
             retryChain = result;
+            // Check for consecutive same results
+            if (result === previousResult) {
+              consecutiveSame++;
+              if (consecutiveSame >= 4) {
+                logger.warn(`Retry chain stuck: 4 consecutive same results. Failing this retry attempt.`);
+                break; // Fail this retry, try next
+              }
+            } else {
+              consecutiveSame = 0;
+            }
+            previousResult = result;
+            currentSource = lang;
             recordSuccess(lang);
             logger.info(`Translated through ${lang}: ${retryChain.substring(0, 50)}...`);
             logTranslationStep(lang, retryChain);
@@ -568,7 +585,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           await delay(jitteredTranslationDelay());
         }
-        finalResult = await translateText(retryChain, 'en');
+        finalResult = await translateText(retryChain, 'en', currentSource);
         logTranslationStep('en', finalResult);
         translationLogSteps.push({ lang: 'en', text: finalResult });
         // Collect English final result as well

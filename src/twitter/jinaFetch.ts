@@ -13,6 +13,7 @@ function snowflakeToDate(snowflakeId: string): Date {
 // Simple fallback fetcher using r.jina.ai to retrieve public timeline HTML.
 // This is a best-effort scraper: it may not always return full recent tweets.
 export async function fetchTweetsFromJina(username: string, max = 20): Promise<Tweet[]> {
+  logger.info(`Starting Jina fetch for ${username}`);
   // Check if Jina is rate limited
   if (rateLimitTracker.isRateLimited('jina')) {
     const waitSeconds = rateLimitTracker.getSecondsUntilReset('jina');
@@ -36,8 +37,8 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     }
     const html = await resp.text();
     
-    // Extract the posts section
-    const postsSection = html.split(`${username}'s posts`)[1] || html.split('posts\n---')[1] || html;
+    // Extract the posts section - split after the posts header
+    const postsSection = html.split("Bro Team Pill's posts")[1] || html;
     
     // Only look for status links from BroTeamPills, not quoted/embedded tweets from other users
     // Pattern matches image links that go to BroTeamPills' own status
@@ -105,6 +106,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
             createdAt,
             user: { id: username, username, displayName: username }
           });
+          logger.info(`Jina extracted tweet ${id}: ${text.substring(0, 50)}...`);
         }
         
         currentText = '';
