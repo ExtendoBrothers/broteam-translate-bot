@@ -1,3 +1,19 @@
+/**
+ * Twitter Translation Bot Worker
+ *
+ * This worker fetches tweets from specified Twitter accounts, translates them through
+ * multiple languages in sequence to create humorous/comedic results, and posts
+ * the final English translations back to Twitter.
+ *
+ * Key features:
+ * - Multi-language translation chains for comedic effect
+ * - Quality checks to ensure acceptable output
+ * - Retry logic for failed translations
+ * - Rate limiting and circuit breakers for reliability
+ * - Queue system for handling posting failures
+ * - Monthly usage tracking for Twitter API limits
+ */
+
 import { fetchTweets } from '../twitter/fetchTweets';
 import { postTweet } from '../twitter/postTweets';
 import { TwitterClient } from '../twitter/client';
@@ -144,6 +160,15 @@ export interface WorkerResult {
   blockedByPostLimit: boolean;
 }
 
+/**
+ * Main worker function that orchestrates the entire tweet processing pipeline.
+ * This function runs periodically to:
+ * 1. Process any queued tweets from previous failed attempts
+ * 2. Fetch new tweets from monitored accounts
+ * 3. Translate tweets through multiple languages for comedic effect
+ * 4. Post acceptable translations to Twitter
+ * 5. Handle rate limits, errors, and retries appropriately
+ */
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   try {
     fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
@@ -155,7 +180,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   let blockedByCooldown = false;
   let blockedByPostLimit = false;
 
-  // Translation steps log setup
+  // Translation steps log setup - logs each translation step for debugging
   const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
   function logTranslationStep(lang: string, text: string) {
     const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
@@ -386,6 +411,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let currentSource = 'en';
       let consecutiveSame = 0;
       let previousResult = translationChain;
+
+      // Main translation chain loop: translate through multiple languages sequentially
+      // This creates the comedic effect by accumulating translation artifacts
       for (const lang of selectedLangs) {
         if (isCircuitOpen(lang)) {
           logger.warn(`Skipping language ${lang} due to open circuit`);
@@ -403,7 +431,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             }
           }
           translationChain = result;
-          // Check for consecutive same results
+          // Check for consecutive same results (indicates translation service is stuck)
           if (result === previousResult) {
             consecutiveSame++;
             if (consecutiveSame >= 4) {
@@ -427,14 +455,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         await delay(jitteredTranslationDelay());
       }
 
-      if (!translationAttempted) {
-        logger.error(`No translations succeeded for tweet ${tweet.id} - will retry in next run`);
-        continue;
-      }
-
-      // Use the result from the initial translation chain
-      let finalResult = translationChain;
-      const translationLogSteps: { lang: string, text: string }[] = [];
       const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
       let postedOutputs: string[] = [];
       try {
@@ -444,15 +464,26 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } catch (e) {
         logger.warn(`Could not read posted-outputs.log: ${e}`);
       }
-      // Ensure log directory exists for debug logging
-      const logDir = path.join(process.cwd(), 'translation-logs');
-      if (!fs.existsSync(logDir)) {
-        fs.mkdirSync(logDir);
+
+      let finalResult: string;
+      let acceptable: boolean;
+      let initialCheck: { acceptable: boolean; reason: string };
+
+      // Handle cases where the initial translation chain failed completely (e.g., stuck with same results)
+      // In such cases, force retries by setting acceptable = false, similar to unacceptable translations
+      if (!translationAttempted) {
+        logger.error(`No translations succeeded for tweet ${tweet.id} - will retry in next run`);
+        finalResult = tweet.text; // Use original text as fallback for retry attempts
+        acceptable = false; // Force entry into retry loop
+        initialCheck = { acceptable: false, reason: 'No translations succeeded' };
+      } else {
+        // Use the result from the initial translation chain
+        finalResult = translationChain;
+        initialCheck = isAcceptable(finalResult, tweet.text, postedOutputs);
+        acceptable = initialCheck.acceptable;
       }
 
-      // Check if the initial translation result is acceptable
-      const initialCheck = isAcceptable(finalResult, tweet.text, postedOutputs);
-      let acceptable = initialCheck.acceptable;
+      const translationLogSteps: { lang: string, text: string }[] = [];
       const englishResults: string[] = [];
 
       // Log the initial result evaluation
@@ -518,6 +549,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       let triedFallbackMode = false;
       const originalMode = config.OLDSCHOOL_MODE; // Store original mode
 
+      // Retry loop: attempts to improve unacceptable translations or handle stuck chains
+      // This loop runs for both cases where initial result is bad OR no translation was attempted
       // Try with current mode first, then fallback to opposite mode if needed
       while (!acceptable) {
         if (attempts >= maxRetries) {
@@ -756,6 +789,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
     }
   }
+  // Return worker status for scheduling decisions
   return {
     didWork,
     blockedByCooldown,
@@ -764,6 +798,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 };
 
 // Utility functions moved to root for lint compliance
+
+/**
+ * Calculate Jaccard distance between two strings based on their word sets.
+ * Used for measuring how different two texts are.
+ */
 function differenceScore(a: string, b: string): number {
   // Jaccard distance on word sets
   const setA = new Set(a.toLowerCase().split(/\W+/));
@@ -773,6 +812,10 @@ function differenceScore(a: string, b: string): number {
   return union.size - intersection.size;
 }
 
+/**
+ * Count unexpected words in result that aren't in the original text.
+ * Used to measure how much the translation process has transformed the content.
+ */
 function unexpectednessScore(result: string, original: string): number {
   // Count words not in the original
   const origWords = new Set(original.toLowerCase().split(/\W+/));
