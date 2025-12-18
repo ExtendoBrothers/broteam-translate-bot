@@ -19,6 +19,13 @@ interface DetectionResult {
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
+// Clean ASS subtitle formatting codes from translation responses
+function cleanSubtitleCodes(text: string): string {
+  // Remove ASS subtitle formatting codes like \FN黑体\FS22\BORD1\SHAD0\ etc.
+  // These codes start with backslash followed by letters/numbers and end with space or end of string
+  return text.replace(/\\[A-Za-z0-9]+(?:[^\s\\]|$)/g, '').trim();
+}
+
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)
 const LIBRE_URL = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000/translate';
 const LIBRE_API_KEY = process.env.LIBRETRANSLATE_API_KEY || process.env.LIBRETRANSLATE_KEY || '';
@@ -157,7 +164,8 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
       throw new Error(`LibreTranslate error ${status}: ${body}`);
     }
     const data = await res.json();
-    return (data?.translatedText as string) || (data?.translated_text as string) || '';
+    const rawText = (data?.translatedText as string) || (data?.translated_text as string) || '';
+    return cleanSubtitleCodes(rawText);
   }
   if (lastError) throw lastError;
   throw new Error('LibreTranslate failed for all source language attempts');
