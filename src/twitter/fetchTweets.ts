@@ -239,6 +239,8 @@ export async function fetchTweets(): Promise<Tweet[]> {
       targetUserId = user.data.id;
       setCachedUserId(targetUsername, targetUserId);
       didLookup = true;
+      // Count this API call toward monthly limit
+      monthlyUsageTracker.incrementFetch();
       logger.info(`Cached @${targetUsername} userId=${targetUserId}`);
       // Persist in .env as it won't change
       setEnvVar('SOURCE_USER_ID', targetUserId);
@@ -317,6 +319,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       message?: string;
       statusCode?: number;
       data?: any;
+      error?: { title?: string; detail?: string; type?: string; };
     };
     
     // Check for rate limit indicators
@@ -326,9 +329,22 @@ export async function fetchTweets(): Promise<Tweet[]> {
                          err?.headers?.['x-rate-limit-reset'] ||
                          err?.message?.includes('429') ||
                          err?.message?.includes('rate limit') ||
-                         err?.message?.includes('Rate limit');
+                         err?.message?.includes('Rate limit') ||
+                         err?.data?.title === 'UsageCapExceeded' ||
+                         err?.error?.title === 'UsageCapExceeded';
     
-    if (isRateLimited) {
+    // Check for monthly usage cap exceeded (different from rate limits)
+    const isMonthlyCapExceeded = err?.data?.title === 'UsageCapExceeded' ||
+                                err?.error?.title === 'UsageCapExceeded' ||
+                                (err?.data?.detail && err.data.detail.includes('Monthly product cap')) ||
+                                (err?.error?.detail && err.error.detail.includes('Monthly product cap'));
+    
+    if (isMonthlyCapExceeded) {
+      logger.warn('Twitter API monthly usage cap exceeded. Switching to fallback sources only.');
+      // Set a long cooldown to prevent further API calls this month
+      rateLimitTracker.setCooldown('timeline', 30 * 24 * 60 * 60, 'monthly usage cap exceeded'); // 30 days
+      monthlyUsageTracker.markLimitReached(); // Mark the limit as reached
+    } else if (isRateLimited) {
       // Try multiple ways to extract reset time
       let resetTime: number | undefined;
       
