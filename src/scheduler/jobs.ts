@@ -64,7 +64,7 @@ function computeDynamicIntervalMs(): number {
 }
 
 function scheduleNext() {
-  let baseDelay = computeDynamicIntervalMs();
+  const baseDelay = computeDynamicIntervalMs();
 
   // Check if timeline cooldown is active and ensure we don't schedule before it expires
   // const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
