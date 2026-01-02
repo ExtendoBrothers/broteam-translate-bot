@@ -96,11 +96,7 @@ class TweetTracker {
     }
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
-      try {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} already in posting queue\n`, 'utf8');
-      } catch {
-        // intentionally empty: debug log failure is non-critical
-      }
+      logger.debug(`shouldProcess: ${tweetId} already in posting queue`);
       return false;
     }
     const tweetDate = new Date(createdAt);
@@ -108,11 +104,7 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
       return false;
     }
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] shouldProcess: ${tweetId} will be processed\n`, 'utf8');
-    } catch {
-      // intentionally empty: debug log failure is non-critical
-    }
+    logger.debug(`shouldProcess: ${tweetId} will be processed`);
     return true;
   }
 

@@ -170,11 +170,7 @@ export interface WorkerResult {
  * 5. Handle rate limits, errors, and retries appropriately
  */
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
-  try {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] translateAndPostWorker entry at ${new Date().toISOString()}\n`, 'utf8');
-  } catch (err) {
-    // Logging failed
-  }
+  logger.debug(`translateAndPostWorker entry at ${new Date().toISOString()}`);
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
@@ -201,12 +197,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
     }
   }
-  // Debug log at worker startup
-  try {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Worker started at ${new Date().toISOString()}\n`, 'utf8');
-  } catch (err) {
-    // Logging failed
-  }
+  logger.debug(`Worker started at ${new Date().toISOString()}`);
 
   // Helper: retry translation with a different language if result is problematic
   async function retryWithDifferentLang(input: string, badResult: string, excludeLangs: string[]): Promise<string | null> {

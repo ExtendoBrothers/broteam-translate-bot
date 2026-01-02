@@ -38,11 +38,7 @@ function recordTwitterApiFetch(when: Date) {
 }
 
 export async function fetchTweets(): Promise<Tweet[]> {
-  try {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] fetchTweets entry at ${new Date().toISOString()}\n`, 'utf8');
-  } catch (err) {
-    // Logging failed
-  }
+  logger.debug(`fetchTweets entry at ${new Date().toISOString()}`);
   const tweets: Tweet[] = [];
   const targetUsername = config.SOURCE_USERNAME || 'BroTeamPills';
   
@@ -124,12 +120,12 @@ export async function fetchTweets(): Promise<Tweet[]> {
   
   // Always process manual tweet inputs
   try {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] Entered manual input block in fetchTweets\n', 'utf8');
+    logger.debug('Entered manual input block in fetchTweets');
     const inputLogPath = path.resolve(process.cwd(), 'tweet-inputs.log');
     if (fs.existsSync(inputLogPath)) {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log exists, reading file\n', 'utf8');
+      logger.debug('tweet-inputs.log exists, reading file');
       const content = fs.readFileSync(inputLogPath, 'utf8');
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] tweet-inputs.log content length: ${content.length}\n`, 'utf8');
+      logger.debug(`tweet-inputs.log content length: ${content.length}`);
       // Parse multiline entries: timestamp [id] text (text can span multiple lines until next timestamp)
       const entryRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) \[(\d+)\] ([\s\S]*?)(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}|$)/g;
       let match;
@@ -155,15 +151,11 @@ export async function fetchTweets(): Promise<Tweet[]> {
         }
       }
     } else {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] tweet-inputs.log does NOT exist\n', 'utf8');
+      logger.debug('tweet-inputs.log does NOT exist');
     }
   } catch (err) {
     logger.error(`Tweet inputs log fallback failed: ${err}`);
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] Manual input block exception: ${err}\n`, 'utf8');
-    } catch (e2) {
-      console.error('[ERROR] Failed to write manual input block exception debug log:', e2);
-    }
+    logger.debug(`Manual input block exception: ${err}`);
   }
   
   // Check if we should also use Twitter API based on monthly spacing
