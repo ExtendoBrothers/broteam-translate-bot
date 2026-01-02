@@ -44,7 +44,7 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 // Split text by tokens and translate only non-token segments
 async function translateWithTokenProtection(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   // Split text by tokens, preserving both text and tokens
-  const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g);
+  const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__|__XNL__)/g);
   
   // Translate only the text segments (odd indices after split)
   const translatedSegments = await Promise.all(
@@ -68,46 +68,14 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
   
   return translatedSegments.join('');
 }
-function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[] {
+function splitProtectedIntoChunks(protectedText: string, maxLen = 10000): string[] {
   if (protectedText.length <= maxLen) return [protectedText];
-  // Split into sentence-like segments including trailing punctuation + whitespace
-  const sentenceSegments = protectedText.match(/[^.!?]+[.!?]*\s*/g) || [protectedText];
-  const primaryChunks: string[] = [];
-  let current = '';
-  for (const seg of sentenceSegments) {
-    if (!current) {
-      current = seg;
-      continue;
-    }
-    if ((current + seg).length <= maxLen) {
-      current += seg;
-    } else {
-      primaryChunks.push(current);
-      current = seg;
-    }
+  // Split by length only, not by sentences, to avoid cutting off at punctuation
+  const chunks: string[] = [];
+  for (let i = 0; i < protectedText.length; i += maxLen) {
+    chunks.push(protectedText.substring(i, i + maxLen));
   }
-  if (current) primaryChunks.push(current);
-  // Second pass: ensure no chunk exceeds maxLen; if it does, word-split that chunk
-  const finalChunks: string[] = [];
-  for (const chunk of primaryChunks) {
-    if (chunk.length <= maxLen) {
-      finalChunks.push(chunk);
-      continue;
-    }
-    const parts = chunk.split(/(\s+)/); // keep whitespace tokens
-    let acc = '';
-    for (const p of parts) {
-      if (!p) continue;
-      if ((acc + p).length > maxLen && acc) {
-        finalChunks.push(acc);
-        acc = p.trimStart();
-      } else {
-        acc += p;
-      }
-    }
-    if (acc) finalChunks.push(acc);
-  }
-  return finalChunks;
+  return chunks;
 }
 
 // LibreTranslate supported language codes (ISO 639-1)
@@ -174,6 +142,9 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
 export async function translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   if (!text) return '';
 
+  // Protect newlines before translation
+  text = text.replace(/\n/g, '__XNL__');
+
   // Normalize and protect tokens before translation
   text = normalizeNFC(text);
   const sanitized = protectTokens(text);
@@ -186,7 +157,7 @@ export async function translateText(text: string, targetLanguage: string, source
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
       const raw = await translateWithTokenProtection(sanitized, targetLanguage, sourceLanguage);
-      return restoreTokens(raw);
+      return restoreTokens(raw).replace(/__XNL__/g, '\n');
     } catch (error: unknown) {
       lastErr = error;
       const errMsg = (error as Error)?.message || '';
@@ -218,7 +189,7 @@ export async function translateText(text: string, targetLanguage: string, source
             await new Promise(r => setTimeout(r, 150));
           }
           const rawJoined = outPieces.join('');
-          return restoreTokens(rawJoined);
+          return restoreTokens(rawJoined).replace(/__XNL__/g, '\n');
         } catch (e: unknown) {
           lastErr = e;
         }

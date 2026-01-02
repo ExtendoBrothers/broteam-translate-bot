@@ -16,6 +16,7 @@ export function protectTokens(text: string): string {
     { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?=\W|$)/g },
     { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
     { type: 'CASHTAG', regex: /\B\$[A-Za-z]{1,6}\b/g },
+    { type: 'QMARK', regex: /\?/g },
   ];
 
   let tokenIndex = 0;
