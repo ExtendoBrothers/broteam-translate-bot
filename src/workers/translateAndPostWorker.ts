@@ -60,9 +60,14 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Try lexicon-based detection first for short texts
-  let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
-  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${detectedLang}\n`, 'utf8');
-  if (detectedLang === 'und') {
+  const lexiconResult = detectLanguageByLexicon(textOnly);
+  let detectedLang = lexiconResult || 'und';
+  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult}\n`, 'utf8');
+  
+  // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
+  // If lexicon explicitly returned null (checked all languages, none matched), trust that result
+  if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+    // Lexicon couldn't determine language, try langdetect as fallback
     try {
       const detections = langdetect.detect(textOnly);
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
@@ -73,6 +78,8 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect error for "${textOnly}": ${e}\n`, 'utf8');
       logger.warn(`Language detection failed: ${e}`);
     }
+  } else if (lexiconResult === null) {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n', 'utf8');
   }
   const notEnglish = detectedLang !== 'en';
 
@@ -291,6 +298,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         recordFailure(lang);
       }
       await delay(jitteredTranslationDelay());
+    }
+
+    // Final step: translate back to English if we're not already in English
+    if (currentSource !== 'en' && translationAttempted) {
+      try {
+        logger.info(`[${chainLabel}] Final step: translating back to English from ${currentSource}`);
+        const finalEnglish = await translateText(translationChain, 'en', currentSource);
+        translationChain = finalEnglish;
+        logger.info(`[${chainLabel}] Final English result: ${translationChain.substring(0, 50)}...`);
+        logTranslationStep(`${chainLabel}-final-en`, translationChain);
+      } catch (error: unknown) {
+        logger.error(`[${chainLabel}] Failed to translate back to English: ${error}`);
+      }
     }
 
     return { result: translationChain, attempted: translationAttempted };
@@ -582,6 +602,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.warn(`Could not read posted-outputs.log for duplicate check: ${e}`);
       }
       
+      // CRITICAL: Check if already processed before posting from queue
+      if (tweetTracker.isProcessed(queuedTweet.sourceTweetId)) {
+        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - already processed`);
+        tweetQueue.dequeue();
+        logger.info(`[QUEUE_DEBUG] Dequeued already-processed tweet. New queue size: ${tweetQueue.size()}`);
+        continue;
+      }
+      
       const trimmedQueued = queuedTweet.finalTranslation.trim();
       if (postedOutputs.includes(trimmedQueued)) {
         logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - content is duplicate of previously posted tweet`);
@@ -596,6 +624,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
         logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
       }
+      
+      // Mark as processed after successful post (postTweet no longer does this to prevent race conditions)
+      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+      logger.info(`[QUEUE_DEBUG] Marked ${queuedTweet.sourceTweetId} as processed after successful queue post`);
                 
       // Record the post - tweet tracker updated inside postTweet
       postTracker.recordPost();
@@ -715,17 +747,44 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[MULTI_CHAIN] Comparing ${allCandidates.length} candidates (${randomResults.length} random + 1 oldschool)...`);
 
-      // Score all candidates
+      // Detect language of each candidate and only score English results
+      const originalText = tweet.text; // Store for tie-breaker calculations
       const scoredCandidates = await Promise.all(
         allCandidates.map(async (candidate) => {
-          const humorScore = await scoreHumor(candidate.result);
-          return { ...candidate, humorScore };
+          // Detect language
+          const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+          const textOnly = candidate.result.replace(tokenPattern, '').trim();
+          let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+          
+          if (detectedLang === 'und') {
+            try {
+              const detections = langdetect.detect(textOnly);
+              if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+                detectedLang = detections[0].lang;
+              }
+            } catch {
+              // ignore
+            }
+          }
+          
+          // Only score English results (humor model is trained on English)
+          const isEnglish = detectedLang === 'en';
+          const humorScore = isEnglish 
+            ? await scoreHumor(candidate.result)
+            : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
+          
+          // Calculate secondary metrics for tie-breaking
+          const diffScore = differenceScore(candidate.result, originalText);
+          const unexpScore = unexpectednessScore(candidate.result, originalText);
+          const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker };
         })
       );
 
       // Log all scores
       for (const candidate of scoredCandidates) {
-        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) acceptable=${candidate.acceptable}`);
+        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
       }
 
       // Log to debug file
@@ -734,7 +793,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
           `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
           scoredCandidates.map(c => 
-            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, acceptable=${c.acceptable}\n` +
+            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, lang=${c.isEnglish ? 'en' : 'non-en'}, acceptable=${c.acceptable}\n` +
             `    Result: "${c.result}"\n`
           ).join('') + '\n',
           'utf8'
@@ -744,13 +803,26 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       // Select the funniest result
-      // Priority: isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
+      // Priority: English results first, then isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
+      // Tie-breaker: use differenceScore + unexpectednessScore to pick more interesting/transformed results
+      // Non-English results are deprioritized since humor model is trained on English
       let bestCandidate = scoredCandidates[0];
       
       for (const candidate of scoredCandidates) {
         const best = bestCandidate.humorScore;
         const curr = candidate.humorScore;
         
+        // Prioritize English results over non-English
+        if (candidate.isEnglish && !bestCandidate.isEnglish) {
+          bestCandidate = candidate;
+          continue;
+        }
+        // If best is English but current isn't, skip current
+        if (!candidate.isEnglish && bestCandidate.isEnglish) {
+          continue;
+        }
+        
+        // Both are same language type, compare humor scores
         // If current is humorous and best isn't, prefer current
         if (curr.isHumorous && !best.isHumorous) {
           bestCandidate = candidate;
@@ -759,13 +831,60 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         else if (curr.isHumorous && best.isHumorous && curr.score > best.score) {
           bestCandidate = candidate;
         }
+        // If both are humorous with SAME score, use tie-breaker (more unexpected/different = better)
+        else if (curr.isHumorous && best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
+          bestCandidate = candidate;
+        }
         // If neither is humorous, prefer lower score (less certain it's NOT funny)
         else if (!curr.isHumorous && !best.isHumorous && curr.score < best.score) {
+          bestCandidate = candidate;
+        }
+        // If neither is humorous with SAME score, use tie-breaker (more unexpected/different = better)
+        else if (!curr.isHumorous && !best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
           bestCandidate = candidate;
         }
       }
 
       logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (score: ${bestCandidate.humorScore.score.toFixed(3)})`);
+
+      // Save feedback data for manual review
+      try {
+        const feedbackEntry = {
+          timestamp: new Date().toISOString(),
+          tweetId: tweet.id,
+          originalText: tweet.text,
+          candidates: scoredCandidates.map(c => ({
+            source: c.source,
+            result: c.result,
+            humorScore: c.humorScore.score,
+            humorLabel: c.humorScore.label,
+            isEnglish: c.isEnglish,
+            tieBreaker: c.tieBreaker,
+            acceptable: c.acceptable
+          })),
+          botSelected: bestCandidate.source,
+          selectedResult: bestCandidate.result,
+          selectedScore: bestCandidate.humorScore.score,
+          userFeedback: null
+        };
+
+        const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
+        fs.appendFileSync(feedbackPath, JSON.stringify(feedbackEntry) + '\n', 'utf8');
+        
+        // Check if feedback threshold reached for analysis (every 5 feedbacks)
+        try {
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
+          const { execSync } = require('child_process');
+          execSync('node scripts/check-feedback-threshold.js', { 
+            stdio: 'inherit',
+            cwd: process.cwd()
+          });
+        } catch (checkErr) {
+          logger.warn('[FEEDBACK] Failed to run threshold check:', checkErr);
+        }
+      } catch (err) {
+        logger.error('[ERROR] Failed to save feedback data:', err);
+      }
 
       const finalResult = bestCandidate.result;
       const acceptable = bestCandidate.acceptable || randomResults.length > 0; // Accept if we got any random results
@@ -839,6 +958,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           // Post the tweet
           try {
+            // CRITICAL: Final check before posting to prevent race conditions
+            if (tweetTracker.isProcessed(tweet.id)) {
+              logger.info(`Skipping tweet ${tweet.id} - already processed (race condition detected)`);
+              continue;
+            }
+            
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
             } else {
@@ -848,6 +973,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Record the post
             postTracker.recordPost();
             tweetTracker.markProcessed(tweet.id);
+            logger.info(`Marked ${tweet.id} as processed after successful post`);
             lastPostTime = Date.now();
             didWork = true;
             // Log posted output

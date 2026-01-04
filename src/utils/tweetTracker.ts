@@ -109,6 +109,13 @@ class TweetTracker {
   }
 
   /**
+     * Check if tweet has already been processed (for duplicate prevention)
+     */
+  public isProcessed(tweetId: string): boolean {
+    return this.processed.has(tweetId);
+  }
+
+  /**
      * Mark tweet as processed
      */
   public markProcessed(tweetId: string) {
