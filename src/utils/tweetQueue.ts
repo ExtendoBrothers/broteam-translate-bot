@@ -70,8 +70,9 @@ class TweetQueue {
       return;
     }
 
-    // CRITICAL: Import tweetTracker and check if already processed
-    // This prevents queuing tweets that have already been successfully posted
+    // CRITICAL: Check if already processed to prevent queuing tweets that have been posted
+    // Import dynamically to avoid circular dependency
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
     const { tweetTracker } = require('./tweetTracker');
     if (tweetTracker.isProcessed(sourceTweetId)) {
       logger.info(`Tweet ${sourceTweetId} already processed, not adding to queue`);

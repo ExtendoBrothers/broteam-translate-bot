@@ -79,7 +79,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       logger.warn(`Language detection failed: ${e}`);
     }
   } else if (lexiconResult === null) {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n`, 'utf8');
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n', 'utf8');
   }
   const notEnglish = detectedLang !== 'en';
 
@@ -873,6 +873,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
         try {
+          // eslint-disable-next-line @typescript-eslint/no-var-requires
           const { execSync } = require('child_process');
           execSync('node scripts/check-feedback-threshold.js', { 
             stdio: 'inherit',
