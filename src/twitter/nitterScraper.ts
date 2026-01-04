@@ -227,9 +227,9 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
       let text = snippet
         .replace(/<[^>]+>/g, ' ')
         .replace(/&quot;/g, '"')
-        .replace(/&amp;/g, '&')
         .replace(/&lt;/g, '<')
         .replace(/&gt;/g, '>')
+        .replace(/&amp;/g, '&') // Decode &amp; LAST to prevent double-unescaping
         .replace(/https?:\/\/[^\s]+/g, '')
         .replace(/\s+/g, ' ')
         .trim();
