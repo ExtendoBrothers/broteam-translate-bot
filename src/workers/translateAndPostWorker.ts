@@ -873,7 +873,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
         try {
-          // eslint-disable-next-line @typescript-eslint/no-var-requires
+          // eslint-disable-next-line @typescript-eslint/no-require-imports
           const { execSync } = require('child_process');
           execSync('node scripts/check-feedback-threshold.js', { 
             stdio: 'inherit',
