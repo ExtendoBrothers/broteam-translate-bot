@@ -64,25 +64,25 @@ function computeDynamicIntervalMs(): number {
 }
 
 function scheduleNext() {
-  let baseDelay = computeDynamicIntervalMs();
+  const baseDelay = computeDynamicIntervalMs();
 
   // Check if timeline cooldown is active and ensure we don't schedule before it expires
-  const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
-  if (timelineCooldown > 0) {
-    const cooldownMs = timelineCooldown * 1000;
-    const BUFFER_MS = 20 * 1000; // 20s buffer after cooldown expires
-    const minDelay = cooldownMs + BUFFER_MS;
-    if (baseDelay < minDelay) {
-      logger.info(`Adjusting schedule: timeline cooldown active for ${timelineCooldown}s; adding buffer`);
-      baseDelay = minDelay;
-    }
-  }
+  // const timelineCooldown = rateLimitTracker.getSecondsUntilReset('timeline');
+  // if (timelineCooldown > 0) {
+  //   const cooldownMs = timelineCooldown * 1000;
+  //   const BUFFER_MS = 20 * 1000; // 20s buffer after cooldown expires
+  //   const minDelay = cooldownMs + BUFFER_MS;
+  //   if (baseDelay < minDelay) {
+  //     logger.info(`Adjusting schedule: timeline cooldown active for ${timelineCooldown}s; adding buffer`);
+  //     baseDelay = minDelay;
+  //   }
+  // }
 
   // Add extra debug logging so we can see why the next run is scheduled
   const lastRunAt = readLastRun();
   const lastPostAt = readLastPost();
   const debugMsg = `Scheduling details: baseDelay=${Math.ceil(baseDelay/1000)}s` +
-    (timelineCooldown > 0 ? `, timelineCooldown=${timelineCooldown}s` : '') +
+    // (timelineCooldown > 0 ? `, timelineCooldown=${timelineCooldown}s` : '') +
     (lastRunAt ? `, lastRunAt=${lastRunAt.toISOString()}` : ', lastRunAt=none') +
     (lastPostAt ? `, lastPostAt=${lastPostAt.toISOString()}` : ', lastPostAt=none');
   logger.info(debugMsg);
@@ -91,6 +91,10 @@ function scheduleNext() {
   const jitter = Math.floor(Math.random() * JITTER_MS);
   const delay = baseDelay + jitter;
   const nextAt = new Date(Date.now() + delay);
+  if (delay > 24 * 60 * 60 * 1000) { // 24 hours
+    logger.info(`Delay too long (${Math.ceil(delay/1000)}s > 86400s). Not scheduling next run.`);
+    return;
+  }
   logger.info(`Next scheduled run at ${nextAt.toISOString()} (in ${Math.ceil(delay/1000)}s)`);
   setTimeout(async () => {
     try {
@@ -106,24 +110,7 @@ function scheduleNext() {
   }, delay);
 }
 
-export function scheduleJobs(lastRunAt?: Date, initialDelayMs?: number) {
-  if (initialDelayMs && initialDelayMs > 0) {
-    const nextAt = new Date(Date.now() + initialDelayMs);
-    logger.info(`Startup cooldown detected. First scheduled run at ${nextAt.toISOString()} (in ${Math.ceil(initialDelayMs/1000)}s)`);
-    setTimeout(async () => {
-      try {
-        logger.info('Running scheduled translation job...');
-        await translateAndPostWorker();
-      } catch (error) {
-        logger.error(`Error in scheduled job: ${error}`);
-      } finally {
-        const now2 = new Date();
-        recordLastRun(now2);
-        scheduleNext();
-      }
-    }, initialDelayMs);
-  } else {
-    scheduleNext();
-  }
+export function scheduleJobs(lastRunAt?: Date) {
+  scheduleNext();
   logger.info('Scheduler configured: running every 30 minutes since the last run');
 }

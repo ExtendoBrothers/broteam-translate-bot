@@ -3,9 +3,10 @@ import { translateText } from '../src/translator/googleTranslate';
 import * as langdetect from 'langdetect';
 
 async function main() {
-  const input = 'нет, нет, нет, нет, тв/брата';
+  const input = 'HERSTELL CHANDRA';
   const result = await translateText(input, 'en');
   const detections = langdetect.detect(result);
+  console.log('Detections:', JSON.stringify(detections));
   const detectedLang = detections && detections.length > 0 ? detections[0].lang : 'und';
   console.log('Input:', input);
   console.log('Translated to EN:', result);

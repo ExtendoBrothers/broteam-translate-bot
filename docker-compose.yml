@@ -8,7 +8,7 @@ services:
     environment:
       - PORT=5000
       - LT_UPDATE_MODELS=true
-      - LT_LOAD_ONLY=ja,ar,fi,hu,ko,tr,zh,ru,th,vi,hi,pl,el,en
+      # Load all available language models (removed LT_LOAD_ONLY restriction)
       # Keep translation strictly single-threaded to avoid known crashes/500s
       # in Argos/Stanza under concurrency. Tune up only after stability.
       - LT_THREADS=1

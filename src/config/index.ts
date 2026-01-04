@@ -23,15 +23,19 @@ export const config = {
   // OAuth2 refresh retry config
   OAUTH2_REFRESH_MAX_RETRIES: Number(process.env.OAUTH2_REFRESH_MAX_RETRIES || '3'),
   OAUTH2_REFRESH_BACKOFF_MS: Number(process.env.OAUTH2_REFRESH_BACKOFF_MS || '1000'),
-  // Translation chain reordered to move problematic/short-output languages later:
-  // English → Japanese → Arabic → Finnish → Turkish → Chinese → Russian → Hindi → Polish → Hungarian → Korean → Thai → Vietnamese → English
-  // Vietnamese, Thai, Hungarian, Korean moved later due to frequent short/failing outputs
-  // Expanded translation chain: all supported LibreTranslate languages
+  // Translation chain: all 49 languages supported by LibreTranslate
   LANGUAGES: [
-    'en', 'ar', 'az', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'eo', 'es', 'et', 'eu', 'fa', 'fi', 'fr', 'ga', 'gl', 'he', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ky', 'lt', 'lv', 'ms', 'nb', 'nl', 'pt-BR', 'pl', 'pt', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv', 'th', 'tl', 'tr', 'uk', 'ur', 'vi', 'zh-Hans', 'zh-Hant'
+    'ar', 'az', 'bg', 'bn', 'ca', 'cs', 'da', 'de', 'el', 'en', 'eo', 'es', 'et', 'eu', 'fa',
+    'fi', 'fr', 'ga', 'gl', 'he', 'hi', 'hu', 'id', 'it', 'ja', 'ko', 'ky', 'lt', 'lv', 'ms',
+    'nb', 'nl', 'pl', 'pt', 'pt-BR', 'ro', 'ru', 'sk', 'sl', 'sq', 'sv', 'th', 'tl', 'tr',
+    'uk', 'ur', 'vi', 'zh-Hans', 'zh-Hant'
   ],
   // Oldschool translation mode: use fixed translation order instead of random selection
   OLDSCHOOL_MODE: (process.env.OLDSCHOOL_MODE || 'false').toLowerCase() === 'true',
   // Fixed translation order for oldschool mode (will be set by user)
-  OLDSCHOOL_LANGUAGES: process.env.OLDSCHOOL_LANGUAGES ? process.env.OLDSCHOOL_LANGUAGES.split(',').map(s => s.trim()) : ['en','ja','en','ru','en','zh','en','el','en','fi','en','hu','en','sv','de','en'],
+  OLDSCHOOL_LANGUAGES: process.env.OLDSCHOOL_LANGUAGES ? process.env.OLDSCHOOL_LANGUAGES.split(',').map(s => s.trim()) : ['en','ja','en','ru','en','zh-Hans','en','el','en','fi','en','hu','en'],
+  // Humor detection configuration
+  HUMOR_DETECTION_ENABLED: (process.env.HUMOR_DETECTION_ENABLED || 'false').toLowerCase() === 'true',
+  HUMOR_THRESHOLD: Number(process.env.HUMOR_THRESHOLD || '0.5'), // Minimum score to consider text humorous
+  HUGGINGFACE_TOKEN: process.env.HUGGINGFACE_TOKEN || '', // Optional API token for Hugging Face
 };

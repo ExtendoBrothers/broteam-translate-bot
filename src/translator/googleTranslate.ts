@@ -8,6 +8,8 @@
 
 import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
+import * as fs from 'fs';
+import * as path from 'path';
 // Type declarations for langdetect
 interface DetectionResult {
   lang: string;
@@ -16,6 +18,13 @@ interface DetectionResult {
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
+
+// Clean ASS subtitle formatting codes from translation responses
+function cleanSubtitleCodes(text: string): string {
+  // Remove ASS subtitle formatting codes like \FN黑体\FS22\BORD1\SHAD0\ etc.
+  // These codes start with backslash followed by letters/numbers and end with space or end of string
+  return text.replace(/\\[A-Za-z0-9]+(?:[^\s\\]|$)/g, '').trim();
+}
 
 // Default to local instance using 127.0.0.1 (avoids IPv6 issues)
 const LIBRE_URL = process.env.LIBRETRANSLATE_URL || 'http://127.0.0.1:5000/translate';
@@ -33,9 +42,9 @@ async function fetchWithTimeout(input: RequestInfo, init: RequestInit, timeoutMs
 }
 
 // Split text by tokens and translate only non-token segments
-async function translateWithTokenProtection(text: string, targetLanguage: string): Promise<string> {
+async function translateWithTokenProtection(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   // Split text by tokens, preserving both text and tokens
-  const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__)/g);
+  const segments = text.split(/(__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__|__XNL__)/g);
   
   // Translate only the text segments (odd indices after split)
   const translatedSegments = await Promise.all(
@@ -47,7 +56,7 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
         const trailingWhitespace = segment.match(/\s*$/)?.[0] || '';
         const trimmedSegment = segment.trim();
         if (trimmedSegment) {
-          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000);
+          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000, sourceLanguage);
           return leadingWhitespace + translated + trailingWhitespace;
         }
         return segment;
@@ -59,46 +68,14 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
   
   return translatedSegments.join('');
 }
-function splitProtectedIntoChunks(protectedText: string, maxLen = 220): string[] {
+function splitProtectedIntoChunks(protectedText: string, maxLen = 10000): string[] {
   if (protectedText.length <= maxLen) return [protectedText];
-  // Split into sentence-like segments including trailing punctuation + whitespace
-  const sentenceSegments = protectedText.match(/[^.!?]+[.!?]*\s*/g) || [protectedText];
-  const primaryChunks: string[] = [];
-  let current = '';
-  for (const seg of sentenceSegments) {
-    if (!current) {
-      current = seg;
-      continue;
-    }
-    if ((current + seg).length <= maxLen) {
-      current += seg;
-    } else {
-      primaryChunks.push(current);
-      current = seg;
-    }
+  // Split by length only, not by sentences, to avoid cutting off at punctuation
+  const chunks: string[] = [];
+  for (let i = 0; i < protectedText.length; i += maxLen) {
+    chunks.push(protectedText.substring(i, i + maxLen));
   }
-  if (current) primaryChunks.push(current);
-  // Second pass: ensure no chunk exceeds maxLen; if it does, word-split that chunk
-  const finalChunks: string[] = [];
-  for (const chunk of primaryChunks) {
-    if (chunk.length <= maxLen) {
-      finalChunks.push(chunk);
-      continue;
-    }
-    const parts = chunk.split(/(\s+)/); // keep whitespace tokens
-    let acc = '';
-    for (const p of parts) {
-      if (!p) continue;
-      if ((acc + p).length > maxLen && acc) {
-        finalChunks.push(acc);
-        acc = p.trimStart();
-      } else {
-        acc += p;
-      }
-    }
-    if (acc) finalChunks.push(acc);
-  }
-  return finalChunks;
+  return chunks;
 }
 
 // LibreTranslate supported language codes (ISO 639-1)
@@ -106,21 +83,23 @@ const LIBRE_SUPPORTED = [
   'en', 'ar', 'az', 'zh', 'cs', 'de', 'es', 'fr', 'hi', 'it', 'ja', 'ko', 'pl', 'pt', 'ru', 'tr', 'uk', 'vi', 'nl', 'el', 'he', 'id', 'fa', 'sv', 'fi', 'hu', 'ro', 'sk', 'th', 'bg', 'hr', 'lt', 'sl', 'et', 'sr', 'ms', 'bn', 'ur', 'ta', 'te', 'ml', 'kn', 'gu', 'mr', 'pa', 'sw', 'tl', 'my', 'km', 'lo', 'am', 'zu', 'xh', 'st', 'so', 'yo', 'ig', 'ha', 'eu', 'gl', 'ca', 'is', 'ga', 'mt', 'lb', 'mk', 'sq', 'bs', 'af', 'hy', 'ka', 'be', 'mn', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb', 'ky', 'kk', 'uz', 'tt', 'tk', 'ps', 'sd', 'si', 'ne', 'as', 'or', 'my', 'dz', 'bo', 'ug', 'ku', 'ckb'
 ];
 
-async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number): Promise<string> {
-  // Use langdetect to detect the source language (ISO 639-1)
-  let detectedSource = 'auto';
-  try {
-    const detections = langdetect.detect(q);
-    if (detections && detections.length > 0 && detections[0].prob > 0.5) {
-      const detectedCode = detections[0].lang;
-      if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
-        detectedSource = detectedCode;
-      } else {
-        detectedSource = 'auto';
+async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: number, sourceLanguage?: string): Promise<string> {
+  // Use provided source language, or detect it
+  let detectedSource = sourceLanguage || 'auto';
+  if (!sourceLanguage) {
+    try {
+      const detections = langdetect.detect(q);
+      if (detections && detections.length > 0 && detections[0].prob > 0.5) {
+        const detectedCode = detections[0].lang;
+        if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
+          detectedSource = detectedCode;
+        } else {
+          detectedSource = 'auto';
+        }
       }
+    } catch (e) {
+      logger.warn(`langdetect language detection failed: ${e}`);
     }
-  } catch (e) {
-    logger.warn(`langdetect language detection failed: ${e}`);
   }
   let lastError: any = null;
   for (const trySource of [detectedSource, 'auto']) {
@@ -131,6 +110,9 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
       format: 'text',
     };
     if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
+
+    // Debug log the API request
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`, 'utf8');
 
     const res = await fetchWithTimeout(LIBRE_URL, {
       method: 'POST',
@@ -150,14 +132,18 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
       throw new Error(`LibreTranslate error ${status}: ${body}`);
     }
     const data = await res.json();
-    return (data?.translatedText as string) || (data?.translated_text as string) || '';
+    const rawText = (data?.translatedText as string) || (data?.translated_text as string) || '';
+    return cleanSubtitleCodes(rawText);
   }
   if (lastError) throw lastError;
   throw new Error('LibreTranslate failed for all source language attempts');
 }
 
-export async function translateText(text: string, targetLanguage: string): Promise<string> {
+export async function translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   if (!text) return '';
+
+  // Protect newlines before translation
+  text = text.replace(/\n/g, '__XNL__');
 
   // Normalize and protect tokens before translation
   text = normalizeNFC(text);
@@ -170,8 +156,8 @@ export async function translateText(text: string, targetLanguage: string): Promi
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const raw = await translateWithTokenProtection(sanitized, targetLanguage);
-      return restoreTokens(raw);
+      const raw = await translateWithTokenProtection(sanitized, targetLanguage, sourceLanguage);
+      return restoreTokens(raw).replace(/__XNL__/g, '\n');
     } catch (error: unknown) {
       lastErr = error;
       const errMsg = (error as Error)?.message || '';
@@ -198,12 +184,12 @@ export async function translateText(text: string, targetLanguage: string): Promi
           const chunks = splitProtectedIntoChunks(sanitized, 220);
           const outPieces: string[] = [];
           for (const ch of chunks) {
-            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS);
+            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, sourceLanguage);
             outPieces.push(piece);
             await new Promise(r => setTimeout(r, 150));
           }
           const rawJoined = outPieces.join('');
-          return restoreTokens(rawJoined);
+          return restoreTokens(rawJoined).replace(/__XNL__/g, '\n');
         } catch (e: unknown) {
           lastErr = e;
         }

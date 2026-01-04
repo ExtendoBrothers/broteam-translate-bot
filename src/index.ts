@@ -61,17 +61,14 @@ async function main() {
     await translateAndPostWorker();
     const now = new Date();
     recordLastRun(now);
-    // If we're under a startup cooldown for timeline reads, schedule first run
-    // for 20s after cooldown expires, then continue every 30 minutes after completion.
-    const secondsUntilTimeline = rateLimitTracker.getSecondsUntilReset('timeline');
-    const initialDelayMs = secondsUntilTimeline > 0 ? (secondsUntilTimeline + 20) * 1000 : undefined;
-    if (initialDelayMs) {
-      logger.info(`Startup: timeline blocked for ${secondsUntilTimeline}s. Scheduling first run ${secondsUntilTimeline + 20}s from now.`);
-    }
-    // Schedule next runs relative to now, honoring optional initial delay
-    scheduleJobs(now, initialDelayMs);
-        
+    // Schedule next runs relative to now
+    scheduleJobs(now);
     logger.info('Bot is running. Press Ctrl+C to stop.');
+    
+    // Keep the process alive even if not scheduling jobs
+    setInterval(() => {
+      logger.info('Bot is idle, waiting for timeline cooldown to expire.');
+    }, 60 * 60 * 1000); // Log every hour
   } catch (error) {
     logger.error(`Error in main execution: ${error}`);
     process.exit(1);

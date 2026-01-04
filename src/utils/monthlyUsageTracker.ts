@@ -82,6 +82,18 @@ class MonthlyUsageTracker {
   public isLimitReached(monthKey = this.getCurrentMonthKey()): boolean {
     return this.getFetchCount(monthKey) >= config.MONTHLY_FETCH_LIMIT;
   }
+
+  public markLimitReached(monthKey = this.getCurrentMonthKey()) {
+    const rec = this.months.get(monthKey);
+    if (!rec) {
+      this.months.set(monthKey, { fetches: config.MONTHLY_FETCH_LIMIT, firstFetchAt: new Date().toISOString() });
+    } else {
+      rec.fetches = config.MONTHLY_FETCH_LIMIT;
+      this.months.set(monthKey, rec);
+    }
+    this.save();
+    logger.warn(`Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as ${config.MONTHLY_FETCH_LIMIT}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+  }
 }
 
 export const monthlyUsageTracker = new MonthlyUsageTracker();
