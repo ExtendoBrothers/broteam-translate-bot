@@ -130,10 +130,10 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
         text = text
           .replace(/<[^>]+>/g, ' ')
           .replace(/&quot;/g, '"')
-          .replace(/&amp;/g, '&')
           .replace(/&lt;/g, '<')
           .replace(/&gt;/g, '>')
           .replace(/&apos;/g, '\'')
+          .replace(/&amp;/g, '&') // Decode &amp; LAST to prevent double-unescaping
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
           .replace(/\s+/g, ' ')
           .trim();
