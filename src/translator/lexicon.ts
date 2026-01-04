@@ -13,16 +13,28 @@ export const LEXICONS: Record<string, Set<string>> = {
 };
 
 export function detectLanguageByLexicon(text: string): string | null {
-  const words = text.toLowerCase().split(/\W+/).filter(Boolean);
-  let bestMatch: { lang: string; count: number } = { lang: '', count: 0 };
+  // Filter words: ignore very short words (<=2 chars) as they're unreliable indicators
+  // (e.g., "de", "l", "a", "i" exist in many languages)
+  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  const totalWords = words.length;
+
+  if (totalWords === 0) return null;
+
+  let bestMatch: { lang: string; count: number; percentage: number } = { lang: '', count: 0, percentage: 0 };
+
   for (const [lang, lexicon] of Object.entries(LEXICONS)) {
     let matchCount = 0;
     for (const word of words) {
       if (lexicon.has(word)) matchCount++;
     }
-    if (matchCount > bestMatch.count) {
-      bestMatch = { lang, count: matchCount };
+
+    const percentage = (matchCount / totalWords) * 100;
+
+    // Require at least 33% of words to match for confident detection
+    if (percentage >= 33 && percentage > bestMatch.percentage) {
+      bestMatch = { lang, count: matchCount, percentage };
     }
   }
-  return bestMatch.count > 0 ? bestMatch.lang : null;
+
+  return bestMatch.percentage >= 33 ? bestMatch.lang : null;
 }

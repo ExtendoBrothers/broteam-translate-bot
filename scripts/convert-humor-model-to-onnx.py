@@ -7,14 +7,16 @@ Requirements:
     pip install transformers torch onnx optimum[exporters]
 
 Usage:
-    python convert-humor-model-to-onnx.py
+    python convert-humor-model-to-onnx.py              # Convert base model
+    python convert-humor-model-to-onnx.py --custom     # Convert fine-tuned model
 """
 
 import os
 import sys
+import argparse
 from pathlib import Path
 
-def convert_model():
+def convert_model(custom=False):
     try:
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
         from optimum.onnxruntime import ORTModelForSequenceClassification
@@ -26,9 +28,15 @@ def convert_model():
         print("  pip install transformers torch onnx optimum[exporters]")
         sys.exit(1)
 
-    # Model to convert - using a well-tested humor detection model
-    MODEL_NAME = "mohameddhiab/humor-no-humor"
-    OUTPUT_DIR = Path("models/humor-detector")
+    # Model to convert - base or custom fine-tuned
+    if custom:
+        MODEL_NAME = "models/humor-detector-custom"
+        OUTPUT_DIR = Path("models/humor-detector-custom-onnx")
+        print("\n🎯 Converting CUSTOM fine-tuned model")
+    else:
+        MODEL_NAME = "mohameddhiab/humor-no-humor"
+        OUTPUT_DIR = Path("models/humor-detector")
+        print("\n📦 Converting BASE model")
     
     print(f"\n📦 Converting model: {MODEL_NAME}")
     print(f"📁 Output directory: {OUTPUT_DIR}\n")
@@ -91,6 +99,12 @@ def convert_model():
         sys.exit(1)
 
 if __name__ == "__main__":
+    parser = argparse.ArgumentParser(description='Convert humor model to ONNX')
+    parser.add_argument('--custom', action='store_true', 
+                        help='Convert custom fine-tuned model instead of base model')
+    args = parser.parse_args()
+    
     print("🔄 Humor Detection Model Converter")
     print("=" * 50)
-    convert_model()
+    convert_model(custom=args.custom)
+

@@ -47,11 +47,8 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       }
     }
     
-    // Mark source tweet as processed only after successful posting
-    if (sourceTweetId) {
-      tweetTracker.markProcessed(sourceTweetId);
-      logger.info(`Marked source tweet ${sourceTweetId} as processed after successful post`);
-    }
+    // Note: Caller is responsible for marking as processed to prevent race conditions
+    // (postTweet may be called from multiple contexts - queue, retry, main flow)
         
     return { id: previousTweetId, threadLength: chunks.length };
   } catch (error: unknown) {

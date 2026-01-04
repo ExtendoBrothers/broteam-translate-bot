@@ -70,6 +70,14 @@ class TweetQueue {
       return;
     }
 
+    // CRITICAL: Import tweetTracker and check if already processed
+    // This prevents queuing tweets that have already been successfully posted
+    const { tweetTracker } = require('./tweetTracker');
+    if (tweetTracker.isProcessed(sourceTweetId)) {
+      logger.info(`Tweet ${sourceTweetId} already processed, not adding to queue`);
+      return;
+    }
+
     this.queue.push({
       sourceTweetId,
       finalTranslation,

@@ -60,9 +60,14 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Try lexicon-based detection first for short texts
-  let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
-  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${detectedLang}\n`, 'utf8');
-  if (detectedLang === 'und') {
+  const lexiconResult = detectLanguageByLexicon(textOnly);
+  let detectedLang = lexiconResult || 'und';
+  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult}\n`, 'utf8');
+  
+  // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
+  // If lexicon explicitly returned null (checked all languages, none matched), trust that result
+  if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+    // Lexicon couldn't determine language, try langdetect as fallback
     try {
       const detections = langdetect.detect(textOnly);
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
@@ -73,6 +78,8 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect error for "${textOnly}": ${e}\n`, 'utf8');
       logger.warn(`Language detection failed: ${e}`);
     }
+  } else if (lexiconResult === null) {
+    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n`, 'utf8');
   }
   const notEnglish = detectedLang !== 'en';
 
@@ -291,6 +298,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         recordFailure(lang);
       }
       await delay(jitteredTranslationDelay());
+    }
+
+    // Final step: translate back to English if we're not already in English
+    if (currentSource !== 'en' && translationAttempted) {
+      try {
+        logger.info(`[${chainLabel}] Final step: translating back to English from ${currentSource}`);
+        const finalEnglish = await translateText(translationChain, 'en', currentSource);
+        translationChain = finalEnglish;
+        logger.info(`[${chainLabel}] Final English result: ${translationChain.substring(0, 50)}...`);
+        logTranslationStep(`${chainLabel}-final-en`, translationChain);
+      } catch (error: unknown) {
+        logger.error(`[${chainLabel}] Failed to translate back to English: ${error}`);
+      }
     }
 
     return { result: translationChain, attempted: translationAttempted };
@@ -582,6 +602,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.warn(`Could not read posted-outputs.log for duplicate check: ${e}`);
       }
       
+      // CRITICAL: Check if already processed before posting from queue
+      if (tweetTracker.isProcessed(queuedTweet.sourceTweetId)) {
+        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - already processed`);
+        tweetQueue.dequeue();
+        logger.info(`[QUEUE_DEBUG] Dequeued already-processed tweet. New queue size: ${tweetQueue.size()}`);
+        continue;
+      }
+      
       const trimmedQueued = queuedTweet.finalTranslation.trim();
       if (postedOutputs.includes(trimmedQueued)) {
         logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - content is duplicate of previously posted tweet`);
@@ -596,6 +624,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
         logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
       }
+      
+      // Mark as processed after successful post (postTweet no longer does this to prevent race conditions)
+      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+      logger.info(`[QUEUE_DEBUG] Marked ${queuedTweet.sourceTweetId} as processed after successful queue post`);
                 
       // Record the post - tweet tracker updated inside postTweet
       postTracker.recordPost();
@@ -815,6 +847,44 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (score: ${bestCandidate.humorScore.score.toFixed(3)})`);
 
+      // Save feedback data for manual review
+      try {
+        const feedbackEntry = {
+          timestamp: new Date().toISOString(),
+          tweetId: tweet.id,
+          originalText: tweet.text,
+          candidates: scoredCandidates.map(c => ({
+            source: c.source,
+            result: c.result,
+            humorScore: c.humorScore.score,
+            humorLabel: c.humorScore.label,
+            isEnglish: c.isEnglish,
+            tieBreaker: c.tieBreaker,
+            acceptable: c.acceptable
+          })),
+          botSelected: bestCandidate.source,
+          selectedResult: bestCandidate.result,
+          selectedScore: bestCandidate.humorScore.score,
+          userFeedback: null
+        };
+
+        const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
+        fs.appendFileSync(feedbackPath, JSON.stringify(feedbackEntry) + '\n', 'utf8');
+        
+        // Check if feedback threshold reached for analysis (every 5 feedbacks)
+        try {
+          const { execSync } = require('child_process');
+          execSync('node scripts/check-feedback-threshold.js', { 
+            stdio: 'inherit',
+            cwd: process.cwd()
+          });
+        } catch (checkErr) {
+          logger.warn('[FEEDBACK] Failed to run threshold check:', checkErr);
+        }
+      } catch (err) {
+        logger.error('[ERROR] Failed to save feedback data:', err);
+      }
+
       const finalResult = bestCandidate.result;
       const acceptable = bestCandidate.acceptable || randomResults.length > 0; // Accept if we got any random results
       const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
@@ -887,6 +957,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           // Post the tweet
           try {
+            // CRITICAL: Final check before posting to prevent race conditions
+            if (tweetTracker.isProcessed(tweet.id)) {
+              logger.info(`Skipping tweet ${tweet.id} - already processed (race condition detected)`);
+              continue;
+            }
+            
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
             } else {
@@ -896,6 +972,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Record the post
             postTracker.recordPost();
             tweetTracker.markProcessed(tweet.id);
+            logger.info(`Marked ${tweet.id} as processed after successful post`);
             lastPostTime = Date.now();
             didWork = true;
             // Log posted output
