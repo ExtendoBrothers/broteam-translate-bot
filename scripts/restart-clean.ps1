@@ -1,6 +1,9 @@
 # PowerShell script to guarantee a clean build and PM2 restart
 # Usage: ./scripts/restart-clean.ps1
 
+Write-Host "Fetching latest tags from remote..."
+git fetch --tags
+
 Write-Host "Removing dist directory..."
 Remove-Item -Recurse -Force dist
 

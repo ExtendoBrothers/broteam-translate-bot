@@ -715,17 +715,44 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[MULTI_CHAIN] Comparing ${allCandidates.length} candidates (${randomResults.length} random + 1 oldschool)...`);
 
-      // Score all candidates
+      // Detect language of each candidate and only score English results
+      const originalText = tweet.text; // Store for tie-breaker calculations
       const scoredCandidates = await Promise.all(
         allCandidates.map(async (candidate) => {
-          const humorScore = await scoreHumor(candidate.result);
-          return { ...candidate, humorScore };
+          // Detect language
+          const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+          const textOnly = candidate.result.replace(tokenPattern, '').trim();
+          let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+          
+          if (detectedLang === 'und') {
+            try {
+              const detections = langdetect.detect(textOnly);
+              if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+                detectedLang = detections[0].lang;
+              }
+            } catch {
+              // ignore
+            }
+          }
+          
+          // Only score English results (humor model is trained on English)
+          const isEnglish = detectedLang === 'en';
+          const humorScore = isEnglish 
+            ? await scoreHumor(candidate.result)
+            : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
+          
+          // Calculate secondary metrics for tie-breaking
+          const diffScore = differenceScore(candidate.result, originalText);
+          const unexpScore = unexpectednessScore(candidate.result, originalText);
+          const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker };
         })
       );
 
       // Log all scores
       for (const candidate of scoredCandidates) {
-        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) acceptable=${candidate.acceptable}`);
+        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
       }
 
       // Log to debug file
@@ -734,7 +761,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
           `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
           scoredCandidates.map(c => 
-            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, acceptable=${c.acceptable}\n` +
+            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, lang=${c.isEnglish ? 'en' : 'non-en'}, acceptable=${c.acceptable}\n` +
             `    Result: "${c.result}"\n`
           ).join('') + '\n',
           'utf8'
@@ -744,13 +771,26 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       // Select the funniest result
-      // Priority: isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
+      // Priority: English results first, then isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
+      // Tie-breaker: use differenceScore + unexpectednessScore to pick more interesting/transformed results
+      // Non-English results are deprioritized since humor model is trained on English
       let bestCandidate = scoredCandidates[0];
       
       for (const candidate of scoredCandidates) {
         const best = bestCandidate.humorScore;
         const curr = candidate.humorScore;
         
+        // Prioritize English results over non-English
+        if (candidate.isEnglish && !bestCandidate.isEnglish) {
+          bestCandidate = candidate;
+          continue;
+        }
+        // If best is English but current isn't, skip current
+        if (!candidate.isEnglish && bestCandidate.isEnglish) {
+          continue;
+        }
+        
+        // Both are same language type, compare humor scores
         // If current is humorous and best isn't, prefer current
         if (curr.isHumorous && !best.isHumorous) {
           bestCandidate = candidate;
@@ -759,8 +799,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         else if (curr.isHumorous && best.isHumorous && curr.score > best.score) {
           bestCandidate = candidate;
         }
+        // If both are humorous with SAME score, use tie-breaker (more unexpected/different = better)
+        else if (curr.isHumorous && best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
+          bestCandidate = candidate;
+        }
         // If neither is humorous, prefer lower score (less certain it's NOT funny)
         else if (!curr.isHumorous && !best.isHumorous && curr.score < best.score) {
+          bestCandidate = candidate;
+        }
+        // If neither is humorous with SAME score, use tie-breaker (more unexpected/different = better)
+        else if (!curr.isHumorous && !best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
           bestCandidate = candidate;
         }
       }
