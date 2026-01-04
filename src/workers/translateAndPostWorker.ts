@@ -436,24 +436,54 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       
       const check = isAcceptable(chainResult.result, inputText, postedOutputs);
       
-      // Detect if result is English for fallback collection
+      // Log detailed evaluation of each criterion for debugging (same as executeChainWithRetries)
+      const trimmed = chainResult.result.trim();
+      const originalTrimmed = inputText.trim();
       const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-      const textOnly = chainResult.result.replace(tokenPattern, '').trim();
+      const textOnly = trimmed.replace(tokenPattern, '').trim();
+      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+      
+      const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+      const empty = textOnly.length <= 1;
+      const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
+      const duplicate = postedOutputs.includes(trimmed);
+      const sameAsInput = textOnly === originalTextOnly;
+      const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
+      
       let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
       if (detectedLang === 'und') {
         try {
           const detections = langdetect.detect(textOnly);
-          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
             detectedLang = detections[0].lang;
           }
         } catch {
           // ignore
         }
       }
+      const notEnglish = detectedLang !== 'en';
       
       // Collect English results for potential fallback
       if (detectedLang === 'en') {
         englishResults.push({ result: chainResult.result, attempts: totalAttempts });
+      }
+      
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
+          `[DEBUG][RANDOM_COLLECT] Attempt ${totalAttempts} evaluation: acceptable=${check.acceptable}\n` +
+          `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
+          `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
+          `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
+          `Duplicate check: ${duplicate ? 'FAIL' : 'pass'}\n` +
+          `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
+          `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
+          `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
+          `Result: '${chainResult.result}'\n\n`,
+          'utf8'
+        );
+      } catch (err) {
+        logger.error('[ERROR][RANDOM_COLLECT] Failed to write evaluation to translation-debug.log:', err);
       }
       
       if (check.acceptable) {
