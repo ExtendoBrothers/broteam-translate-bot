@@ -25,15 +25,10 @@ import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
+import { scoreHumor } from '../utils/humorScorer';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
-
-// Type declarations for langdetect
-interface DetectionResult {
-  lang: string;
-  prob: number;
-}
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -175,6 +170,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   let didWork = false;
   let blockedByCooldown = false;
   let blockedByPostLimit = false;
+  const isDryRun = process.env.DRY_RUN_MODE === 'true';
+  
+  if (isDryRun) {
+    logger.warn('='.repeat(80));
+    logger.warn('DRY RUN MODE - No tweets will be posted');
+    logger.warn('='.repeat(80));
+  }
 
   // Translation steps log setup - logs each translation step for debugging
   const translationLogPath = path.resolve(__dirname, '../../translation-steps.log');
@@ -184,16 +186,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     try {
       fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] [${lang}] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`, 'utf8');
     } catch (err) {
-      console.error('[ERROR] Failed to write to translation-debug.log:', err);
+      logger.error('[ERROR] Failed to write to translation-debug.log:', err);
     }
     try {
       fs.appendFileSync(translationLogPath, entry, 'utf8');
     } catch (err) {
-      console.error('[ERROR] Failed to write to translation-steps.log:', err);
+      logger.error('[ERROR] Failed to write to translation-steps.log:', err);
       try {
         fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] [${lang}] ${new Date().toISOString()} ${err}\n`, 'utf8');
       } catch (e2) {
-        console.error('[ERROR] Failed to write error to translation-debug.log:', e2);
+        logger.error('[ERROR] Failed to write error to translation-debug.log:', e2);
       }
     }
   }
@@ -227,8 +229,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   }
 
   // Helper function to get languages for translation chain based on mode
-  function getTranslationLanguages(): string[] {
-    if (config.OLDSCHOOL_MODE && config.OLDSCHOOL_LANGUAGES.length > 0) {
+  function getTranslationLanguages(useOldschool: boolean): string[] {
+    if (useOldschool && config.OLDSCHOOL_LANGUAGES.length > 0) {
       logger.info(`[OLDSCHOOL_MODE] Using fixed language order: ${config.OLDSCHOOL_LANGUAGES.join(', ')}`);
       return config.OLDSCHOOL_LANGUAGES;
     } else {
@@ -237,6 +239,263 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       logger.info(`[LANG_CHAIN] Random languages: ${randomizedLangs.join(', ')}`);
       return randomizedLangs;
     }
+  }
+
+  // Helper function to execute a translation chain with a specific mode
+  async function executeTranslationChain(
+    inputText: string,
+    useOldschool: boolean,
+    chainLabel: string
+  ): Promise<{ result: string; attempted: boolean }> {
+    let translationChain = inputText;
+    const selectedLangs = getTranslationLanguages(useOldschool);
+    let currentSource = 'en';
+    let consecutiveSame = 0;
+    let previousResult = translationChain;
+    let translationAttempted = false;
+
+    for (const lang of selectedLangs) {
+      if (isCircuitOpen(lang)) {
+        logger.warn(`[${chainLabel}] Skipping language ${lang} due to open circuit`);
+        continue;
+      }
+      try {
+        let result = await translateText(translationChain, lang, currentSource);
+        const trimmedResult = result.trim();
+        if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+          logger.warn(`[${chainLabel}] Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
+          const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
+          if (altResult) {
+            result = altResult;
+          }
+        }
+        translationChain = result;
+        if (result === previousResult) {
+          consecutiveSame++;
+          if (consecutiveSame >= 4) {
+            logger.warn(`[${chainLabel}] Chain stuck: 4 consecutive same results. Failing chain.`);
+            translationAttempted = false;
+            break;
+          }
+        } else {
+          consecutiveSame = 0;
+        }
+        previousResult = result;
+        currentSource = lang;
+        recordSuccess(lang);
+        translationAttempted = true;
+        logger.info(`[${chainLabel}] Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
+        logTranslationStep(`${chainLabel}-${lang}`, translationChain);
+      } catch (error: unknown) {
+        logger.error(`[${chainLabel}] Failed to translate for ${lang}: ${error}`);
+        recordFailure(lang);
+      }
+      await delay(jitteredTranslationDelay());
+    }
+
+    return { result: translationChain, attempted: translationAttempted };
+  }
+
+  // Helper function to execute a translation chain with retries until acceptable
+  async function executeChainWithRetries(
+    inputText: string,
+    useOldschool: boolean,
+    chainLabel: string,
+    postedOutputs: string[],
+    maxRetries: number = 33
+  ): Promise<{ result: string; acceptable: boolean; attempts: number }> {
+    let attempts = 0;
+    let acceptable = false;
+    let finalResult = inputText;
+    const englishResults: string[] = []; // Collect English results for fallback
+
+    while (!acceptable && attempts < maxRetries) {
+      attempts++;
+      logger.info(`[${chainLabel}] Attempt ${attempts}/${maxRetries}...`);
+
+      // Execute translation chain
+      const chainResult = await executeTranslationChain(inputText, useOldschool, chainLabel);
+      
+      if (!chainResult.attempted) {
+        logger.warn(`[${chainLabel}] Chain failed to execute translations, retrying...`);
+        continue;
+      }
+
+      finalResult = chainResult.result;
+      const check = isAcceptable(finalResult, inputText, postedOutputs);
+      acceptable = check.acceptable;
+
+      // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
+      const trimmed = finalResult.trim();
+      const originalTrimmed = inputText.trim();
+      const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+      const textOnly = trimmed.replace(tokenPattern, '').trim();
+      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+      
+      const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+      const empty = textOnly.length <= 1;
+      const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
+      const duplicate = postedOutputs.includes(trimmed);
+      const sameAsInput = textOnly === originalTextOnly;
+      const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
+      
+      let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+      if (detectedLang === 'und') {
+        try {
+          const detections = langdetect.detect(textOnly);
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
+          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
+            detectedLang = detections[0].lang;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      const notEnglish = detectedLang !== 'en';
+      
+      // Collect English results for fallback selection
+      if (detectedLang === 'en') {
+        englishResults.push(finalResult);
+      }
+      
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
+          `[DEBUG][${chainLabel}] Attempt ${attempts} evaluation: acceptable=${check.acceptable}\n` +
+          `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
+          `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
+          `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
+          `Duplicate check: ${duplicate ? 'FAIL' : 'pass'}\n` +
+          `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
+          `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
+          `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
+          `Result: '${finalResult}'\n\n`,
+          'utf8'
+        );
+      } catch (err) {
+        logger.error(`[ERROR][${chainLabel}] Failed to write evaluation to translation-debug.log:`, err);
+      }
+
+      if (acceptable) {
+        logger.info(`[${chainLabel}] ✓ Acceptable result achieved after ${attempts} attempt(s)`);
+      } else {
+        logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${check.reason}`);
+      }
+    }
+
+    if (!acceptable) {
+      logger.error(`[${chainLabel}] Failed to get acceptable result after ${maxRetries} attempts`);
+      
+      // If we have English results, pick the funniest/most unexpected one
+      if (englishResults.length > 0) {
+        let bestScore = -1;
+        let funniest = englishResults[0];
+        for (const res of englishResults) {
+          const diff = differenceScore(res, inputText);
+          const unexp = unexpectednessScore(res, inputText);
+          const score = diff + unexp * 2; // Weight unexpectedness higher
+          if (score > bestScore) {
+            bestScore = score;
+            funniest = res;
+          }
+        }
+        logger.warn(`[${chainLabel}] Using funniest English result from ${englishResults.length} candidates (score: ${bestScore.toFixed(2)})`);
+        finalResult = funniest;
+      } else {
+        logger.warn(`[${chainLabel}] No English results found, using last attempt result`);
+      }
+    }
+
+    return { result: finalResult, acceptable, attempts };
+  }
+
+  // Helper function to collect multiple acceptable results from random chain
+  async function collectMultipleRandomResults(
+    inputText: string,
+    postedOutputs: string[],
+    targetCount: number = 3,
+    maxTotalAttempts: number = 33
+  ): Promise<Array<{ result: string; attempts: number }>> {
+    const acceptableResults: Array<{ result: string; attempts: number }> = [];
+    const englishResults: Array<{ result: string; attempts: number }> = []; // Track all English results for fallback
+    let totalAttempts = 0;
+    
+    logger.info(`[RANDOM_COLLECT] Collecting ${targetCount} acceptable random chain results...`);
+    
+    while (acceptableResults.length < targetCount && totalAttempts < maxTotalAttempts) {
+      totalAttempts++;
+      logger.info(`[RANDOM_COLLECT] Attempt ${totalAttempts}/${maxTotalAttempts} (${acceptableResults.length}/${targetCount} collected)...`);
+      
+      // Execute random translation chain
+      const chainResult = await executeTranslationChain(inputText, false, 'RANDOM_COLLECT');
+      
+      if (!chainResult.attempted) {
+        logger.warn('[RANDOM_COLLECT] Chain failed to execute translations, retrying...');
+        continue;
+      }
+      
+      const check = isAcceptable(chainResult.result, inputText, postedOutputs);
+      
+      // Detect if result is English for fallback collection
+      const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+      const textOnly = chainResult.result.replace(tokenPattern, '').trim();
+      let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+      if (detectedLang === 'und') {
+        try {
+          const detections = langdetect.detect(textOnly);
+          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+            detectedLang = detections[0].lang;
+          }
+        } catch {
+          // ignore
+        }
+      }
+      
+      // Collect English results for potential fallback
+      if (detectedLang === 'en') {
+        englishResults.push({ result: chainResult.result, attempts: totalAttempts });
+      }
+      
+      if (check.acceptable) {
+        acceptableResults.push({ result: chainResult.result, attempts: totalAttempts });
+        logger.info(`[RANDOM_COLLECT] ✓ Collected result ${acceptableResults.length}/${targetCount}`);
+      } else {
+        logger.warn(`[RANDOM_COLLECT] Attempt ${totalAttempts} unacceptable: ${check.reason}`);
+      }
+    }
+    
+    // If we didn't get enough acceptable results, use fallback selection from English results
+    if (acceptableResults.length < targetCount) {
+      logger.warn(`[RANDOM_COLLECT] Only collected ${acceptableResults.length}/${targetCount} acceptable results after ${totalAttempts} attempts`);
+      
+      if (englishResults.length > 0) {
+        const needed = targetCount - acceptableResults.length;
+        logger.info(`[RANDOM_COLLECT] Selecting ${needed} most funny/unexpected results from ${englishResults.length} English candidates...`);
+        
+        // Score all English results by funniness/unexpectedness
+        const scoredResults = englishResults.map(r => {
+          const diff = differenceScore(r.result, inputText);
+          const unexp = unexpectednessScore(r.result, inputText);
+          const score = diff + unexp * 2; // Weight unexpectedness higher
+          return { ...r, score };
+        });
+        
+        // Sort by score descending and take top N
+        scoredResults.sort((a, b) => b.score - a.score);
+        const selectedFallbacks = scoredResults.slice(0, needed);
+        
+        for (const fallback of selectedFallbacks) {
+          acceptableResults.push({ result: fallback.result, attempts: fallback.attempts });
+          logger.info(`[RANDOM_COLLECT] ✓ Added fallback result (score: ${fallback.score.toFixed(2)}) from attempt ${fallback.attempts}`);
+        }
+      } else {
+        logger.error('[RANDOM_COLLECT] No English results available for fallback selection!');
+      }
+    } else {
+      logger.info(`[RANDOM_COLLECT] ✓ Successfully collected ${targetCount} acceptable results`);
+    }
+    
+    return acceptableResults;
   }
 
   // Periodically prune processed tweet IDs to keep storage healthy
@@ -301,8 +560,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         continue;
       }
       
-      await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
-      logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
+      if (isDryRun) {
+        logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
+      } else {
+        await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
+        logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
+      }
                 
       // Record the post - tweet tracker updated inside postTweet
       postTracker.recordPost();
@@ -366,7 +629,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   const limit = config.MONTHLY_FETCH_LIMIT;
     
   logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
-  tweets = await fetchTweets();
+  tweets = await fetchTweets(isDryRun);
     
   // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
 
@@ -391,61 +654,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.warn(`Failed to log tweet input: ${err}`);
       }
 
-      let translationChain = tweet.text;
-      let translationAttempted = false;
-
       // Always log the original tweet text as the first step for traceability
       logTranslationStep('original', tweet.text);
 
-      // Get languages for translation chain (random or fixed based on mode)
-      const selectedLangs = getTranslationLanguages();
-      let currentSource = 'en';
-      let consecutiveSame = 0;
-      let previousResult = translationChain;
-
-      // Main translation chain loop: translate through multiple languages sequentially
-      // This creates the comedic effect by accumulating translation artifacts
-      for (const lang of selectedLangs) {
-        if (isCircuitOpen(lang)) {
-          logger.warn(`Skipping language ${lang} due to open circuit`);
-          continue;
-        }
-        try {
-          let result = await translateText(translationChain, lang, currentSource);
-          // If result is just a problematic char or empty, retry with a different language
-          const trimmedResult = result.trim();
-          if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
-            logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
-            const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
-            if (altResult) {
-              result = altResult;
-            }
-          }
-          translationChain = result;
-          // Check for consecutive same results (indicates translation service is stuck)
-          if (result === previousResult) {
-            consecutiveSame++;
-            if (consecutiveSame >= 4) {
-              logger.warn('Chain stuck: 4 consecutive same results. Failing initial chain.');
-              translationAttempted = false; // Force retry
-              break;
-            }
-          } else {
-            consecutiveSame = 0;
-          }
-          previousResult = result;
-          currentSource = lang;
-          recordSuccess(lang);
-          translationAttempted = true;
-          logger.info(`Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
-          logTranslationStep(lang, translationChain);
-        } catch (error: unknown) {
-          logger.error(`Failed to translate for ${lang}: ${error}`);
-          recordFailure(lang);
-        }
-        await delay(jitteredTranslationDelay());
-      }
-
+      // Load posted outputs for duplicate checking
       const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
       let postedOutputs: string[] = [];
       try {
@@ -456,225 +668,94 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.warn(`Could not read posted-outputs.log: ${e}`);
       }
 
-      let finalResult: string;
-      let acceptable: boolean;
-      let initialCheck: { acceptable: boolean; reason: string };
+      // Collect multiple random chain results and one oldschool result
+      logger.info('[MULTI_CHAIN] Collecting 3 random chain results + 1 oldschool result...');
+      
+      logger.info('[MULTI_CHAIN] === Collecting 3 RANDOM chain results ===');
+      const randomResults = await collectMultipleRandomResults(tweet.text, postedOutputs, 3, 33);
+      
+      logger.info('[MULTI_CHAIN] === Running OLDSCHOOL chain (single run - deterministic) ===');
+      const oldschoolChainResult = await executeChainWithRetries(tweet.text, true, 'OLDSCHOOL', postedOutputs, 1);
 
-      // Handle cases where the initial translation chain failed completely (e.g., stuck with same results)
-      // In such cases, force retries by setting acceptable = false, similar to unacceptable translations
-      if (!translationAttempted) {
-        logger.error(`No translations succeeded for tweet ${tweet.id} - will retry in next run`);
-        finalResult = tweet.text; // Use original text as fallback for retry attempts
-        acceptable = false; // Force entry into retry loop
-        initialCheck = { acceptable: false, reason: 'No translations succeeded' };
-      } else {
-        // Use the result from the initial translation chain
-        finalResult = translationChain;
-        initialCheck = isAcceptable(finalResult, tweet.text, postedOutputs);
-        acceptable = initialCheck.acceptable;
+      // Prepare all candidates for humor comparison
+      const allCandidates: Array<{ result: string; source: string; attempts: number; acceptable: boolean }> = [
+        ...randomResults.map((r, idx) => ({ result: r.result, source: `RANDOM_${idx + 1}`, attempts: r.attempts, acceptable: true })),
+        { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
+      ];
+
+      logger.info(`[MULTI_CHAIN] Comparing ${allCandidates.length} candidates (${randomResults.length} random + 1 oldschool)...`);
+
+      // Score all candidates
+      const scoredCandidates = await Promise.all(
+        allCandidates.map(async (candidate) => {
+          const humorScore = await scoreHumor(candidate.result);
+          return { ...candidate, humorScore };
+        })
+      );
+
+      // Log all scores
+      for (const candidate of scoredCandidates) {
+        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) acceptable=${candidate.acceptable}`);
       }
+
+      // Log to debug file
+      try {
+        fs.appendFileSync(
+          path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
+          `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
+          scoredCandidates.map(c => 
+            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, acceptable=${c.acceptable}\n` +
+            `    Result: "${c.result}"\n`
+          ).join('') + '\n',
+          'utf8'
+        );
+      } catch (err) {
+        logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
+      }
+
+      // Select the funniest result
+      // Priority: isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
+      let bestCandidate = scoredCandidates[0];
+      
+      for (const candidate of scoredCandidates) {
+        const best = bestCandidate.humorScore;
+        const curr = candidate.humorScore;
+        
+        // If current is humorous and best isn't, prefer current
+        if (curr.isHumorous && !best.isHumorous) {
+          bestCandidate = candidate;
+        }
+        // If both are humorous, prefer higher score (more confident it's funny)
+        else if (curr.isHumorous && best.isHumorous && curr.score > best.score) {
+          bestCandidate = candidate;
+        }
+        // If neither is humorous, prefer lower score (less certain it's NOT funny)
+        else if (!curr.isHumorous && !best.isHumorous && curr.score < best.score) {
+          bestCandidate = candidate;
+        }
+      }
+
+      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (score: ${bestCandidate.humorScore.score.toFixed(3)})`);
+
+      const finalResult = bestCandidate.result;
+      const acceptable = bestCandidate.acceptable || randomResults.length > 0; // Accept if we got any random results
+      const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
+      const translationAttempted = true;
+      const selectedChain = bestCandidate.source;
+      const chosenHumorScore = bestCandidate.humorScore.score;
 
       const translationLogSteps: { lang: string, text: string }[] = [];
-      const englishResults: string[] = [];
 
-      // Log the initial result evaluation
-      try {
-        const trimmedInitial = finalResult.trim();
-        const originalTrimmedInitial = tweet.text.trim();
-        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-        const textOnlyInitial = trimmedInitial.replace(tokenPattern, '').trim();
-        const originalTextOnlyInitial = originalTrimmedInitial.replace(tokenPattern, '').trim();
-        
-        const tooShortInitial = textOnlyInitial.length < Math.ceil(0.33 * originalTextOnlyInitial.length);
-        const emptyInitial = textOnlyInitial.length <= 1;
-        const punctuationOnlyInitial = /^[\p{P}\p{S}]+$/u.test(textOnlyInitial);
-        const duplicateInitial = postedOutputs.includes(trimmedInitial);
-        const sameAsInputInitial = textOnlyInitial === originalTextOnlyInitial;
-        const problematicCharInitial = ['/', ':', '.', '', ' '].includes(textOnlyInitial) || textOnlyInitial.startsWith('/');
-        
-        // Lexicon-based detection first, fallback to langdetect
-        let detectedLangInitial = detectLanguageByLexicon(textOnlyInitial) || 'und';
-        if (detectedLangInitial === 'und') {
-          try {
-            const detections = langdetect.detect(textOnlyInitial);
-            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for initial "${textOnlyInitial}": ${JSON.stringify(detections)}\n`, 'utf8');
-            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-              detectedLangInitial = detections[0].lang;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        const notEnglishInitial = detectedLangInitial !== 'en';
-
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Initial translation evaluation: acceptable=${initialCheck.acceptable}\nLength check: ${tooShortInitial ? 'fail' : 'pass'} (${textOnlyInitial.length}/${originalTextOnlyInitial.length})\nEmpty check: ${emptyInitial ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyInitial ? 'fail' : 'pass'}\nDuplicate check: ${duplicateInitial ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputInitial ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharInitial ? 'fail' : 'pass'}\nLanguage check: ${notEnglishInitial ? 'fail' : 'pass'} (${detectedLangInitial})\nfinalResult='${finalResult}'\n`, 'utf8');
-      } catch (err) {
-        console.error('[ERROR] Failed to write initial evaluation to translation-debug.log:', err);
-      }
-
-      if (!acceptable) {
-        logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Will attempt retries.`);
-      }
-
-      // If initial result is acceptable, collect it for logging
-      if (acceptable) {
-        let detectedLangInitial = detectLanguageByLexicon(finalResult) || 'und';
-        if (detectedLangInitial === 'und') {
-          try {
-            const detections = langdetect.detect(finalResult);
-            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for acceptable "${finalResult}": ${JSON.stringify(detections)}\n`, 'utf8');
-            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-              detectedLangInitial = detections[0].lang;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        if (detectedLangInitial === 'en') {
-          englishResults.push(finalResult);
-        }
-      }
-
-      const maxRetries = 33;
-      let attempts = 0;
-      let triedFallbackMode = false;
-      const originalMode = config.OLDSCHOOL_MODE; // Store original mode
-
-      // Retry loop: attempts to improve unacceptable translations or handle stuck chains
-      // This loop runs for both cases where initial result is bad OR no translation was attempted
-      // Try with current mode first, then fallback to opposite mode if needed
-      while (!acceptable) {
-        if (attempts >= maxRetries) {
-          if (triedFallbackMode) {
-            // Both modes exhausted, give up
-            logger.error('All retry attempts exhausted in both modes. Final result may not meet quality standards.');
-            break;
-          } else {
-            // Switch to fallback mode
-            triedFallbackMode = true;
-            attempts = 0;
-            const fallbackMode = config.OLDSCHOOL_MODE ? 'random' : 'oldschool';
-            logger.warn(`Primary mode exhausted ${maxRetries} attempts. Switching to ${fallbackMode} mode as fallback.`);
-            // Toggle the mode by temporarily overriding the config
-            config.OLDSCHOOL_MODE = !config.OLDSCHOOL_MODE;
-          }
-        }
-
-        if (!triedFallbackMode) {
-          logger.warn(`Initial translation failed checks: ${initialCheck.reason}. Attempting retry ${attempts + 1}/${maxRetries}`);
-        } else {
-          logger.warn(`Fallback mode retry ${attempts + 1}/${maxRetries}`);
-        }
-
-        // On each retry, get languages for translation chain (random or fixed based on mode)
-        let retryChain = tweet.text;
-        const selectedLangs = getTranslationLanguages();
-        let currentSource = 'en';
-        let consecutiveSame = 0;
-        let previousResult = retryChain;
-        for (const lang of selectedLangs) {
-          if (isCircuitOpen(lang)) {
-            logger.warn(`Skipping language ${lang} due to open circuit`);
-            continue;
-          }
-          try {
-            let result = await translateText(retryChain, lang, currentSource);
-            const trimmedResult = result.trim();
-            if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
-              logger.warn(`Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
-              const altResult = await retryWithDifferentLang(retryChain, trimmedResult, [lang]);
-              if (altResult) {
-                result = altResult;
-              }
-            }
-            retryChain = result;
-            // Check for consecutive same results
-            if (result === previousResult) {
-              consecutiveSame++;
-              if (consecutiveSame >= 4) {
-                logger.warn('Retry chain stuck: 4 consecutive same results. Failing this retry attempt.');
-                break; // Fail this retry, try next
-              }
-            } else {
-              consecutiveSame = 0;
-            }
-            previousResult = result;
-            currentSource = lang;
-            recordSuccess(lang);
-            logger.info(`Translated through ${lang}: ${retryChain.substring(0, 50)}...`);
-            logTranslationStep(lang, retryChain);
-          } catch (error: unknown) {
-            logger.error(`Failed to translate for ${lang}: ${error}`);
-            recordFailure(lang);
-          }
-          await delay(jitteredTranslationDelay());
-        }
-        finalResult = await translateText(retryChain, 'en', currentSource);
-        logTranslationStep('en', finalResult);
-        translationLogSteps.push({ lang: 'en', text: finalResult });
-        // Collect English final result as well
-        let detectedLangFinal = detectLanguageByLexicon(finalResult) || 'und';
-        if (detectedLangFinal === 'und') {
-          try {
-            const detections = langdetect.detect(finalResult);
-            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for final "${finalResult}": ${JSON.stringify(detections)}\n`, 'utf8');
-            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-              detectedLangFinal = detections[0].lang;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        if (detectedLangFinal === 'en') {
-          englishResults.push(finalResult);
-        }
-        const check = isAcceptable(finalResult, tweet.text, postedOutputs);
-        acceptable = check.acceptable;
-        // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
-        const trimmedRetry = finalResult.trim();
-        const originalTrimmedRetry = tweet.text.trim();
-        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-        const textOnlyRetry = trimmedRetry.replace(tokenPattern, '').trim();
-        const originalTextOnlyRetry = originalTrimmedRetry.replace(tokenPattern, '').trim();
-        
-        const tooShortRetry = textOnlyRetry.length < Math.ceil(0.33 * originalTextOnlyRetry.length);
-        const emptyRetry = textOnlyRetry.length <= 1;
-        const punctuationOnlyRetry = /^[\p{P}\p{S}]+$/u.test(textOnlyRetry);
-        const duplicateRetry = postedOutputs.includes(trimmedRetry);
-        const sameAsInputRetry = textOnlyRetry === originalTextOnlyRetry;
-        const problematicCharRetry = ['/', ':', '.', '', ' '].includes(textOnlyRetry) || textOnlyRetry.startsWith('/');
-        
-        let detectedLangRetry = detectLanguageByLexicon(textOnlyRetry) || 'und';
-        if (detectedLangRetry === 'und') {
-          try {
-            const detections = langdetect.detect(textOnlyRetry);
-            fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for retry "${textOnlyRetry}": ${JSON.stringify(detections)}\n`, 'utf8');
-            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-              detectedLangRetry = detections[0].lang;
-            }
-          } catch {
-            // ignore
-          }
-        }
-        const notEnglishRetry = detectedLangRetry !== 'en';
+      // Log the initial result evaluation (if we have one)
+      if (acceptable && translationAttempted) {
         try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Retry attempt ${attempts + 1} evaluation: acceptable=${check.acceptable}\nLength check: ${tooShortRetry ? 'fail' : 'pass'} (${textOnlyRetry.length}/${originalTextOnlyRetry.length})\nEmpty check: ${emptyRetry ? 'fail' : 'pass'}\nPunctuation check: ${punctuationOnlyRetry ? 'fail' : 'pass'}\nDuplicate check: ${duplicateRetry ? 'fail' : 'pass'}\nSame as input check: ${sameAsInputRetry ? 'fail' : 'pass'}\nProblematic char check: ${problematicCharRetry ? 'fail' : 'pass'}\nLanguage check: ${notEnglishRetry ? 'fail' : 'pass'} (${detectedLangRetry})\nfinalResult='${finalResult}'\n`, 'utf8');
+          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Final result evaluation: acceptable=${acceptable}\nSelected chain: ${selectedChain}\nfinalResult='${finalResult}'\nReason: ${initialCheck.reason}\n`, 'utf8');
         } catch (err) {
-          console.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
+          logger.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
         }
-        if (!acceptable) {
-          logger.warn(`Retry attempt ${attempts + 1} failed checks: ${check.reason}`);
-        }
-        attempts++;
       }
 
-      // Restore original mode if we switched to fallback
-      if (triedFallbackMode) {
-        config.OLDSCHOOL_MODE = originalMode;
-        logger.info('Restored original translation mode');
-      }
-
-      logger.info(`Final translation result: ${finalResult}`);
+      logger.info(`Selected translation (${selectedChain}, humor: ${chosenHumorScore.toFixed(3)}): ${finalResult}`);
 
       // Write detailed translation log to a single log file (append)
       try {
@@ -684,7 +765,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         const logFile = path.join(logDir, 'all-translations.log');
         const timestamp = new Date().toISOString();
-        let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nSteps:\n`;
+        let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nChosen Chain: ${selectedChain}\nHumor Score: ${chosenHumorScore.toFixed(3)}\nSteps:\n`;
         for (const step of translationLogSteps) {
           logContent += `  [${step.lang}] ${step.text}\n`;
         }
@@ -728,8 +809,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           // Post the tweet
           try {
-            await postTweet(client, finalResult, tweet.id);
-            logger.info(`Successfully posted translated tweet ${tweet.id}`);
+            if (isDryRun) {
+              logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
+            } else {
+              await postTweet(client, finalResult, tweet.id);
+              logger.info(`Successfully posted translated tweet ${tweet.id}`);
+            }
             // Record the post
             postTracker.recordPost();
             tweetTracker.markProcessed(tweet.id);
@@ -755,28 +840,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             }
           }
         }
-      } else {
-        // After max retries, still unacceptable - pick the funniest English result if available
-        let chosenResult = finalResult;
-        if (englishResults.length > 0) {
-          // Score each English result for 'funniness': most different from original, most unexpected words
-          let bestScore = -1;
-          let funniest = englishResults[0];
-          for (const res of englishResults) {
-            const diff = differenceScore(res, tweet.text);
-            const unexp = unexpectednessScore(res, tweet.text);
-            const score = diff + unexp * 2; // Weight unexpectedness higher
-            if (score > bestScore) {
-              bestScore = score;
-              funniest = res;
-            }
-          }
-          logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing funniest English result.`);
-          chosenResult = funniest;
-        } else {
-          logger.warn(`After ${maxRetries} attempts, result is not acceptable. Enqueueing last result.`);
-        }
-        tweetQueue.enqueue(tweet.id, chosenResult);
       }
     }
   }
@@ -788,7 +851,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   };
 };
 
-// Utility functions moved to root for lint compliance
+// Utility functions for scoring funniness/unexpectedness
 
 /**
  * Calculate Jaccard distance between two strings based on their word sets.
@@ -817,3 +880,4 @@ function unexpectednessScore(result: string, original: string): number {
   }
   return unexpected;
 }
+

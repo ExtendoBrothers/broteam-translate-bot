@@ -45,3 +45,6 @@ tweet-inputs.log
 
 # Coverage / test
 coverage/
+
+# ML Models (too large for GitHub)
+models/humor-detector/*.onnx

@@ -37,10 +37,14 @@ function recordTwitterApiFetch(when: Date) {
   }
 }
 
-export async function fetchTweets(): Promise<Tweet[]> {
+export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
   logger.debug(`fetchTweets entry at ${new Date().toISOString()}`);
   const tweets: Tweet[] = [];
   const targetUsername = config.SOURCE_USERNAME || 'BroTeamPills';
+  
+  if (isDryRun) {
+    logger.info('[DRY_RUN] Fetching tweets without filtering already-processed ones');
+  }
   
   // Always run fallback sources every 30 minutes (called by worker)
   logger.info('Fetching from fallback sources...');
@@ -49,7 +53,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
   try {
     const altTweets = await fetchTweetsFromJina(targetUsername, 20);
     for (const t of altTweets) {
-      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+      if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
         tweets.push(t);
       }
     }
@@ -63,7 +67,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
     const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
     let addedCount = 0;
     for (const t of syndicationTweets) {
-      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+      if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
         tweets.push(t);
         addedCount++;
       }
@@ -78,7 +82,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
     const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
     let addedCount = 0;
     for (const t of nitterTweets) {
-      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+      if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
         tweets.push(t);
         addedCount++;
       }
@@ -93,7 +97,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
     const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
     let addedCount = 0;
     for (const t of cacheTweets) {
-      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+      if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
         tweets.push(t);
         addedCount++;
       }
@@ -108,7 +112,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
     const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
     let addedCount = 0;
     for (const t of searchTweets) {
-      if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+      if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
         tweets.push(t);
         addedCount++;
       }
@@ -131,10 +135,10 @@ export async function fetchTweets(): Promise<Tweet[]> {
       let match;
       let addedCount = 0;
       while ((match = entryRegex.exec(content)) !== null) {
-        const [, timestamp, idStr, text] = match;
+        const [, _timestamp, idStr, text] = match;
         const id = idStr;
         const trimmedText = text.trim();
-        const shouldProc = tweetTracker.shouldProcess(id, new Date().toISOString());
+        const shouldProc = isDryRun || tweetTracker.shouldProcess(id, new Date().toISOString());
         // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
         if (shouldProc) {
           tweets.push({
@@ -276,7 +280,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
 
     for (const tweet of timeline.data.data || []) {
       // Check if tweet should be processed (not already processed and after start date)
-      if (!tweetTracker.shouldProcess(tweet.id, tweet.created_at || new Date().toISOString())) {
+      if (!isDryRun && !tweetTracker.shouldProcess(tweet.id, tweet.created_at || new Date().toISOString())) {
         continue;
       }
             
@@ -310,7 +314,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       headers?: Record<string, string>; 
       message?: string;
       statusCode?: number;
-      data?: any;
+      data?: { title?: string; detail?: string; rateLimit?: { reset?: number } };
       error?: { title?: string; detail?: string; type?: string; };
     };
     
@@ -361,7 +365,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       try {
         const jinaFallbackTweets = await fetchTweetsFromJina(targetUsername, 20);
         for (const t of jinaFallbackTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
           }
         }
@@ -376,7 +380,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
         let addedCount = 0;
         for (const t of syndicationTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -391,7 +395,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
         let addedCount = 0;
         for (const t of nitterTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -406,7 +410,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
         let addedCount = 0;
         for (const t of cacheTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -421,7 +425,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
         let addedCount = 0;
         for (const t of searchTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -438,7 +442,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
       try {
         const jinaFallbackTweets = await fetchTweetsFromJina(targetUsername, 20);
         for (const t of jinaFallbackTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
           }
         }
@@ -453,7 +457,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
         let addedCount = 0;
         for (const t of syndicationTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -468,7 +472,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
         let addedCount = 0;
         for (const t of nitterTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -483,7 +487,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
         let addedCount = 0;
         for (const t of cacheTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
@@ -498,7 +502,7 @@ export async function fetchTweets(): Promise<Tweet[]> {
         const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
         let addedCount = 0;
         for (const t of searchTweets) {
-          if (tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
+          if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
             addedCount++;
           }
