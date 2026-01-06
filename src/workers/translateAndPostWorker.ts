@@ -102,6 +102,12 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   return { acceptable, reason };
 }
 
+// Helper function to check if text is all caps
+function isAllCaps(text: string): boolean {
+  const trimmed = text.trim();
+  return trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed);
+}
+
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -254,7 +260,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     useOldschool: boolean,
     chainLabel: string
   ): Promise<{ result: string; attempted: boolean }> {
-    let translationChain = inputText;
+    const shouldUppercase = isAllCaps(inputText);
+    let translationChain = shouldUppercase ? inputText.toLowerCase() : inputText;
     const selectedLangs = getTranslationLanguages(useOldschool);
     let currentSource = 'en';
     let consecutiveSame = 0;
@@ -306,10 +313,21 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.info(`[${chainLabel}] Final step: translating back to English from ${currentSource}`);
         const finalEnglish = await translateText(translationChain, 'en', currentSource);
         translationChain = finalEnglish;
+        if (shouldUppercase) {
+          translationChain = translationChain.toUpperCase();
+        }
         logger.info(`[${chainLabel}] Final English result: ${translationChain.substring(0, 50)}...`);
         logTranslationStep(`${chainLabel}-final-en`, translationChain);
       } catch (error: unknown) {
         logger.error(`[${chainLabel}] Failed to translate back to English: ${error}`);
+      }
+    }
+
+    if (shouldUppercase) {
+      if (translationAttempted) {
+        translationChain = translationChain.toUpperCase();
+      } else {
+        translationChain = inputText;
       }
     }
 
