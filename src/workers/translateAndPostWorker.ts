@@ -822,7 +822,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       scoredCandidates.forEach(candidate => {
         const originalScore = candidate.humorScore.score;
         let bonus = 0;
-        let bonusDetails = [];
+        const bonusDetails = [];
         
         // Heuristic 4: Strong secondary preference for OLDSCHOOL
         if (candidate.source === 'OLDSCHOOL') {
