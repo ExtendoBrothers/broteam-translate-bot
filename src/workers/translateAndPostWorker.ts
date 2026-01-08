@@ -796,11 +796,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           const unexpScore = unexpectednessScore(candidate.result, originalText);
           const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker };
+          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: 0 };
         })
       );
 
-      // Log all scores
+      // Log all scores (after heuristic bonuses applied)
       for (const candidate of scoredCandidates) {
         logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
       }
@@ -819,17 +819,123 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } catch (err) {
         logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
       }
-
-      // Select the funniest result
-      // Priority: English results first, then isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
-      // Tie-breaker: use differenceScore + unexpectednessScore to pick more interesting/transformed results
-      // Non-English results are deprioritized since humor model is trained on English
+      scoredCandidates.forEach(candidate => {
+        const originalScore = candidate.humorScore.score;
+        let bonus = 0;
+        let bonusDetails = [];
+        
+        // Heuristic 4: Strong secondary preference for OLDSCHOOL
+        if (candidate.source === 'OLDSCHOOL') {
+          bonus += 0.05; // Significant boost for OLDSCHOOL
+          bonusDetails.push('OLDSCHOOL +0.05');
+        }
+        
+        // Heuristic 2: Favor longer results (small bonus per character)
+        const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005); // ~0.05 bonus for 100+ chars
+        if (lengthBonus > 0) {
+          bonus += lengthBonus;
+          bonusDetails.push(`length +${lengthBonus.toFixed(4)}`);
+        }
+        
+        // Heuristic 5: Coherence bonus - reward complete sentences/phrases
+        const text = candidate.result.trim();
+        const sentenceBonus = (() => {
+          // Check for sentence endings
+          const hasSentenceEndings = /[.!?]$/.test(text);
+          // Check for basic subject-verb structure (simplified)
+          const words = text.toLowerCase().split(/\s+/);
+          const hasVerbs = words.some(word => ['is', 'are', 'was', 'were', 'has', 'have', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word));
+          const coherenceScore = (hasSentenceEndings ? 0.01 : 0) + (hasVerbs ? 0.01 : 0);
+          return coherenceScore;
+        })();
+        if (sentenceBonus > 0) {
+          bonus += sentenceBonus;
+          bonusDetails.push(`coherence +${sentenceBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 6: Garbage penalty - penalize low word diversity
+        const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+        const uniqueWords = new Set(words);
+        const diversityRatio = uniqueWords.size / words.length;
+        const garbagePenalty = diversityRatio < 0.7 ? -0.02 : 0; // Penalty for <70% unique words
+        if (garbagePenalty < 0) {
+          bonus += garbagePenalty;
+          bonusDetails.push(`garbage ${garbagePenalty.toFixed(3)}`);
+        }
+        
+        // Heuristic 7: Contradiction bonus - reward contradictory concepts
+        const contradictionBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Simple contradiction patterns
+          const contradictions = [
+            /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
+            /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
+            /\b(fast|quick)\b.*\b(slow)\b/,
+            /\b(hot)\b.*\b(cold)\b/
+          ];
+          const hasContradiction = contradictions.some(pattern => pattern.test(lowerText));
+          return hasContradiction ? 0.015 : 0;
+        })();
+        if (contradictionBonus > 0) {
+          bonus += contradictionBonus;
+          bonusDetails.push(`contradiction +${contradictionBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 8: Self-deprecation bonus - reward self-critical humor
+        const selfDeprecationBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Look for first-person + negative self-description
+          const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
+          const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
+          const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
+          return (hasFirstPerson && hasNegativeSelf) || hasSelfCriticism ? 0.012 : 0;
+        })();
+        if (selfDeprecationBonus > 0) {
+          bonus += selfDeprecationBonus;
+          bonusDetails.push(`self-deprecating +${selfDeprecationBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 9: Absurdity bonus - reward impossible or extreme concepts
+        const absurdityBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Words indicating impossibility or extremes
+          const absurdWords = /\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/;
+          const extremeWords = /\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/;
+          const impossibleConcepts = /\b(flying pigs|square circle|cold heat|dark light)\b/;
+          
+          const hasAbsurdWords = absurdWords.test(lowerText);
+          const hasExtremeWords = extremeWords.test(lowerText);
+          const hasImpossible = impossibleConcepts.test(lowerText);
+          
+          return (hasAbsurdWords ? 0.008 : 0) + (hasExtremeWords ? 0.005 : 0) + (hasImpossible ? 0.010 : 0);
+        })();
+        if (absurdityBonus > 0) {
+          bonus += absurdityBonus;
+          bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
+        }
+        
+        // Apply bonus (cap at 0.1 total to avoid over-weighting)
+        const appliedBonus = Math.min(bonus, 0.1);
+        
+        // Create unified humor scale: higher = more likely funny
+        // Humorous results: use confidence as-is (higher = funnier)
+        // Non-humorous results: use 1 - confidence (lower confidence = more potentially funny)
+        const baseHumorScore = candidate.humorScore.isHumorous 
+          ? candidate.humorScore.score 
+          : (1 - candidate.humorScore.score);
+        
+        candidate.unifiedHumorScore = Math.min(1.0, baseHumorScore + appliedBonus);
+        
+        // Log the heuristic application
+        if (bonusDetails.length > 0) {
+          logger.info(`[HEURISTIC] ${candidate.source}: ${baseHumorScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
+        }
+      });
+      // Select the funniest result using unified humor scores
+      // Higher unified score = more likely funny (consistent for all results)
       let bestCandidate = scoredCandidates[0];
       
       for (const candidate of scoredCandidates) {
-        const best = bestCandidate.humorScore;
-        const curr = candidate.humorScore;
-        
         // Prioritize English results over non-English
         if (candidate.isEnglish && !bestCandidate.isEnglish) {
           bestCandidate = candidate;
@@ -840,30 +946,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           continue;
         }
         
-        // Both are same language type, compare humor scores
-        // If current is humorous and best isn't, prefer current
-        if (curr.isHumorous && !best.isHumorous) {
+        // Both are English, compare unified humor scores (higher = better)
+        if (candidate.unifiedHumorScore > bestCandidate.unifiedHumorScore) {
           bestCandidate = candidate;
         }
-        // If both are humorous, prefer higher score (more confident it's funny)
-        else if (curr.isHumorous && best.isHumorous && curr.score > best.score) {
-          bestCandidate = candidate;
-        }
-        // If both are humorous with SAME score, use tie-breaker (more unexpected/different = better)
-        else if (curr.isHumorous && best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
-          bestCandidate = candidate;
-        }
-        // If neither is humorous, prefer lower score (less certain it's NOT funny)
-        else if (!curr.isHumorous && !best.isHumorous && curr.score < best.score) {
-          bestCandidate = candidate;
-        }
-        // If neither is humorous with SAME score, use tie-breaker (more unexpected/different = better)
-        else if (!curr.isHumorous && !best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
+        // If unified scores are equal, use tie-breaker (more unexpected/different = better)
+        else if (candidate.unifiedHumorScore === bestCandidate.unifiedHumorScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
           bestCandidate = candidate;
         }
       }
 
-      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (score: ${bestCandidate.humorScore.score.toFixed(3)})`);
+      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (unified score: ${bestCandidate.unifiedHumorScore.toFixed(3)})`);
 
       // Save feedback data for manual review
       try {
@@ -875,6 +968,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             source: c.source,
             result: c.result,
             humorScore: c.humorScore.score,
+            unifiedHumorScore: c.unifiedHumorScore,
             humorLabel: c.humorScore.label,
             isEnglish: c.isEnglish,
             tieBreaker: c.tieBreaker,
@@ -882,7 +976,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           })),
           botSelected: bestCandidate.source,
           selectedResult: bestCandidate.result,
-          selectedScore: bestCandidate.humorScore.score,
+          selectedScore: bestCandidate.unifiedHumorScore,
           userFeedback: null
         };
 
