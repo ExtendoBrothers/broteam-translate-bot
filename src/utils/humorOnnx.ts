@@ -8,7 +8,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 
-const MODEL_DIR = path.join(process.cwd(), 'models', 'humor-detector');
+const MODEL_DIR = path.join(process.cwd(), 'models', 'humor-detector-custom-onnx');
 const MODEL_PATH = path.join(MODEL_DIR, 'model.onnx');
 const VOCAB_PATH = path.join(MODEL_DIR, 'vocab.txt');
 const CONFIG_PATH = path.join(MODEL_DIR, 'config.json');
