@@ -639,7 +639,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (isDryRun) {
         logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
       } else {
-        await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
+        await postTweet(client, queuedTweet.finalTranslation);
         logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
       }
       
@@ -820,7 +820,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
       }
       scoredCandidates.forEach(candidate => {
-        const originalScore = candidate.humorScore.score;
         let bonus = 0;
         const bonusDetails = [];
         
@@ -985,8 +984,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { execSync } = require('child_process');
+          const { execSync } = await import('child_process');
           execSync('node scripts/check-feedback-threshold.js', { 
             stdio: 'inherit',
             cwd: process.cwd()
@@ -1048,7 +1046,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 'minimum interval enforcement';
           logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
           logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
-          tweetQueue.enqueue(tweet.id, finalResult);
+          await tweetQueue.enqueue(tweet.id, finalResult);
         } else {
           // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
           if (!finalResult || finalResult.trim() === '/') {
@@ -1079,7 +1077,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
             } else {
-              await postTweet(client, finalResult, tweet.id);
+              await postTweet(client, finalResult);
               logger.info(`Successfully posted translated tweet ${tweet.id}`);
             }
             // Record the post
@@ -1100,11 +1098,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             const err = error as { code?: number; message?: string };
             if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
               logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
-              tweetQueue.enqueue(tweet.id, finalResult);
+              await tweetQueue.enqueue(tweet.id, finalResult);
             } else {
               logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
               // Enqueue for retry
-              tweetQueue.enqueue(tweet.id, finalResult);
+              await tweetQueue.enqueue(tweet.id, finalResult);
             }
           }
         }
