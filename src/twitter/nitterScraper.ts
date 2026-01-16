@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
@@ -80,13 +79,16 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
       const rssUrl = `https://${instance}/${username}/rss`;
       logger.info(`Trying Nitter RSS: ${instance}`);
       
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 10000);
       const resp = await fetch(rssUrl, {
         headers: { 
           'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36',
           'Accept': 'application/rss+xml, application/xml, text/xml, */*'
         },
-        timeout: 10000
+        signal: controller.signal
       });
+      clearTimeout(timeoutId);
 
       if (!resp.ok) {
         logger.warn(`Nitter RSS ${instance} returned ${resp.status}`);
@@ -197,10 +199,13 @@ export async function fetchFromGoogleCache(username: string, max = 20): Promise<
   try {
     const url = `https://webcache.googleusercontent.com/search?q=cache:https://x.com/${username}`;
     logger.info(`Trying Google Cache for @${username}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const resp = await fetch(url, {
       headers: { 'User-Agent': 'Mozilla/5.0' },
-      timeout: 15000
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       logger.warn(`Google Cache returned ${resp.status}`);
       rateLimitTracker.setCooldown('google-cache', 30 * 60, 'failed');
@@ -276,14 +281,17 @@ export async function fetchFromGoogleSearch(username: string, max = 20): Promise
     const searchQuery = encodeURIComponent(`site:x.com/${username} OR site:twitter.com/${username}`);
     const url = `https://www.google.com/search?q=${searchQuery}&num=50`;
     logger.info(`Trying Google Search for @${username}`);
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const resp = await fetch(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
         'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
         'Accept-Language': 'en-US,en;q=0.9'
       },
-      timeout: 15000
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       logger.warn(`Google Search returned ${resp.status}`);
       rateLimitTracker.setCooldown('google-search', 30 * 60, 'failed');

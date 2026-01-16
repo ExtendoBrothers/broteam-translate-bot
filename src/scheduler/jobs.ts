@@ -1,6 +1,5 @@
 import { translateAndPostWorker } from '../workers/translateAndPostWorker';
 import { logger } from '../utils/logger';
-import { rateLimitTracker } from '../utils/rateLimitTracker';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -110,7 +109,7 @@ function scheduleNext() {
   }, delay);
 }
 
-export function scheduleJobs(lastRunAt?: Date) {
+export function scheduleJobs() {
   scheduleNext();
   logger.info('Scheduler configured: running every 30 minutes since the last run');
 }

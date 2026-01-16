@@ -1,4 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 import 'dotenv/config';
 import { TwitterClient } from '../twitter/client';
 import { logger } from '../utils/logger';

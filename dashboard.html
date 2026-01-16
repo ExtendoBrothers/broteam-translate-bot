@@ -8,7 +8,7 @@
     body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
     h1 { color: #4ec9b0; margin-bottom: 8px; }
     .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
-    @media (min-width: 1100px) { .row { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1100px) { .row { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); } }
     table { border-collapse: collapse; width: 100%; background: #252526; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #3e3e42; font-size: 14px; }
     th { background: #2d2d30; color: #4ec9b0; font-weight: 600; position: sticky; top: 0; }
@@ -73,6 +73,19 @@
         <span class="meta" id="status"></span>
       </div>
       <div class="log" id="log"></div>
+    </div>
+    <div class="card">
+      <h2>Translation Debug Log</h2>
+      <div class="log" id="debugLog">Loading...</div>
+    </div>
+    <div class="card">
+      <h2>Add New Tweet</h2>
+      <div style="padding: 10px;">
+        <label style="display: block; margin-bottom: 8px;">Tweet ID: <input id="tweetId" placeholder="e.g. 1234567890123456789" style="width: 100%; padding: 6px; margin-top: 4px;" /></label>
+        <label style="display: block; margin-bottom: 8px;">Content: <textarea id="tweetContent" placeholder="Tweet content..." rows="4" style="width: 100%; padding: 6px; margin-top: 4px;"></textarea></label>
+        <button id="addTweetBtn" style="padding: 8px 16px;">Add Tweet</button>
+        <div id="addStatus" style="margin-top: 8px; color: #4ec9b0;"></div>
+      </div>
     </div>
   </div>
 
@@ -239,6 +252,50 @@
     
     // Flush pending log lines every 10 seconds
     setInterval(flushPendingLines, 10000);
+    
+    async function loadDebugLog() {
+      try {
+        const res = await fetch('/api/logs/static?file=translation-debug.log');
+        const text = await res.text();
+        document.getElementById('debugLog').textContent = text;
+        document.getElementById('debugLog').scrollTop = document.getElementById('debugLog').scrollHeight;
+      } catch (e) {
+        document.getElementById('debugLog').textContent = 'Error loading log';
+      }
+    }
+
+    loadDebugLog();
+    setInterval(loadDebugLog, 10000);
+    
+    document.getElementById('addTweetBtn').addEventListener('click', async () => {
+      const id = document.getElementById('tweetId').value.trim();
+      const content = document.getElementById('tweetContent').value.trim();
+      const statusEl = document.getElementById('addStatus');
+      if (!id || !content) {
+        statusEl.textContent = 'Please fill in both fields.';
+        statusEl.style.color = '#f48771';
+        return;
+      }
+      try {
+        const res = await fetch('/api/add-tweet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, content })
+        });
+        if (res.ok) {
+          statusEl.textContent = 'Tweet added successfully!';
+          statusEl.style.color = '#4ec9b0';
+          document.getElementById('tweetId').value = '';
+          document.getElementById('tweetContent').value = '';
+        } else {
+          statusEl.textContent = 'Error adding tweet.';
+          statusEl.style.color = '#f48771';
+        }
+      } catch (e) {
+        statusEl.textContent = 'Error adding tweet.';
+        statusEl.style.color = '#f48771';
+      }
+    });
     
     // Set initial log content
     (function(){

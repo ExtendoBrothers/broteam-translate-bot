@@ -12,7 +12,6 @@ async function testLanguageSupport() {
   for (const lang of newLanguages) {
     try {
       const result = await translateText(testPhrase, lang);
-      const backToEnglish = await translateText(result, 'en');
       console.log(`✅ ${lang}: Supported (translated to: ${result.substring(0, 50)}...)`);
     } catch (error) {
       const err = error as Error;

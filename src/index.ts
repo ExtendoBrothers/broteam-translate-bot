@@ -1,7 +1,4 @@
-import * as path from 'path';
-
 import { scheduleJobs, recordLastRun } from './scheduler/jobs';
-import { rateLimitTracker } from './utils/rateLimitTracker';
 import { translateAndPostWorker } from './workers/translateAndPostWorker';
 import { logger } from './utils/logger';
 import { config } from './config';
@@ -38,7 +35,7 @@ async function main() {
       try {
         const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
         logger.error(`Unhandled promise rejection: ${msg}`);
-      } catch (e) {
+      } catch {
         // ignore
       }
     });
@@ -62,7 +59,7 @@ async function main() {
     const now = new Date();
     recordLastRun(now);
     // Schedule next runs relative to now
-    scheduleJobs(now);
+    scheduleJobs();
     logger.info('Bot is running. Press Ctrl+C to stop.');
     
     // Keep the process alive even if not scheduling jobs

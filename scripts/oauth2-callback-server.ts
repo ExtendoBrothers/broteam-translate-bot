@@ -17,7 +17,7 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'text/plain' });
       res.end('Authorization received! You can close this tab.\nCheck your terminal for next steps.');
       try {
-        const tokens = await TwitterClient.handleOAuth2Callback(reqUrl.query.code as string, reqUrl.query.state as string);
+        await TwitterClient.handleOAuth2Callback(reqUrl.query.code as string, reqUrl.query.state as string);
         console.log('[callback-server] OAuth2 tokens saved! Bot is now authorized.');
         server.close();
         process.exit(0);

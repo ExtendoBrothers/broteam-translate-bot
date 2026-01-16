@@ -10,11 +10,6 @@ import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
 import * as fs from 'fs';
 import * as path from 'path';
-// Type declarations for langdetect
-interface DetectionResult {
-  lang: string;
-  prob: number;
-}
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';

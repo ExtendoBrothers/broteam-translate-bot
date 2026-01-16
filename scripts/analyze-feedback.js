@@ -39,10 +39,10 @@ function analyzeFeedback() {
   console.log(`Tweets with feedback: ${feedbackCount} (${((feedbackCount / total) * 100).toFixed(1)}%)`);
   
   if (feedbackCount < minSamples) {
-    console.log(`\n⚠️  Need at least ${minSamples} feedback samples for meaningful analysis.`);
-    console.log(`   Current: ${feedbackCount}/${minSamples}`);
-    console.log(`\nTo add feedback, use:`);
-    console.log(`  node scripts/add-feedback.js <tweetId> --rating <1-5> --best <source>`);
+    console.log('\n⚠️  Need at least ' + minSamples + ' feedback samples for meaningful analysis.');
+    console.log('   Current: ' + feedbackCount + '/' + minSamples);
+    console.log('\nTo add feedback, use:');
+    console.log('  node scripts/add-feedback.js <tweetId> --rating <1-5> --best <source>');
     return;
   }
 

@@ -2,6 +2,7 @@
 const http = require('http');
 const url = require('url');
 const fs = require('fs');
+const path = require('path');
 const pm2 = require('pm2');
 const os = require('os');
 const { exec } = require('child_process');
@@ -25,7 +26,7 @@ async function getVersion() {
       cachedVersion = trimmedVersion.substring(1); // Remove 'v' prefix
       return cachedVersion;
     }
-  } catch (error) {
+  } catch {
     // Git command failed, fall back to package.json
   }
 
@@ -34,7 +35,7 @@ async function getVersion() {
     const packageJson = JSON.parse(fs.readFileSync('./package.json', 'utf-8'));
     cachedVersion = packageJson.version || 'unknown';
     return cachedVersion;
-  } catch (error) {
+  } catch {
     cachedVersion = 'unknown';
     return cachedVersion;
   }
@@ -46,12 +47,12 @@ async function getPM2Data() {
       pm2.connect(err => {
         if (err) return resolve([]);
         pm2.list((err2, data) => {
-          try { pm2.disconnect(); } catch (_) {}
+          pm2.disconnect();
           if (err2) return resolve([]);
           resolve(Array.isArray(data) ? data : []);
         });
       });
-    } catch (_) {
+    } catch {
       resolve([]);
     }
   });
@@ -59,7 +60,7 @@ async function getPM2Data() {
   try {
     const { stdout } = await execPromise('pm2 jlist', { windowsHide: true });
     return JSON.parse(stdout);
-  } catch (err) {
+  } catch {
     return [];
   }
 }
@@ -91,7 +92,7 @@ function tailFileSync(filePath, tailBytes = 16384, maxLines = 100) {
     fs.closeSync(fd);
     const lines = buf.toString('utf8').split(/\r?\n/).filter(Boolean);
     return lines.slice(-maxLines).join('\n');
-  } catch (e) {
+  } catch {
     return '';
   }
 }
@@ -100,58 +101,6 @@ function sseWrite(res, event, data) {
   if (event) res.write(`event: ${event}\n`);
   const payload = typeof data === 'string' ? data : JSON.stringify(data);
   res.write(`data: ${payload}\n\n`);
-}
-
-function tailSSE(res, filePath, opts = { tailBytes: 8192 }) {
-  let position = 0;
-  let watcher = null;
-  let reading = false;
-
-  const sendLines = chunk => {
-    const str = chunk.toString('utf8');
-    str.split(/\r?\n/).forEach(line => {
-      if (line.length > 0) sseWrite(res, 'log', line);
-    });
-  };
-
-  const readFrom = start => {
-    if (reading) return;
-    reading = true;
-    const stream = fs.createReadStream(filePath, { start });
-    stream.on('data', chunk => {
-      position += chunk.length;
-      sendLines(chunk);
-    });
-    stream.on('end', () => { reading = false; });
-    stream.on('error', () => { reading = false; });
-  };
-
-  const start = () => {
-    fs.stat(filePath, (err, stat) => {
-      if (err) {
-        sseWrite(res, 'log', `[dashboard] log file not found: ${filePath}`);
-        return;
-      }
-      const tailStart = Math.max(0, stat.size - (opts.tailBytes || 8192));
-      position = tailStart;
-      readFrom(tailStart);
-    });
-  };
-
-  watcher = fs.watchFile(filePath, { interval: 1000 }, (curr, prev) => {
-    if (curr.size < prev.size) {
-      position = 0;
-      readFrom(0);
-    } else if (curr.size > position) {
-      readFrom(position);
-    }
-  });
-
-  res.on('close', () => {
-    if (watcher) fs.unwatchFile(filePath);
-  });
-
-  start();
 }
 
 async function handleRequest(req, res) {
@@ -180,6 +129,52 @@ async function handleRequest(req, res) {
     return;
   }
 
+  if (pathname === '/api/logs/static') {
+    const file = parsed.query.file;
+    if (!file || !file.match(/^[a-zA-Z0-9\-_.]+$/)) {
+      res.writeHead(400, { 'Content-Type': 'text/plain' });
+      res.end('invalid file');
+      return;
+    }
+    const filePath = path.join(__dirname, '..', 'translation-logs', file);
+    try {
+      const content = fs.readFileSync(filePath, 'utf8');
+      res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store, max-age=0' });
+      res.end(content);
+    } catch {
+      res.writeHead(404, { 'Content-Type': 'text/plain' });
+      res.end('file not found');
+    }
+    return;
+  }
+
+  if (pathname === '/api/add-tweet' && req.method === 'POST') {
+    let body = '';
+    req.on('data', chunk => { body += chunk; });
+    req.on('end', () => {
+      try {
+        const data = JSON.parse(body);
+        const id = data.id;
+        const content = data.content;
+        if (!id || !content || typeof id !== 'string' || typeof content !== 'string') {
+          res.writeHead(400, { 'Content-Type': 'text/plain' });
+          res.end('invalid data');
+          return;
+        }
+        const timestamp = new Date().toISOString();
+        const entry = `${timestamp} [${id}]\n${content}\n`;
+        const filePath = path.join(__dirname, '..', 'tweet-inputs.log');
+        fs.appendFileSync(filePath, entry);
+        res.writeHead(200, { 'Content-Type': 'text/plain' });
+        res.end('ok');
+      } catch {
+        res.writeHead(400, { 'Content-Type': 'text/plain' });
+        res.end('error');
+      }
+    });
+    return;
+  }
+
   if (pathname === '/api/logs/stream') {
     const name = parsed.query.name || 'broteam-translate-bot';
     const type = (parsed.query.type || 'out').toString();
@@ -197,14 +192,14 @@ async function handleRequest(req, res) {
       'X-Accel-Buffering': 'no',
       'Access-Control-Allow-Origin': '*'
     });
-    if (typeof res.flushHeaders === 'function') { try { res.flushHeaders(); } catch(_) {} }
+    if (typeof res.flushHeaders === 'function') { try { res.flushHeaders(); } catch { /* ignore */ } }
     // Send an initial heartbeat to open the stream and keep it alive
     try {
       res.write('retry: 2000\n');
       res.write(': heartbeat\n\n');
-    } catch(_) {}
+    } catch { /* ignore */ }
     const ping = setInterval(() => {
-      try { res.write(': ping\n\n'); } catch(_) {}
+      try { res.write(': ping\n\n'); } catch { /* ignore */ }
     }, 15000);
     const outPath = proc.pm2_env && proc.pm2_env.pm_out_log_path;
     const errPath = proc.pm2_env && proc.pm2_env.pm_err_log_path;
@@ -216,16 +211,16 @@ async function handleRequest(req, res) {
         tailSSEWithPrefix(res, errPath, { tailBytes: 16384 }, '[err] ', redactors),
       ];
       res.on('close', () => {
-        try { clearInterval(ping); } catch(_) {}
-        cleaners.forEach(fn => { try { fn(); } catch(_) {} });
+        try { clearInterval(ping); } catch { /* ignore */ }
+        cleaners.forEach(fn => { try { fn(); } catch { /* ignore */ } });
       });
     } else {
       const logPath = type === 'err' ? errPath : outPath;
       sseWrite(res, 'info', `[dashboard] streaming ${type} logs for ${name}`);
       const cleaner = tailSSEWithPrefix(res, logPath, { tailBytes: 16384 }, type === 'err' ? '[err] ' : '', redactors);
       res.on('close', () => {
-        try { clearInterval(ping); } catch(_) {}
-        try { cleaner(); } catch(_) {}
+        try { clearInterval(ping); } catch { /* ignore */ }
+        try { cleaner(); } catch { /* ignore */ }
       });
     }
     return;
@@ -254,9 +249,9 @@ async function handleRequest(req, res) {
   // Filter out noise from initial logs and reverse for newest-first
   const filteredLog = fallbackLog 
     ? fallbackLog.split('\n')
-        .filter(line => !/already processed|skipping tweet/i.test(line))
-        .reverse()
-        .join('\n')
+      .filter(line => !/already processed|skipping tweet/i.test(line))
+      .reverse()
+      .join('\n')
     : '';
   const escapedLog = filteredLog ? (filteredLog.replace(/&/g,'&amp;').replace(/</g,'&lt;')) : '';
   const version = await getVersion();
@@ -271,7 +266,7 @@ async function handleRequest(req, res) {
     body { font-family: system-ui, sans-serif; margin: 20px; background: #1e1e1e; color: #d4d4d4; }
     h1 { color: #4ec9b0; margin-bottom: 8px; }
     .row { display: grid; grid-template-columns: 1fr; gap: 16px; }
-    @media (min-width: 1100px) { .row { grid-template-columns: 1fr 1fr; } }
+    @media (min-width: 1100px) { .row { grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); } }
     table { border-collapse: collapse; width: 100%; background: #252526; }
     th, td { padding: 10px; text-align: left; border-bottom: 1px solid #3e3e42; font-size: 14px; }
     th { background: #2d2d30; color: #4ec9b0; font-weight: 600; position: sticky; top: 0; }
@@ -329,6 +324,19 @@ async function handleRequest(req, res) {
       </div>
       <div class="log" id="log">${escapedLog}</div>
     </div>
+    <div class="card">
+      <h2>Translation Debug Log</h2>
+      <div class="log" id="debugLog">Loading...</div>
+    </div>
+    <div class="card">
+      <h2>Add New Tweet</h2>
+      <div style="padding: 10px;">
+        <label style="display: block; margin-bottom: 8px;">Tweet ID: <input id="tweetId" placeholder="e.g. 1234567890123456789" style="width: 100%; padding: 6px; margin-top: 4px;" /></label>
+        <label style="display: block; margin-bottom: 8px;">Content: <textarea id="tweetContent" placeholder="Tweet content..." rows="4" style="width: 100%; padding: 6px; margin-top: 4px;"></textarea></label>
+        <button id="addTweetBtn" style="padding: 8px 16px;">Add Tweet</button>
+        <div id="addStatus" style="margin-top: 8px; color: #4ec9b0;"></div>
+      </div>
+    </div>
   </div>
 
   <script>
@@ -363,7 +371,7 @@ async function handleRequest(req, res) {
           return '<tr>' +
             '<td>' + p.pm_id + '</td>' +
             '<td><code>' + p.name + '</code></td>' +
-            '<td><span class="badge ' + badgeClass + '\">' + p.pm2_env.status + '</span></td>' +
+            '<td><span class="badge ' + badgeClass + '">' + p.pm2_env.status + '</span></td>' +
             '<td>' + (p.pid || 'N/A') + '</td>' +
             '<td>' + formatUptime(uptime) + '</td>' +
             '<td>' + (p.pm2_env.restart_time || 0) + '</td>' +
@@ -374,7 +382,7 @@ async function handleRequest(req, res) {
 
         const names = data.map(p => p.name);
         const current = procName.value;
-        procName.innerHTML = names.map(function(n){ return '<option value="' + n + '\">' + n + '</option>'; }).join('');
+        procName.innerHTML = names.map(function(n){ return '<option value="' + n + '">' + n + '</option>'; }).join('');
         if (!current) {
           const def = names.includes('broteam-translate-bot') ? 'broteam-translate-bot' : names[0];
           if (def) procName.value = def;
@@ -391,6 +399,50 @@ async function handleRequest(req, res) {
       try { window.stop && window.stop(); } catch(_) {}
       location.replace(location.href.split('#')[0]);
     }, 60000);
+
+    async function loadDebugLog() {
+      try {
+        const res = await fetch('/api/logs/static?file=translation-debug.log');
+        const text = await res.text();
+        document.getElementById('debugLog').textContent = text;
+        document.getElementById('debugLog').scrollTop = document.getElementById('debugLog').scrollHeight;
+      } catch (e) {
+        document.getElementById('debugLog').textContent = 'Error loading log';
+      }
+    }
+
+    loadDebugLog();
+    setInterval(loadDebugLog, 10000);
+
+    document.getElementById('addTweetBtn').addEventListener('click', async () => {
+      const id = document.getElementById('tweetId').value.trim();
+      const content = document.getElementById('tweetContent').value.trim();
+      const statusEl = document.getElementById('addStatus');
+      if (!id || !content) {
+        statusEl.textContent = 'Please fill in both fields.';
+        statusEl.style.color = '#f48771';
+        return;
+      }
+      try {
+        const res = await fetch('/api/add-tweet', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ id, content })
+        });
+        if (res.ok) {
+          statusEl.textContent = 'Tweet added successfully!';
+          statusEl.style.color = '#4ec9b0';
+          document.getElementById('tweetId').value = '';
+          document.getElementById('tweetContent').value = '';
+        } else {
+          statusEl.textContent = 'Error adding tweet.';
+          statusEl.style.color = '#f48771';
+        }
+      } catch (e) {
+        statusEl.textContent = 'Error adding tweet.';
+        statusEl.style.color = '#f48771';
+      }
+    });
   </script>
 </body>
 </html>
@@ -417,12 +469,13 @@ function buildRedactors() {
     const info = os.userInfo();
     if (info && info.username) {
       const user = info.username.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+      // eslint-disable-next-line no-useless-escape
       const re = new RegExp('C:\\\\\Users\\\\' + user, 'gi');
       redactors.push(s => s.replace(re, 'C:/Users/[user]'));
     }
-  } catch (_) {}
+  } catch { /* ignore */ }
   // Generic token-like sequences (long base64/hex-ish)
-  redactors.push(s => s.replace(/[A-Za-z0-9_\-]{24,}/g, '[REDACTED]'));
+  redactors.push(s => s.replace(/[A-Za-z0-9_-]{24,}/g, '[REDACTED]'));
   return redactors;
 }
 
@@ -437,7 +490,7 @@ function tailSSEWithPrefix(res, filePath, opts, prefix = '', redactors = []) {
   const watchers = [];
 
   const applyRedaction = (line) => redactors.reduce((acc, fn) => {
-    try { return fn(acc); } catch(_) { return acc; }
+    try { return fn(acc); } catch { return acc; }
   }, line);
 
   const sendLines = chunk => {
@@ -464,7 +517,7 @@ function tailSSEWithPrefix(res, filePath, opts, prefix = '', redactors = []) {
       const tailStart = Math.max(0, stat.size - (opts.tailBytes || 8192));
       position = tailStart;
       readFrom(tailStart);
-    } catch (e) {
+    } catch {
       sseWrite(res, 'log', `${prefix}[dashboard] cannot stat log file: ${filePath}`);
     }
   };
@@ -479,5 +532,5 @@ function tailSSEWithPrefix(res, filePath, opts, prefix = '', redactors = []) {
   fs.watchFile(filePath, { interval: 1000 }, watcher);
   watchers.push(() => fs.unwatchFile(filePath, watcher));
   start();
-  return () => { watchers.forEach(fn => { try { fn(); } catch(_) {} }); };
+  return () => { watchers.forEach(fn => { try { fn(); } catch { /* ignore */ } }); };
 }

@@ -26,7 +26,7 @@ export function getVersion(): string {
       cachedVersion = versionTags[0].substring(1); // Remove 'v' prefix
       return cachedVersion;
     }
-  } catch (error) {
+  } catch {
     // Git command failed, fall back to package.json
   }
 
