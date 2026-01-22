@@ -1,4 +1,3 @@
-/* eslint-disable no-console, @typescript-eslint/no-explicit-any */
 /**
  * Check OAuth2 token health and alert if refresh is needed
  * Run this periodically (e.g., daily via cron/Task Scheduler)

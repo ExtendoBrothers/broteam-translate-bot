@@ -21,7 +21,7 @@ export function acquireLock(): boolean {
         process.kill(pid, 0); // Signal 0 checks if process exists
         logger.error(`Bot is already running (PID: ${pid}, started: ${new Date(timestamp).toISOString()})`);
         return false;
-      } catch (e) {
+      } catch {
         // Process doesn't exist, remove stale lock
         logger.warn(`Removing stale lock file from PID ${pid}`);
         fs.unlinkSync(LOCK_FILE);
@@ -46,7 +46,7 @@ export function acquireLock(): boolean {
             logger.info(`Released instance lock (PID: ${process.pid})`);
           }
         }
-      } catch (e) {
+      } catch {
         // Ignore cleanup errors
       }
     };

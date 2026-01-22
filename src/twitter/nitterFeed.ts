@@ -1,6 +1,5 @@
 import { logger } from '../utils/logger';
 import { Tweet } from '../types';
-import fetch from 'node-fetch';
 
 /**
  * Twitter Syndication API - Public, no auth required

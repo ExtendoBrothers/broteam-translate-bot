@@ -62,7 +62,7 @@ class TweetQueue {
   /**
      * Add a tweet to the queue
      */
-  public enqueue(sourceTweetId: string, finalTranslation: string) {
+  public async enqueue(sourceTweetId: string, finalTranslation: string) {
     // Check if already queued to avoid duplicates
     const existing = this.queue.find(t => t.sourceTweetId === sourceTweetId);
     if (existing) {
@@ -72,8 +72,7 @@ class TweetQueue {
 
     // CRITICAL: Check if already processed to prevent queuing tweets that have been posted
     // Import dynamically to avoid circular dependency
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const { tweetTracker } = require('./tweetTracker');
+    const { tweetTracker } = await import('./tweetTracker');
     if (tweetTracker.isProcessed(sourceTweetId)) {
       logger.info(`Tweet ${sourceTweetId} already processed, not adding to queue`);
       return;

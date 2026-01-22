@@ -1,4 +1,3 @@
-import fetch from 'node-fetch';
 import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
@@ -25,10 +24,13 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
 
   const url = `https://r.jina.ai/https://x.com/${username}`;
   try {
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 15000);
     const resp = await fetch(url, { 
       headers: { 'User-Agent': 'Mozilla/5.0 (compatible; BroTranslateBot/1.0)' },
-      timeout: 15000 // 15s timeout
+      signal: controller.signal
     });
+    clearTimeout(timeoutId);
     if (!resp.ok) {
       logger.error(`Jina fallback HTTP ${resp.status}`);
       if (resp.status === 429) {

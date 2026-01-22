@@ -2,7 +2,6 @@ import { TwitterClient } from './client';
 import { logger } from '../utils/logger';
 import { splitTweet } from '../utils/tweetSplitter';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
-import { tweetTracker } from '../utils/tweetTracker';
 
 export async function postTweet(client: TwitterClient, content: string, sourceTweetId?: string) {
   const isDryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';
@@ -30,12 +29,12 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
   }
     
   try {
-    let previousTweetId: string | undefined = undefined;
+    let previousTweetId: string | undefined = sourceTweetId;
         
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
             
-      // Post as reply to previous tweet in thread
+      // Post as reply to previous tweet in thread (or source tweet for first post)
       const result = await client.postTweet(chunk, previousTweetId);
       previousTweetId = result.id;
             

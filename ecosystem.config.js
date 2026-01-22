@@ -1,8 +1,8 @@
 module.exports = {
   apps: [
     {
-        name: 'broteam-translate-bot',
-        script: 'pm2-wrapper.js',
+      name: 'broteam-translate-bot',
+      script: 'pm2-wrapper.js',
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',

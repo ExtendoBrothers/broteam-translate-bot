@@ -48,3 +48,11 @@ coverage/
 
 # ML Models (too large for GitHub)
 models/humor-detector/*.onnx
+
+# Local data files
+feedback-data.jsonl
+training-data.jsonl
+
+# Custom ML models (local or large)
+models/humor-detector-custom/
+models/humor-detector-custom-onnx/

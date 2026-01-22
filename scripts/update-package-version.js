@@ -1,6 +1,6 @@
-const fs = require('fs');
-const path = require('path');
-const { execSync } = require('child_process');
+import fs from 'fs';
+import path from 'path';
+import { execSync } from 'child_process';
 
 function updatePackageVersion() {
   try {
@@ -40,9 +40,9 @@ function updatePackageVersion() {
 }
 
 // Export for use in other scripts
-module.exports = { updatePackageVersion };
+export { updatePackageVersion };
 
 // Run if called directly
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   updatePackageVersion();
 }

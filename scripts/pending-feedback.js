@@ -47,8 +47,8 @@ if (needingFeedback.length === 0) {
       console.log(`     ${marker} [${c.source}] "${c.result}" (${c.humorScore.toFixed(2)})`);
     });
     console.log('');
-    console.log(`   To add feedback:`);
-    console.log(`     node scripts/add-feedback.js ${entry.tweetId} --rating 1-5 --best SOURCE --notes "..."\\n`);
+    console.log('   To add feedback:');
+    console.log('     node scripts/add-feedback.js ' + entry.tweetId + ' --rating 1-5 --best SOURCE --notes "..."\\n');
   });
   
   console.log('─'.repeat(70));

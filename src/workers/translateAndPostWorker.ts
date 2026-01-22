@@ -26,6 +26,7 @@ import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
+import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
@@ -102,6 +103,12 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   return { acceptable, reason };
 }
 
+// Helper function to check if text is all caps
+function isAllCaps(text: string): boolean {
+  const trimmed = text.trim();
+  return trimmed === trimmed.toUpperCase() && /[A-Z]/.test(trimmed);
+}
+
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
@@ -173,6 +180,10 @@ export interface WorkerResult {
  */
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   logger.debug(`translateAndPostWorker entry at ${new Date().toISOString()}`);
+  
+  // Initialize comprehensive duplicate prevention system
+  initializeDuplicatePrevention();
+  
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
@@ -254,7 +265,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     useOldschool: boolean,
     chainLabel: string
   ): Promise<{ result: string; attempted: boolean }> {
-    let translationChain = inputText;
+    const shouldUppercase = isAllCaps(inputText);
+    let translationChain = shouldUppercase ? inputText.toLowerCase() : inputText;
     const selectedLangs = getTranslationLanguages(useOldschool);
     let currentSource = 'en';
     let consecutiveSame = 0;
@@ -306,10 +318,21 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.info(`[${chainLabel}] Final step: translating back to English from ${currentSource}`);
         const finalEnglish = await translateText(translationChain, 'en', currentSource);
         translationChain = finalEnglish;
+        if (shouldUppercase) {
+          translationChain = translationChain.toUpperCase();
+        }
         logger.info(`[${chainLabel}] Final English result: ${translationChain.substring(0, 50)}...`);
         logTranslationStep(`${chainLabel}-final-en`, translationChain);
       } catch (error: unknown) {
         logger.error(`[${chainLabel}] Failed to translate back to English: ${error}`);
+      }
+    }
+
+    if (shouldUppercase) {
+      if (translationAttempted) {
+        translationChain = translationChain.toUpperCase();
+      } else {
+        translationChain = inputText;
       }
     }
 
@@ -591,53 +614,32 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
       
-      // Check for duplicates before posting queued tweet
-      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-      let postedOutputs: string[] = [];
-      try {
-        if (fs.existsSync(postedLogPath)) {
-          postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
+      // COMPREHENSIVE DUPLICATE PREVENTION CHECK FOR QUEUED TWEETS
+      const duplicateCheck = await checkForDuplicates(
+        queuedTweet.sourceTweetId,
+        queuedTweet.finalTranslation,
+        '', // We don't have original text for queued tweets
+        'queued',
+        queuedTweet.attemptCount
+      );
+
+      if (!duplicateCheck.canProceed) {
+        logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
+        if (duplicateCheck.severity === 'block') {
+          tweetQueue.dequeue();
+          logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);
+          continue;
         }
-      } catch (e) {
-        logger.warn(`Could not read posted-outputs.log for duplicate check: ${e}`);
-      }
-      
-      // CRITICAL: Check if already processed before posting from queue
-      if (tweetTracker.isProcessed(queuedTweet.sourceTweetId)) {
-        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - already processed`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued already-processed tweet. New queue size: ${tweetQueue.size()}`);
-        continue;
-      }
-      
-      const trimmedQueued = queuedTweet.finalTranslation.trim();
-      if (postedOutputs.includes(trimmedQueued)) {
-        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - content is duplicate of previously posted tweet`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued duplicate tweet. New queue size: ${tweetQueue.size()}`);
-        continue;
       }
       
       if (isDryRun) {
         logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
       } else {
-        await postTweet(client, queuedTweet.finalTranslation, queuedTweet.sourceTweetId);
+        await postTweet(client, queuedTweet.finalTranslation);
         logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
-      }
-      
-      // Mark as processed after successful post (postTweet no longer does this to prevent race conditions)
-      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
-      logger.info(`[QUEUE_DEBUG] Marked ${queuedTweet.sourceTweetId} as processed after successful queue post`);
-                
-      // Record the post - tweet tracker updated inside postTweet
-      postTracker.recordPost();
-      
-      // Log posted output for duplicate tracking
-      try {
-        const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-        fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${queuedTweet.sourceTweetId}] ${queuedTweet.finalTranslation}\n`, 'utf8');
-      } catch (err) {
-        logger.warn(`Failed to log posted queued output: ${err}`);
+
+        // COMPREHENSIVE POST RECORDING FOR QUEUED TWEETS
+        recordSuccessfulPost(queuedTweet.sourceTweetId, queuedTweet.finalTranslation);
       }
       
       tweetQueue.dequeue();
@@ -770,7 +772,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           // Only score English results (humor model is trained on English)
           const isEnglish = detectedLang === 'en';
           const humorScore = isEnglish 
-            ? await scoreHumor(candidate.result)
+            ? await scoreHumor(candidate.result, originalText)
             : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
           
           // Calculate secondary metrics for tie-breaking
@@ -778,11 +780,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           const unexpScore = unexpectednessScore(candidate.result, originalText);
           const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker };
+          // Initialize unified humor score with base value (will be modified by heuristics later)
+          const baseHumorScore = humorScore.isHumorous 
+            ? humorScore.score 
+            : (1 - humorScore.score);
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore };
         })
       );
 
-      // Log all scores
+      // Log all scores (after heuristic bonuses applied)
       for (const candidate of scoredCandidates) {
         logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
       }
@@ -801,17 +808,117 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } catch (err) {
         logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
       }
-
-      // Select the funniest result
-      // Priority: English results first, then isHumorous=true > higher score (if both humorous) > lower score (if both not humorous)
-      // Tie-breaker: use differenceScore + unexpectednessScore to pick more interesting/transformed results
-      // Non-English results are deprioritized since humor model is trained on English
+      scoredCandidates.forEach(candidate => {
+        let bonus = 0;
+        const bonusDetails = [];
+        
+        // Heuristic 4: Strong secondary preference for OLDSCHOOL
+        if (candidate.source === 'OLDSCHOOL') {
+          bonus += 0.05; // Significant boost for OLDSCHOOL
+          bonusDetails.push('OLDSCHOOL +0.05');
+        }
+        
+        // Heuristic 2: Favor longer results (small bonus per character)
+        const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005); // ~0.05 bonus for 100+ chars
+        if (lengthBonus > 0) {
+          bonus += lengthBonus;
+          bonusDetails.push(`length +${lengthBonus.toFixed(4)}`);
+        }
+        
+        // Heuristic 5: Coherence bonus - reward complete sentences/phrases
+        const text = candidate.result.trim();
+        const sentenceBonus = (() => {
+          // Check for sentence endings
+          const hasSentenceEndings = /[.!?]$/.test(text);
+          // Check for basic subject-verb structure (simplified)
+          const words = text.toLowerCase().split(/\s+/);
+          const hasVerbs = words.some(word => ['is', 'are', 'was', 'were', 'has', 'have', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word));
+          const coherenceScore = (hasSentenceEndings ? 0.01 : 0) + (hasVerbs ? 0.01 : 0);
+          return coherenceScore;
+        })();
+        if (sentenceBonus > 0) {
+          bonus += sentenceBonus;
+          bonusDetails.push(`coherence +${sentenceBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 6: Garbage penalty - penalize low word diversity
+        const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+        const uniqueWords = new Set(words);
+        const diversityRatio = uniqueWords.size / words.length;
+        const garbagePenalty = diversityRatio < 0.7 ? -0.02 : 0; // Penalty for <70% unique words
+        if (garbagePenalty < 0) {
+          bonus += garbagePenalty;
+          bonusDetails.push(`garbage ${garbagePenalty.toFixed(3)}`);
+        }
+        
+        // Heuristic 7: Contradiction bonus - reward contradictory concepts
+        const contradictionBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Simple contradiction patterns
+          const contradictions = [
+            /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
+            /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
+            /\b(fast|quick)\b.*\b(slow)\b/,
+            /\b(hot)\b.*\b(cold)\b/
+          ];
+          const hasContradiction = contradictions.some(pattern => pattern.test(lowerText));
+          return hasContradiction ? 0.015 : 0;
+        })();
+        if (contradictionBonus > 0) {
+          bonus += contradictionBonus;
+          bonusDetails.push(`contradiction +${contradictionBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 8: Self-deprecation bonus - reward self-critical humor
+        const selfDeprecationBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Look for first-person + negative self-description
+          const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
+          const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
+          const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
+          return (hasFirstPerson && hasNegativeSelf) || hasSelfCriticism ? 0.012 : 0;
+        })();
+        if (selfDeprecationBonus > 0) {
+          bonus += selfDeprecationBonus;
+          bonusDetails.push(`self-deprecating +${selfDeprecationBonus.toFixed(3)}`);
+        }
+        
+        // Heuristic 9: Absurdity bonus - reward impossible or extreme concepts
+        const absurdityBonus = (() => {
+          const lowerText = text.toLowerCase();
+          // Words indicating impossibility or extremes
+          const absurdWords = /\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/;
+          const extremeWords = /\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/;
+          const impossibleConcepts = /\b(flying pigs|square circle|cold heat|dark light)\b/;
+          
+          const hasAbsurdWords = absurdWords.test(lowerText);
+          const hasExtremeWords = extremeWords.test(lowerText);
+          const hasImpossible = impossibleConcepts.test(lowerText);
+          
+          return (hasAbsurdWords ? 0.008 : 0) + (hasExtremeWords ? 0.005 : 0) + (hasImpossible ? 0.010 : 0);
+        })();
+        if (absurdityBonus > 0) {
+          bonus += absurdityBonus;
+          bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
+        }
+        
+        // Apply bonus (cap at 0.1 total to avoid over-weighting)
+        const appliedBonus = Math.min(bonus, 0.1);
+        
+        // Update unified humor score by adding heuristic bonuses
+        const originalUnifiedScore = candidate.unifiedHumorScore;
+        candidate.unifiedHumorScore = Math.min(1.0, candidate.unifiedHumorScore + appliedBonus);
+        
+        // Log the heuristic application
+        if (bonusDetails.length > 0) {
+          logger.info(`[HEURISTIC] ${candidate.source}: ${originalUnifiedScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
+        }
+      });
+      // Select the funniest result using unified humor scores
+      // Higher unified score = more likely funny (consistent for all results)
       let bestCandidate = scoredCandidates[0];
       
       for (const candidate of scoredCandidates) {
-        const best = bestCandidate.humorScore;
-        const curr = candidate.humorScore;
-        
         // Prioritize English results over non-English
         if (candidate.isEnglish && !bestCandidate.isEnglish) {
           bestCandidate = candidate;
@@ -822,30 +929,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           continue;
         }
         
-        // Both are same language type, compare humor scores
-        // If current is humorous and best isn't, prefer current
-        if (curr.isHumorous && !best.isHumorous) {
+        // Both are English, compare unified humor scores (higher = better)
+        if (candidate.unifiedHumorScore > bestCandidate.unifiedHumorScore) {
           bestCandidate = candidate;
         }
-        // If both are humorous, prefer higher score (more confident it's funny)
-        else if (curr.isHumorous && best.isHumorous && curr.score > best.score) {
-          bestCandidate = candidate;
-        }
-        // If both are humorous with SAME score, use tie-breaker (more unexpected/different = better)
-        else if (curr.isHumorous && best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
-          bestCandidate = candidate;
-        }
-        // If neither is humorous, prefer lower score (less certain it's NOT funny)
-        else if (!curr.isHumorous && !best.isHumorous && curr.score < best.score) {
-          bestCandidate = candidate;
-        }
-        // If neither is humorous with SAME score, use tie-breaker (more unexpected/different = better)
-        else if (!curr.isHumorous && !best.isHumorous && curr.score === best.score && candidate.tieBreaker > bestCandidate.tieBreaker) {
+        // If unified scores are equal, use tie-breaker (more unexpected/different = better)
+        else if (candidate.unifiedHumorScore === bestCandidate.unifiedHumorScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
           bestCandidate = candidate;
         }
       }
 
-      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (score: ${bestCandidate.humorScore.score.toFixed(3)})`);
+      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (unified score: ${bestCandidate.unifiedHumorScore.toFixed(3)})`);
 
       // Save feedback data for manual review
       try {
@@ -857,6 +951,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             source: c.source,
             result: c.result,
             humorScore: c.humorScore.score,
+            unifiedHumorScore: c.unifiedHumorScore,
             humorLabel: c.humorScore.label,
             isEnglish: c.isEnglish,
             tieBreaker: c.tieBreaker,
@@ -864,17 +959,38 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           })),
           botSelected: bestCandidate.source,
           selectedResult: bestCandidate.result,
-          selectedScore: bestCandidate.humorScore.score,
+          selectedScore: bestCandidate.unifiedHumorScore,
           userFeedback: null
         };
 
         const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
-        fs.appendFileSync(feedbackPath, JSON.stringify(feedbackEntry) + '\n', 'utf8');
+        
+        // Read existing feedback data
+        let existingEntries = [];
+        if (fs.existsSync(feedbackPath)) {
+          try {
+            const content = fs.readFileSync(feedbackPath, 'utf8');
+            const lines = content.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+              if (line.trim()) {
+                existingEntries.push(JSON.parse(line.trim()));
+              }
+            }
+          } catch (readErr) {
+            logger.warn('[FEEDBACK] Failed to read existing feedback data, starting fresh:', readErr);
+          }
+        }
+        
+        // Add new entry
+        existingEntries.push(feedbackEntry);
+        
+        // Write back all entries
+        const jsonlContent = existingEntries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
+        fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
         try {
-          // eslint-disable-next-line @typescript-eslint/no-require-imports
-          const { execSync } = require('child_process');
+          const { execSync } = await import('child_process');
           execSync('node scripts/check-feedback-threshold.js', { 
             stdio: 'inherit',
             cwd: process.cwd()
@@ -936,8 +1052,24 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
                 'minimum interval enforcement';
           logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
           logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
-          tweetQueue.enqueue(tweet.id, finalResult);
+          await tweetQueue.enqueue(tweet.id, finalResult);
         } else {
+          // COMPREHENSIVE DUPLICATE PREVENTION CHECK
+          const duplicateCheck = await checkForDuplicates(
+            tweet.id,
+            finalResult,
+            tweet.text,
+            selectedChain,
+            chosenHumorScore // Using humor score as attempt count approximation
+          );
+
+          if (!duplicateCheck.canProceed) {
+            logger.warn(`[DUPLICATE_PREVENTION] Blocking post for tweet ${tweet.id}: ${duplicateCheck.reason}`);
+            if (duplicateCheck.severity === 'block') {
+              continue; // Skip this tweet entirely
+            }
+          }
+
           // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
           if (!finalResult || finalResult.trim() === '/') {
             const queued = tweetQueue.peek();
@@ -956,43 +1088,33 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               continue;
             }
           }
+
           // Post the tweet
           try {
-            // CRITICAL: Final check before posting to prevent race conditions
-            if (tweetTracker.isProcessed(tweet.id)) {
-              logger.info(`Skipping tweet ${tweet.id} - already processed (race condition detected)`);
-              continue;
-            }
-            
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
             } else {
-              await postTweet(client, finalResult, tweet.id);
+              await postTweet(client, finalResult);
               logger.info(`Successfully posted translated tweet ${tweet.id}`);
+
+              // COMPREHENSIVE POST RECORDING
+              recordSuccessfulPost(tweet.id, finalResult);
             }
-            // Record the post
-            postTracker.recordPost();
-            tweetTracker.markProcessed(tweet.id);
-            logger.info(`Marked ${tweet.id} as processed after successful post`);
-            lastPostTime = Date.now();
+
             didWork = true;
-            // Log posted output
-            try {
-              fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${tweet.id}] ${finalResult}\n`, 'utf8');
-            } catch (err) {
-              logger.warn(`Failed to log posted output: ${err}`);
-            }
+            lastPostTime = Date.now();
+
             // Add delay between posts
             await delay(5000);
           } catch (error: unknown) {
             const err = error as { code?: number; message?: string };
             if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
               logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
-              tweetQueue.enqueue(tweet.id, finalResult);
+              await tweetQueue.enqueue(tweet.id, finalResult);
             } else {
               logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
               // Enqueue for retry
-              tweetQueue.enqueue(tweet.id, finalResult);
+              await tweetQueue.enqueue(tweet.id, finalResult);
             }
           }
         }

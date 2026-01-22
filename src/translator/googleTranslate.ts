@@ -10,11 +10,6 @@ import { logger } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
 import * as fs from 'fs';
 import * as path from 'path';
-// Type declarations for langdetect
-interface DetectionResult {
-  lang: string;
-  prob: number;
-}
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -56,7 +51,7 @@ async function translateWithTokenProtection(text: string, targetLanguage: string
         const trailingWhitespace = segment.match(/\s*$/)?.[0] || '';
         const trimmedSegment = segment.trim();
         if (trimmedSegment) {
-          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 15000, sourceLanguage);
+          const translated = await doTranslateOnce(trimmedSegment, targetLanguage, 30000, sourceLanguage);
           return leadingWhitespace + translated + trailingWhitespace;
         }
         return segment;
@@ -150,7 +145,7 @@ export async function translateText(text: string, targetLanguage: string, source
   const sanitized = protectTokens(text);
 
   const MAX_RETRIES = 3;
-  const BASE_TIMEOUT_MS = 15000; // 15s per attempt
+  const BASE_TIMEOUT_MS = 30000; // 30s per attempt (increased from 15s)
   let lastErr: unknown;
   let triedChunkFallback = false;
 

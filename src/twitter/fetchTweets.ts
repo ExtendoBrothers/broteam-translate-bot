@@ -131,11 +131,10 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
       const content = fs.readFileSync(inputLogPath, 'utf8');
       logger.debug(`tweet-inputs.log content length: ${content.length}`);
       // Parse multiline entries: timestamp [id] text (text can span multiple lines until next timestamp)
-      const entryRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z) \[(\d+)\] ([\s\S]*?)(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}|$)/g;
+      const entryRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\s*\[(\d+)\]\s*([\s\S]*?)(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}|$)/g;
       let match;
-      let addedCount = 0;
       while ((match = entryRegex.exec(content)) !== null) {
-        const [, _timestamp, idStr, text] = match;
+        const [, , idStr, text] = match;
         const id = idStr;
         const trimmedText = text.trim();
         const shouldProc = isDryRun || tweetTracker.shouldProcess(id, new Date().toISOString());
@@ -151,7 +150,6 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
               displayName: targetUsername
             }
           });
-          addedCount++;
         }
       }
     } else {

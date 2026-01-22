@@ -22,7 +22,6 @@ export function protectTokens(text: string): string {
   let tokenIndex = 0;
   let sanitized = nfc;
   for (const { type, regex } of patterns) {
-    const before = sanitized;
     sanitized = sanitized.replace(regex, (match: string) => {
       tokenIndex += 1;
       const b64 = Buffer.from(match, 'utf8').toString('base64');
