@@ -25,8 +25,43 @@ function analyzeFeedback() {
     process.exit(1);
   }
 
-  const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n').filter(Boolean);
-  const entries = lines.map(line => JSON.parse(line));
+  const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n');
+  
+  // Parse JSON objects, accounting for objects that span multiple lines due to unescaped newlines
+  const entries = [];
+  let currentObject = '';
+  let braceCount = 0;
+  
+  for (const line of lines) {
+    currentObject += line + '\n';
+    
+    // Count braces
+    for (const char of line) {
+      if (char === '{') braceCount++;
+      else if (char === '}') braceCount--;
+    }
+    
+    // If we have a complete object, parse it
+    if (braceCount === 0 && currentObject.trim()) {
+      try {
+        const entry = JSON.parse(currentObject.trim());
+        entries.push(entry);
+        currentObject = '';
+      } catch {
+        // Continue accumulating if parsing fails
+      }
+    }
+  }
+  
+  // Try to parse any remaining content
+  if (currentObject.trim()) {
+    try {
+      const entry = JSON.parse(currentObject.trim());
+      entries.push(entry);
+    } catch {
+      // Ignore
+    }
+  }
   
   const withFeedback = entries.filter(e => e.userFeedback);
   const total = entries.length;

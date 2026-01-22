@@ -18,11 +18,45 @@ if (!fs.existsSync(FEEDBACK_FILE)) {
 }
 
 // Count feedback entries with userFeedback populated
-const feedbackEntries = fs.readFileSync(FEEDBACK_FILE, 'utf8')
-  .split('\n')
-  .filter(line => line.trim())
-  .map(line => JSON.parse(line))
-  .filter(entry => entry.userFeedback !== null);
+const lines = fs.readFileSync(FEEDBACK_FILE, 'utf8').split('\n');
+
+// Parse JSON objects, accounting for objects that span multiple lines due to unescaped newlines
+const entries = [];
+let currentObject = '';
+let braceCount = 0;
+
+for (const line of lines) {
+  currentObject += line + '\n';
+  
+  // Count braces
+  for (const char of line) {
+    if (char === '{') braceCount++;
+    else if (char === '}') braceCount--;
+  }
+  
+  // If we have a complete object, parse it
+  if (braceCount === 0 && currentObject.trim()) {
+    try {
+      const entry = JSON.parse(currentObject.trim());
+      entries.push(entry);
+      currentObject = '';
+    } catch {
+      // Continue accumulating if parsing fails
+    }
+  }
+}
+
+// Try to parse any remaining content
+if (currentObject.trim()) {
+  try {
+    const entry = JSON.parse(currentObject.trim());
+    entries.push(entry);
+  } catch {
+    // Ignore
+  }
+}
+
+const feedbackEntries = entries.filter(entry => entry.userFeedback !== null);
 
 const feedbackCount = feedbackEntries.length;
 console.log(`📊 Current feedback count: ${feedbackCount}`);
