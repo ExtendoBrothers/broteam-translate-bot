@@ -1022,7 +1022,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         
         // Spam/repetition filter: block entries with excessive repeated words or length
-        function isSpammy(entry: any): boolean {
+        function isSpammy(entry: Record<string, unknown>): boolean {
           const allResults = entry.candidates.map((c: any) => c.result).join(' ');
           // Block if any word is repeated 10+ times or if result is over 5000 chars
           const wordCounts = Object.create(null);
@@ -1034,7 +1034,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           if (allResults.length > 5000) return true;
           return false;
         }
-        if (!isSpammy(feedbackEntry)) {
+        if (!isSpammy(feedbackEntry as Record<string, unknown>)) {
           existingEntries.push(feedbackEntry);
         } else {
           logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
