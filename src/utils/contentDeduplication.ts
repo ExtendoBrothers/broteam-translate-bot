@@ -74,8 +74,8 @@ export function isContentDuplicate(newContent: string): boolean {
           logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
           return true;
         }
-      } catch (e) {
-          // Ignore parse errors
+      } catch {
+        // Ignore parse errors
         continue;
       }
     }
