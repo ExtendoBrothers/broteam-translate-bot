@@ -690,7 +690,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       await delay(5000);
     } catch (error: unknown) {
       // If rate limit hit (429 or 403), stop processing queue
-      // Removed unused variable 'err'
+      const err = error as { code?: number; message?: string };
       if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
         logger.error(`[QUEUE_DEBUG] Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
