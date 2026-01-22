@@ -27,6 +27,7 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
+import { isSpammyResult } from '../utils/spamFilter';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
@@ -788,18 +789,6 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       ];
 
       // Filter out spammy results (excessive repeated words or too long)
-      function isSpammyResult(result: string): boolean {
-        // Block if any word is repeated 10+ times or if result is over 5000 chars
-        const wordCounts = Object.create(null);
-        for (const word of result.split(/\s+/)) {
-          if (!word) continue;
-          wordCounts[word] = (wordCounts[word] || 0) + 1;
-          if (wordCounts[word] >= 10) return true;
-        }
-        if (result.length > 5000) return true;
-        return false;
-      }
-
       const filteredCandidates = allCandidates.filter(candidate => {
         if (isSpammyResult(candidate.result)) {
           logger.warn(`[SPAM_FILTER] Blocked spammy translation result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
@@ -1043,20 +1032,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         
         // Spam/repetition filter: block entries with excessive repeated words or length
-        function isSpammy(entry: Record<string, unknown>): boolean {
-          const candidates = entry.candidates as Array<{ result: string }>;
-          const allResults = candidates.map((c) => c.result).join(' ');
-          // Block if any word is repeated 10+ times or if result is over 5000 chars
-          const wordCounts = Object.create(null);
-          for (const word of allResults.split(/\s+/)) {
-            if (!word) continue;
-            wordCounts[word] = (wordCounts[word] || 0) + 1;
-            if (wordCounts[word] >= 10) return true;
-          }
-          if (allResults.length > 5000) return true;
-          return false;
-        }
-        if (!isSpammy(feedbackEntry as Record<string, unknown>)) {
+        if (!isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
           existingEntries.push(feedbackEntry);
         } else {
           logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');

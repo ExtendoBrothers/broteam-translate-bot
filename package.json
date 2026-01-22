@@ -12,6 +12,9 @@
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "debug": "ts-node-dev --respawn --transpile-only --inspect=9229 src/index.ts",
     "lint": "eslint src scripts --ext .ts,.js",
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
     "translate:one": "ts-node src/scripts/translateOne.ts",
     "test:tokens": "ts-node src/scripts/testTokenizer.ts",
     "test:humor": "ts-node src/scripts/testHumorScorer.ts",
@@ -33,14 +36,29 @@
     "winston": "^3.8.2"
   },
   "devDependencies": {
+    "@types/jest": "^30.0.0",
     "@types/node": "^25.0.8",
     "@typescript-eslint/eslint-plugin": "^8.49.0",
     "@typescript-eslint/parser": "^8.49.0",
     "eslint": "^9.39.2",
+    "jest": "^30.2.0",
     "pm2": "^6.0.14",
+    "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^5.1.6"
+  },
+  "jest": {
+    "preset": "ts-jest",
+    "testEnvironment": "node",
+    "roots": ["<rootDir>/src", "<rootDir>/tests"],
+    "testMatch": ["**/__tests__/**/*.test.ts", "**/?(*.)+(spec|test).ts"],
+    "collectCoverageFrom": [
+      "src/**/*.ts",
+      "!src/**/*.d.ts",
+      "!src/index.ts"
+    ],
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
   },
   "overrides": {
     "js-yaml": "^4.1.1",
