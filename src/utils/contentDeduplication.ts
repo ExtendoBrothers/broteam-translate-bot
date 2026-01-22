@@ -75,7 +75,7 @@ export function isContentDuplicate(newContent: string): boolean {
           return true;
         }
       } catch (e) {
-        // Skip invalid lines
+          // Ignore parse errors
         continue;
       }
     }
