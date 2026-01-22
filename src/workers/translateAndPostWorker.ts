@@ -27,7 +27,7 @@ import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
-import { isSpammyResult } from '../utils/spamFilter';
+import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
