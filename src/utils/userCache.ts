@@ -20,9 +20,7 @@ function loadCache(): CacheShape {
 
 function saveCache(cache: CacheShape) {
   try {
-    const tmp = USER_CACHE_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify(cache, null, 2), 'utf-8');
-    fs.renameSync(tmp, USER_CACHE_FILE);
+    fs.writeFileSync(USER_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
   } catch (e) {
     logger.error(`Failed to save user cache: ${e}`);
   }

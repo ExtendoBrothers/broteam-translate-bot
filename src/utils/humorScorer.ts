@@ -8,7 +8,7 @@ import { logger } from './logger';
 import { predictHumor, isModelAvailable } from './humorOnnx';
 
 // Check if local model is available
-const USE_LOCAL_MODEL = isModelAvailable();
+const USE_LOCAL_MODEL = false; // Temporarily disabled for debugging
 
 if (USE_LOCAL_MODEL) {
   logger.info('[HumorScorer] Local ONNX model is available and will be used');

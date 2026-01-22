@@ -77,9 +77,7 @@ class TweetTracker {
         processed: processedObj,
         lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
       };
-      const tmp = TWEET_TRACKER_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, TWEET_TRACKER_FILE);
+      fs.writeFileSync(TWEET_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save tweet tracker state: ${error}`);
     }
@@ -94,6 +92,13 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
       return false;
     }
+
+    // Also check if tweet was posted (more reliable)
+    if (this.wasPosted(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already posted`);
+      return false;
+    }
+
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       logger.debug(`shouldProcess: ${tweetId} already in posting queue`);
@@ -109,10 +114,30 @@ class TweetTracker {
   }
 
   /**
+     * Check if tweet has already been posted (by checking posted-outputs.log)
+     */
+  private wasPosted(tweetId: string): boolean {
+    try {
+      const postedOutputsFile = path.join(process.cwd(), 'posted-outputs.log');
+      if (!fs.existsSync(postedOutputsFile)) {
+        return false;
+      }
+
+      const content = fs.readFileSync(postedOutputsFile, 'utf8');
+      // Check if the tweet ID appears in the format "timestamp [tweetId] content"
+      const regex = new RegExp(`^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z \\[${tweetId}\\]`, 'm');
+      return regex.test(content);
+    } catch (error) {
+      logger.error(`Error checking if tweet ${tweetId} was posted: ${error}`);
+      return false;
+    }
+  }
+
+  /**
      * Check if tweet has already been processed (for duplicate prevention)
      */
   public isProcessed(tweetId: string): boolean {
-    return this.processed.has(tweetId);
+    return this.processed.has(tweetId) || this.wasPosted(tweetId);
   }
 
   /**
@@ -123,6 +148,15 @@ class TweetTracker {
     this.lastProcessedAt = new Date();
     this.saveState();
     logger.info(`Marked tweet ${tweetId} as processed`);
+  }
+
+  /**
+     * Unmark tweet as processed (for failed posts)
+     */
+  public unmarkProcessed(tweetId: string) {
+    this.processed.delete(tweetId);
+    this.saveState();
+    logger.info(`Unmarked tweet ${tweetId} as processed`);
   }
 
   /**

@@ -57,24 +57,26 @@ export function isContentDuplicate(newContent: string): boolean {
     const lines = fs.readFileSync(POSTED_OUTPUTS_FILE, 'utf8').split('\n').filter(line => line.trim());
 
     for (const line of lines) {
-      // Extract content from log format: "timestamp [tweetId] content"
-      const contentMatch = line.match(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z \[([^\]]+)\] (.+)$/);
-      if (!contentMatch) continue;
+      try {
+        const entry = JSON.parse(line.trim());
+        const existingContent = entry.content;
+        const normalizedExisting = normalizeText(existingContent);
 
-      const existingContent = contentMatch[2];
-      const normalizedExisting = normalizeText(existingContent);
+        // Exact match check
+        if (normalizedNew === normalizedExisting) {
+          logger.warn(`Duplicate content detected (exact match): "${newContent}"`);
+          return true;
+        }
 
-      // Exact match check
-      if (normalizedNew === normalizedExisting) {
-        logger.warn(`Duplicate content detected (exact match): "${newContent}"`);
-        return true;
-      }
-
-      // Similarity check
-      const similarity = calculateSimilarity(normalizedNew, normalizedExisting);
-      if (similarity >= SIMILARITY_THRESHOLD) {
-        logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
-        return true;
+        // Similarity check
+        const similarity = calculateSimilarity(normalizedNew, normalizedExisting);
+        if (similarity >= SIMILARITY_THRESHOLD) {
+          logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
+          return true;
+        }
+      } catch (e) {
+        // Skip invalid lines
+        continue;
       }
     }
   } catch (error) {
@@ -148,7 +150,11 @@ export function isAcceptableWithSemanticCheck(
  */
 export function logPostedContent(tweetId: string, content: string) {
   try {
-    const entry = `${new Date().toISOString()} [${tweetId}] ${content}\n`;
+    const entry = JSON.stringify({
+      timestamp: new Date().toISOString(),
+      tweetId,
+      content
+    }) + '\n';
     fs.appendFileSync(POSTED_OUTPUTS_FILE, entry, 'utf8');
     logger.debug(`Logged posted content for tweet ${tweetId}`);
   } catch (error) {

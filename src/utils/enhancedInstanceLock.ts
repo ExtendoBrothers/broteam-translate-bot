@@ -95,7 +95,7 @@ class InstanceLock {
       };
 
       // Write lock file atomically
-      const tempFile = LOCK_FILE + '.tmp';
+      const tempFile = LOCK_FILE + '.tmp.' + Date.now();
       fs.writeFileSync(tempFile, JSON.stringify(this.lockData, null, 2), 'utf8');
       fs.renameSync(tempFile, LOCK_FILE);
 

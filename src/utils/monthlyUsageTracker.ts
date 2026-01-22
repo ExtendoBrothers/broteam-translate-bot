@@ -47,9 +47,7 @@ class MonthlyUsageTracker {
       const monthsObj: Record<string, MonthRecord> = {};
       for (const [k, v] of this.months.entries()) monthsObj[k] = v;
       const state: UsageState = { months: monthsObj };
-      const tmp = USAGE_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, USAGE_FILE);
+      fs.writeFileSync(USAGE_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (err) {
       logger.error(`Failed to save monthly usage tracker: ${err}`);
     }

@@ -30,7 +30,7 @@ function validateEnv(): boolean {
 
 async function main() {
   try {
-    // Global safety net for unhandled rejections
+    // Global safety net for unhandled errors
     process.on('unhandledRejection', (reason: unknown) => {
       try {
         const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
@@ -38,6 +38,15 @@ async function main() {
       } catch {
         // ignore
       }
+    });
+
+    process.on('uncaughtException', (error: Error) => {
+      try {
+        logger.error(`Uncaught exception: ${error.message}\n${error.stack}`);
+      } catch {
+        // ignore
+      }
+      process.exit(1);
     });
         
     // Ensure only one instance runs at a time

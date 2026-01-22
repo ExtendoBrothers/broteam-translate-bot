@@ -19,9 +19,7 @@ function readLastRun(): Date | null {
 
 export function recordLastRun(when: Date) {
   try {
-    const tmp = LAST_RUN_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ lastRun: when.toISOString() }, null, 2), 'utf-8');
-    fs.renameSync(tmp, LAST_RUN_FILE);
+    fs.writeFileSync(LAST_RUN_FILE, JSON.stringify({ lastRun: when.toISOString() }, null, 2), 'utf-8');
   } catch {
     // ignore
   }

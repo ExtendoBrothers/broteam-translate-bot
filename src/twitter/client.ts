@@ -69,7 +69,7 @@ export class TwitterClient {
 
   private persistOAuth2Tokens(tokens: StoredOAuth2Tokens) {
     try {
-      const tmp = OAUTH2_TOKEN_FILE + '.tmp';
+      const tmp = OAUTH2_TOKEN_FILE + '.tmp.' + Date.now();
       fs.writeFileSync(tmp, JSON.stringify(tokens, null, 2), 'utf-8');
       fs.renameSync(tmp, OAUTH2_TOKEN_FILE);
       logger.info('Persisted OAuth2 tokens');
@@ -256,7 +256,7 @@ export class TwitterClient {
       expiresAt: Date.now() + (expiresIn * 1000) - 5000,
     };
     const tokenPath = path.join(process.cwd(), '.twitter-oauth2-tokens.json');
-    const tmp = tokenPath + '.tmp';
+    const tmp = tokenPath + '.tmp.' + Date.now();
     fs.writeFileSync(tmp, JSON.stringify(stored, null, 2));
     fs.renameSync(tmp, tokenPath);
     logger.info('Stored new OAuth2 user context tokens');

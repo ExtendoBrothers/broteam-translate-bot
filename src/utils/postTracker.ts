@@ -51,9 +51,7 @@ class PostTracker {
       const state: PostTrackerState = {
         postTimestamps: this.postTimestamps.map(date => date.toISOString())
       };
-      const tmp = POST_TRACKER_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, POST_TRACKER_FILE);
+      fs.writeFileSync(POST_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save post tracker state: ${error}`);
     }

@@ -88,9 +88,7 @@ class RateLimitTracker {
         entriesObj[key] = { until: val.until.toISOString(), type: val.type, reason: val.reason };
       }
       const state: RateLimitStateV3 = { entries: entriesObj };
-      const tmp = RATE_LIMIT_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, RATE_LIMIT_FILE);
+      fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save rate limit state: ${error}`);
     }

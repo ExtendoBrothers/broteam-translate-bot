@@ -9,7 +9,8 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
   // Check if we're currently rate limited
   if (rateLimitTracker.isRateLimited('post')) {
     const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
-    logger.info(`Skipping post - rate limited for ${waitSeconds} more seconds`);
+    const nextAllowed = new Date(Date.now() + waitSeconds * 1000).toISOString();
+    logger.info(`[RATE_LIMIT] Skipping post - rate limited for ${waitSeconds} more seconds. Next allowed post: ${nextAllowed}, current time: ${new Date().toISOString()}`);
     return null;
   }
     

@@ -51,9 +51,7 @@ class TweetQueue {
       const state: QueueState = {
         queue: this.queue
       };
-      const tmp = QUEUE_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, QUEUE_FILE);
+      fs.writeFileSync(QUEUE_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save tweet queue state: ${error}`);
     }

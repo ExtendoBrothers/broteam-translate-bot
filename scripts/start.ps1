@@ -15,6 +15,25 @@ if (-not $env:DRY_RUN) { $env:DRY_RUN = '0' }
 # Optional: echo versions for diagnostics
 try { $nodeVer = node --version; Write-Host "Node: $nodeVer" } catch { Write-Host "Node not found in PATH" }
 
+# Check if bot is already running
+$lockFile = Join-Path $repo '.bot-lock'
+if (Test-Path $lockFile) {
+    try {
+        $lockData = Get-Content $lockFile | ConvertFrom-Json
+        # ...existing code...
+        if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
+            Write-Host "Bot is already running (PID: $pid). Exiting."
+            exit 0
+        } else {
+            Write-Host "Removing stale lock file from PID $pid."
+            Remove-Item $lockFile
+        }
+    } catch {
+        Write-Host "Error reading lock file, removing it."
+        Remove-Item $lockFile
+    }
+}
+
 # Start the bot
 Write-Host "Starting BroTeam Translate Bot with auto-restart..."
 
