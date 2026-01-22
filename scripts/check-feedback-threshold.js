@@ -81,7 +81,7 @@ try {
           braceCount = 0;
           inString = false;
           escapeNext = false;
-        } catch (parseError) {
+        } catch {
           // If parsing fails, continue accumulating
           // This handles cases where the object spans multiple lines
         }
