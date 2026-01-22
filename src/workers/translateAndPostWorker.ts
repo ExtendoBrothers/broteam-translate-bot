@@ -1180,7 +1180,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             // Add delay between posts
             await delay(5000);
           } catch (error: unknown) {
-            const err = error as { code?: number; message?: string };
+            // removed unused variable 'err' to fix lint error
             logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
             // Enqueue for retry
             await tweetQueue.enqueue(tweet.id, finalResult);
