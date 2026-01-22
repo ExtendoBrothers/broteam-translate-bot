@@ -780,7 +780,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           const unexpScore = unexpectednessScore(candidate.result, originalText);
           const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: 0 };
+          // Initialize unified humor score with base value (will be modified by heuristics later)
+          const baseHumorScore = humorScore.isHumorous 
+            ? humorScore.score 
+            : (1 - humorScore.score);
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore };
         })
       );
 
@@ -900,18 +905,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // Apply bonus (cap at 0.1 total to avoid over-weighting)
         const appliedBonus = Math.min(bonus, 0.1);
         
-        // Create unified humor scale: higher = more likely funny
-        // Humorous results: use confidence as-is (higher = funnier)
-        // Non-humorous results: use 1 - confidence (lower confidence = more potentially funny)
-        const baseHumorScore = candidate.humorScore.isHumorous 
-          ? candidate.humorScore.score 
-          : (1 - candidate.humorScore.score);
-        
-        candidate.unifiedHumorScore = Math.min(1.0, baseHumorScore + appliedBonus);
+        // Update unified humor score by adding heuristic bonuses
+        const originalUnifiedScore = candidate.unifiedHumorScore;
+        candidate.unifiedHumorScore = Math.min(1.0, candidate.unifiedHumorScore + appliedBonus);
         
         // Log the heuristic application
         if (bonusDetails.length > 0) {
-          logger.info(`[HEURISTIC] ${candidate.source}: ${baseHumorScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
+          logger.info(`[HEURISTIC] ${candidate.source}: ${originalUnifiedScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
         }
       });
       // Select the funniest result using unified humor scores
