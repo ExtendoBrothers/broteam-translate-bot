@@ -787,12 +787,33 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
       ];
 
-      logger.info(`[MULTI_CHAIN] Comparing ${allCandidates.length} candidates (${randomResults.length} random + 1 oldschool)...`);
+      // Filter out spammy results (excessive repeated words or too long)
+      function isSpammyResult(result: string): boolean {
+        // Block if any word is repeated 10+ times or if result is over 5000 chars
+        const wordCounts = Object.create(null);
+        for (const word of result.split(/\s+/)) {
+          if (!word) continue;
+          wordCounts[word] = (wordCounts[word] || 0) + 1;
+          if (wordCounts[word] >= 10) return true;
+        }
+        if (result.length > 5000) return true;
+        return false;
+      }
+
+      const filteredCandidates = allCandidates.filter(candidate => {
+        if (isSpammyResult(candidate.result)) {
+          logger.warn(`[SPAM_FILTER] Blocked spammy translation result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+          return false;
+        }
+        return true;
+      });
+
+      logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out as spam)...`);
 
       // Detect language of each candidate and only score English results
       const originalText = tweet.text; // Store for tie-breaker calculations
       const scoredCandidates = await Promise.all(
-        allCandidates.map(async (candidate) => {
+        filteredCandidates.map(async (candidate) => {
           // Detect language
           const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
           const textOnly = candidate.result.replace(tokenPattern, '').trim();
