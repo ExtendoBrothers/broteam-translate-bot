@@ -133,7 +133,9 @@ async function handleRequest(req, res) {
 
   if (pathname === '/api/logs/static') {
     const file = parsed.query.file;
-    if (!file || !file.match(/^[a-zA-Z0-9\-_.]+$/)) {
+    // Only allow specific known log filenames to prevent path traversal
+    const allowedFiles = ['all-translations.log', 'translation-debug.log'];
+    if (!file || !allowedFiles.includes(file)) {
       res.writeHead(400, { 'Content-Type': 'text/plain' });
       res.end('invalid file');
       return;
