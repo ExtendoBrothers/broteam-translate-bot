@@ -26,6 +26,7 @@ import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
+import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
@@ -179,6 +180,10 @@ export interface WorkerResult {
  */
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   logger.debug(`translateAndPostWorker entry at ${new Date().toISOString()}`);
+  
+  // Initialize comprehensive duplicate prevention system
+  initializeDuplicatePrevention();
+  
   const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
@@ -609,31 +614,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
       
-      // Check for duplicates before posting queued tweet
-      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-      let postedOutputs: string[] = [];
-      try {
-        if (fs.existsSync(postedLogPath)) {
-          postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
+      // COMPREHENSIVE DUPLICATE PREVENTION CHECK FOR QUEUED TWEETS
+      const duplicateCheck = await checkForDuplicates(
+        queuedTweet.sourceTweetId,
+        queuedTweet.finalTranslation,
+        '', // We don't have original text for queued tweets
+        'queued',
+        queuedTweet.attemptCount
+      );
+
+      if (!duplicateCheck.canProceed) {
+        logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
+        if (duplicateCheck.severity === 'block') {
+          tweetQueue.dequeue();
+          logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);
+          continue;
         }
-      } catch (e) {
-        logger.warn(`Could not read posted-outputs.log for duplicate check: ${e}`);
-      }
-      
-      // CRITICAL: Check if already processed before posting from queue
-      if (tweetTracker.isProcessed(queuedTweet.sourceTweetId)) {
-        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - already processed`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued already-processed tweet. New queue size: ${tweetQueue.size()}`);
-        continue;
-      }
-      
-      const trimmedQueued = queuedTweet.finalTranslation.trim();
-      if (postedOutputs.includes(trimmedQueued)) {
-        logger.info(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} - content is duplicate of previously posted tweet`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued duplicate tweet. New queue size: ${tweetQueue.size()}`);
-        continue;
       }
       
       if (isDryRun) {
@@ -641,21 +637,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } else {
         await postTweet(client, queuedTweet.finalTranslation);
         logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
-      }
-      
-      // Mark as processed after successful post (postTweet no longer does this to prevent race conditions)
-      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
-      logger.info(`[QUEUE_DEBUG] Marked ${queuedTweet.sourceTweetId} as processed after successful queue post`);
-                
-      // Record the post - tweet tracker updated inside postTweet
-      postTracker.recordPost();
-      
-      // Log posted output for duplicate tracking
-      try {
-        const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-        fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${queuedTweet.sourceTweetId}] ${queuedTweet.finalTranslation}\n`, 'utf8');
-      } catch (err) {
-        logger.warn(`Failed to log posted queued output: ${err}`);
+
+        // COMPREHENSIVE POST RECORDING FOR QUEUED TWEETS
+        recordSuccessfulPost(queuedTweet.sourceTweetId, queuedTweet.finalTranslation);
       }
       
       tweetQueue.dequeue();
@@ -788,7 +772,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           // Only score English results (humor model is trained on English)
           const isEnglish = detectedLang === 'en';
           const humorScore = isEnglish 
-            ? await scoreHumor(candidate.result)
+            ? await scoreHumor(candidate.result, originalText)
             : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
           
           // Calculate secondary metrics for tie-breaking
@@ -980,7 +964,29 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         };
 
         const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
-        fs.appendFileSync(feedbackPath, JSON.stringify(feedbackEntry) + '\n', 'utf8');
+        
+        // Read existing feedback data
+        let existingEntries = [];
+        if (fs.existsSync(feedbackPath)) {
+          try {
+            const content = fs.readFileSync(feedbackPath, 'utf8');
+            const lines = content.split('\n').filter(line => line.trim());
+            for (const line of lines) {
+              if (line.trim()) {
+                existingEntries.push(JSON.parse(line.trim()));
+              }
+            }
+          } catch (readErr) {
+            logger.warn('[FEEDBACK] Failed to read existing feedback data, starting fresh:', readErr);
+          }
+        }
+        
+        // Add new entry
+        existingEntries.push(feedbackEntry);
+        
+        // Write back all entries
+        const jsonlContent = existingEntries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
+        fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
         try {
@@ -1048,6 +1054,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
           await tweetQueue.enqueue(tweet.id, finalResult);
         } else {
+          // COMPREHENSIVE DUPLICATE PREVENTION CHECK
+          const duplicateCheck = await checkForDuplicates(
+            tweet.id,
+            finalResult,
+            tweet.text,
+            selectedChain,
+            chosenHumorScore // Using humor score as attempt count approximation
+          );
+
+          if (!duplicateCheck.canProceed) {
+            logger.warn(`[DUPLICATE_PREVENTION] Blocking post for tweet ${tweet.id}: ${duplicateCheck.reason}`);
+            if (duplicateCheck.severity === 'block') {
+              continue; // Skip this tweet entirely
+            }
+          }
+
           // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
           if (!finalResult || finalResult.trim() === '/') {
             const queued = tweetQueue.peek();
@@ -1066,32 +1088,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
               continue;
             }
           }
+
           // Post the tweet
           try {
-            // CRITICAL: Final check before posting to prevent race conditions
-            if (tweetTracker.isProcessed(tweet.id)) {
-              logger.info(`Skipping tweet ${tweet.id} - already processed (race condition detected)`);
-              continue;
-            }
-            
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
             } else {
               await postTweet(client, finalResult);
               logger.info(`Successfully posted translated tweet ${tweet.id}`);
+
+              // COMPREHENSIVE POST RECORDING
+              recordSuccessfulPost(tweet.id, finalResult);
             }
-            // Record the post
-            postTracker.recordPost();
-            tweetTracker.markProcessed(tweet.id);
-            logger.info(`Marked ${tweet.id} as processed after successful post`);
-            lastPostTime = Date.now();
+
             didWork = true;
-            // Log posted output
-            try {
-              fs.appendFileSync(postedLogPath, `${new Date().toISOString()} [${tweet.id}] ${finalResult}\n`, 'utf8');
-            } catch (err) {
-              logger.warn(`Failed to log posted output: ${err}`);
-            }
+            lastPostTime = Date.now();
+
             // Add delay between posts
             await delay(5000);
           } catch (error: unknown) {
