@@ -21,6 +21,7 @@ const HUMOR_KEYWORDS = [
   'lol', 'lmao', 'rofl', 'haha', 'hehe', 'lmfao', '😂', '🤣', '😭',
   'joke', 'funny', 'hilarious', 'ridiculous', 'absurd', 'wtf', 'omg',
   'bro', 'dude', 'fucking', 'shit', 'damn', 'hell', 'crazy',
+  'trump', 'bitch', 'godsend', 'marketing', 'crime', 'autism', 'hell',
 ];
 
 const HUMOR_PUNCTUATION_PATTERNS = [
@@ -34,10 +35,32 @@ const SARCASM_INDICATORS = [
   'great', 'perfect', 'wonderful', 'amazing',
 ];
 
+// Feedback-based heuristics from user ratings
+const CONTRADICTION_PATTERNS = [
+  /nice.*crime/i, /more.*marketing/i, /delicious.*crime/i,
+  /god.*send/i, /computer.*autism/i, /big.*man/i,
+];
+
+const SETUP_PUNCHLINE_INDICATORS = [
+  /\n\n/,  // Multi-line structure suggesting setup/punchline
+  /\n.*\n/, // Multi-sentence structure
+];
+
+const SPAM_PATTERNS = [
+  /(\w+)\s+\1\s+\1/,  // Repeated words (Central Central Central)
+  /(\w{3,})\s+\1\s+\1\s+\1/,  // Multiple repetitions
+  /(.)\1{4,}/,  // Character repetition (aaaaa, 11111)
+];
+
+const COHERENCE_PENALTIES = [
+  /[^\w\s.,!?-]/g,  // Non-word characters (gibberish)
+  /\b\w{1,2}\b/g,  // Very short words only
+];
+
 /**
  * Calculate a humor score based on text patterns
  */
-function calculateHeuristicScore(text: string): number {
+function calculateHeuristicScore(text: string, originalText?: string): number {
   let score = 0;
   const lowerText = text.toLowerCase();
 
@@ -62,6 +85,46 @@ function calculateHeuristicScore(text: string): number {
     }
   }
 
+  // Feedback-based bonuses
+  // Contradiction bonus (highly rated patterns)
+  for (const pattern of CONTRADICTION_PATTERNS) {
+    if (pattern.test(text)) {
+      score += 0.3; // Strong bonus for contradictions
+    }
+  }
+
+  // Setup-punchline structure bonus
+  for (const pattern of SETUP_PUNCHLINE_INDICATORS) {
+    if (pattern.test(text)) {
+      score += 0.2; // Bonus for multi-line/narrative structure
+    }
+  }
+
+  // Spam penalties (highly disliked patterns)
+  for (const pattern of SPAM_PATTERNS) {
+    if (pattern.test(text)) {
+      score -= 0.4; // Heavy penalty for repetitive spam
+    }
+  }
+
+  // Coherence penalties
+  for (const pattern of COHERENCE_PENALTIES) {
+    const matches = text.match(pattern);
+    if (matches && matches.length > text.split(/\s+/).length * 0.5) {
+      score -= 0.2; // Penalty for incoherent text
+    }
+  }
+
+  // Originality penalty - penalize text too similar to original
+  if (originalText) {
+    const similarity = calculateTextSimilarity(text, originalText.toLowerCase());
+    if (similarity > 0.7) {
+      score -= 0.3; // Heavy penalty for being too close to original
+    } else if (similarity > 0.5) {
+      score -= 0.1; // Moderate penalty
+    }
+  }
+
   // Bonus for questions (often setup for jokes)
   if (text.includes('?')) {
     score += 0.05;
@@ -72,8 +135,28 @@ function calculateHeuristicScore(text: string): number {
     score += 0.05;
   }
 
-  // Cap the score at 1.0
-  return Math.min(score, 1.0);
+  // Bonus for complete sentences (contains subject-verb structure)
+  if (/\b\w+\s+\w+\b/.test(text)) {
+    score += 0.1;
+  }
+
+  // Cap the score at 1.0 and floor at 0.0
+  return Math.max(0, Math.min(score, 1.0));
+}
+
+/**
+ * Calculate similarity between two texts (simple word overlap ratio)
+ */
+function calculateTextSimilarity(text1: string, text2: string): number {
+  const words1 = text1.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+  const words2 = text2.toLowerCase().split(/\s+/).filter(w => w.length > 2);
+
+  if (words1.length === 0 || words2.length === 0) return 0;
+
+  const intersection = words1.filter(word => words2.includes(word));
+  const union = [...new Set([...words1, ...words2])];
+
+  return intersection.length / union.length;
 }
 
 export interface HumorScore {
@@ -85,9 +168,10 @@ export interface HumorScore {
 /**
  * Score text for humor using ML model or heuristics
  * @param text The text to analyze for humor
+ * @param originalText Optional original text for comparison (penalizes similarity)
  * @returns HumorScore object with probability and classification
  */
-export async function scoreHumor(text: string): Promise<HumorScore> {
+export async function scoreHumor(text: string, originalText?: string): Promise<HumorScore> {
   try {
     if (!text || text.trim().length === 0) {
       logger.warn('[HumorScorer] Empty text provided for scoring');
@@ -113,8 +197,8 @@ export async function scoreHumor(text: string): Promise<HumorScore> {
     }
 
     // Fallback to heuristic scoring
-    const score = calculateHeuristicScore(text);
-    const isHumorous = score > 0.3;
+    const score = calculateHeuristicScore(text, originalText);
+    const isHumorous = score > 0.4; // Increased threshold based on feedback analysis
     const label = isHumorous ? 'humorous' : 'not_humorous';
     
     logger.debug(`[HumorScorer] Heuristics - Text: "${text.substring(0, 50)}..." | Score: ${score.toFixed(3)} | Humorous: ${isHumorous}`);

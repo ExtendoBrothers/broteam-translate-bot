@@ -5,14 +5,12 @@ npm run build 2>&1 | Out-Null
 
 $BOT_DIR = $PSScriptRoot
 $LOG_FILE = Join-Path $BOT_DIR '.oauth2-health.log'
-$CHECK_SCRIPT = Join-Path $BOT_DIR 'dist/scripts/checkOAuth2Health.js'
+$CHECK_SCRIPT = Join-Path $BOT_DIR 'dist/src/scripts/checkOAuth2Health.js'
 
 # Run the health check
 Write-Output "$(Get-Date -Format 'yyyy-MM-dd HH:mm:ss') - Running OAuth2 health check..." | Out-File -Append $LOG_FILE
 
-npm run build 2>&1 | Out-Null
-
-$output = node $CHECK_SCRIPT 2>&1
+$output = npm run oauth2:check 2>&1
 $exitCode = $LASTEXITCODE
 
 Write-Output $output | Out-File -Append $LOG_FILE

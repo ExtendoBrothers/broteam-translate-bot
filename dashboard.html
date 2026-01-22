@@ -248,7 +248,7 @@
 
     refreshProcesses();
     connect();
-    setInterval(refreshProcesses, 5000);
+    // setInterval(refreshProcesses, 5000); // Removed to stop reloading dashboard every 5 seconds
     
     // Flush pending log lines every 10 seconds
     setInterval(flushPendingLines, 10000);
@@ -264,8 +264,7 @@
       }
     }
 
-    loadDebugLog();
-    setInterval(loadDebugLog, 10000);
+    loadDebugLog(); // Load the debug log on page load
     
     document.getElementById('addTweetBtn').addEventListener('click', async () => {
       const id = document.getElementById('tweetId').value.trim();

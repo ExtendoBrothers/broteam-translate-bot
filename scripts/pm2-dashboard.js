@@ -162,7 +162,7 @@ async function handleRequest(req, res) {
           return;
         }
         const timestamp = new Date().toISOString();
-        const entry = `${timestamp} [${id}]\n${content}\n`;
+        const entry = `\n${timestamp} [${id}] ${content}\n`;
         const filePath = path.join(__dirname, '..', 'tweet-inputs.log');
         fs.appendFileSync(filePath, entry);
         res.writeHead(200, { 'Content-Type': 'text/plain' });
