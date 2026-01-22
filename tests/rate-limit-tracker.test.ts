@@ -145,10 +145,16 @@ describe('RateLimitTracker', () => {
       const originalBuffer = config.RATE_LIMIT_BUFFER_SECONDS;
       (config as any).RATE_LIMIT_BUFFER_SECONDS = 30;
 
+      const beforeTime = Date.now();
       rateLimitTracker.setRateLimit('test-key');
+      const afterTime = Date.now();
 
       const entry = (rateLimitTracker as any).entries.get('test-key');
-      expect(entry.until.getTime()).toBeGreaterThanOrEqual(Date.now() + 15 * 60 * 1000 + 30 * 1000);
+      const expectedMinTime = beforeTime + 15 * 60 * 1000 + 30 * 1000;
+      const expectedMaxTime = afterTime + 15 * 60 * 1000 + 30 * 1000;
+
+      expect(entry.until.getTime()).toBeGreaterThanOrEqual(expectedMinTime);
+      expect(entry.until.getTime()).toBeLessThanOrEqual(expectedMaxTime);
 
       (config as any).RATE_LIMIT_BUFFER_SECONDS = originalBuffer;
     });
