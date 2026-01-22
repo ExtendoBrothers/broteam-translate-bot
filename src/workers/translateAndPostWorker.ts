@@ -389,7 +389,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       finalResult = chainResult.result;
       const check = isAcceptable(finalResult, inputText, postedOutputs);
-      acceptable = check.acceptable;
+      const isResultSpammy = isSpammyResult(finalResult);
+      acceptable = check.acceptable && !isResultSpammy;
 
       // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
       const trimmed = finalResult.trim();
@@ -427,7 +428,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       try {
         fs.appendFileSync(
           path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
-          `[DEBUG][${chainLabel}] Attempt ${attempts} evaluation: acceptable=${check.acceptable}\n` +
+          `[DEBUG][${chainLabel}] Attempt ${attempts} evaluation: acceptable=${check.acceptable}, spammy=${isResultSpammy}, final=${acceptable}\n` +
           `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
           `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
           `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
@@ -435,6 +436,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
           `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
           `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
+          `Spam check: ${isResultSpammy ? 'FAIL' : 'pass'}\n` +
           `Result: '${finalResult}'\n\n`,
           'utf8'
         );
@@ -445,7 +447,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (acceptable) {
         logger.info(`[${chainLabel}] ✓ Acceptable result achieved after ${attempts} attempt(s)`);
       } else {
-        logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${check.reason}`);
+        const reasons = [check.reason];
+        if (isResultSpammy) reasons.push('spammy content');
+        logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${reasons.join(', ')}`);
       }
     }
 
@@ -501,6 +505,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
       
       const check = isAcceptable(chainResult.result, inputText, postedOutputs);
+      const isResultSpammy = isSpammyResult(chainResult.result);
       
       // Log detailed evaluation of each criterion for debugging (same as executeChainWithRetries)
       const trimmed = chainResult.result.trim();
@@ -537,7 +542,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       try {
         fs.appendFileSync(
           path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
-          `[DEBUG][RANDOM_COLLECT] Attempt ${totalAttempts} evaluation: acceptable=${check.acceptable}\n` +
+          `[DEBUG][RANDOM_COLLECT] Attempt ${totalAttempts} evaluation: acceptable=${check.acceptable}, spammy=${isResultSpammy}, final=${check.acceptable && !isResultSpammy}\n` +
           `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
           `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
           `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
@@ -545,6 +550,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
           `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
           `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
+          `Spam check: ${isResultSpammy ? 'FAIL' : 'pass'}\n` +
           `Result: '${chainResult.result}'\n\n`,
           'utf8'
         );
@@ -552,11 +558,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.error('[ERROR][RANDOM_COLLECT] Failed to write evaluation to translation-debug.log:', err);
       }
       
-      if (check.acceptable) {
+      if (check.acceptable && !isResultSpammy) {
         acceptableResults.push({ result: chainResult.result, attempts: totalAttempts });
         logger.info(`[RANDOM_COLLECT] ✓ Collected result ${acceptableResults.length}/${targetCount}`);
       } else {
-        logger.warn(`[RANDOM_COLLECT] Attempt ${totalAttempts} unacceptable: ${check.reason}`);
+        const reasons = [check.reason];
+        if (isResultSpammy) reasons.push('spammy content');
+        logger.warn(`[RANDOM_COLLECT] Attempt ${totalAttempts} unacceptable: ${reasons.join(', ')}`);
       }
     }
     
@@ -718,6 +726,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         tweetQueue.dequeue();
         logger.info(`[QUEUE_DEBUG] Dequeued tweet after too many failures. New queue size: ${tweetQueue.size()}`);
         // Do NOT mark as processed - allow retry in future runs
+      } else {
+        // For non-rate-limit errors, stop processing the queue to avoid rapid retries
+        // The tweet will be retried on the next worker run (every 30 minutes)
+        logger.info(`[QUEUE_DEBUG] Stopping queue processing due to non-rate-limit error. Will retry tweet ${queuedTweet.sourceTweetId} on next run.`);
+        blockedByPostLimit = true;
       }
       break;
     }
@@ -788,10 +801,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
       ];
 
-      // Filter out spammy results (excessive repeated words or too long)
+      // All candidates should already be acceptable and non-spammy at this point
+      // But double-check for any edge cases
       const filteredCandidates = allCandidates.filter(candidate => {
-        if (isSpammyResult(candidate.result)) {
-          logger.warn(`[SPAM_FILTER] Blocked spammy translation result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+        const isResultSpammy = isSpammyResult(candidate.result);
+        if (isResultSpammy) {
+          logger.warn(`[SPAM_FILTER] Unexpected spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
           return false;
         }
         return true;
@@ -1065,7 +1080,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       const finalResult = bestCandidate.result;
-      const acceptable = bestCandidate.acceptable || randomResults.length > 0; // Accept if we got any random results
+      const acceptable = bestCandidate.acceptable; // Only accept if the best candidate meets quality criteria
       const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
       const translationAttempted = true;
       const selectedChain = bestCandidate.source;

@@ -69,10 +69,6 @@ class TweetTracker {
       for (const [id, dt] of this.processed.entries()) {
         processedObj[id] = dt.toISOString();
       }
-      if (Object.keys(processedObj).length === 0) {
-        logger.warn('[SAFEGUARD] Attempted to save processed tweets file with zero entries. Save aborted to prevent data loss.');
-        return;
-      }
       const state: TweetTrackerStateV2 = {
         processed: processedObj,
         lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
@@ -114,19 +110,28 @@ class TweetTracker {
   }
 
   /**
-     * Check if tweet has already been posted (by checking posted-outputs.log)
+     * Check if tweet has already been posted (by checking combined.log files)
      */
   private wasPosted(tweetId: string): boolean {
     try {
-      const postedOutputsFile = path.join(process.cwd(), 'posted-outputs.log');
-      if (!fs.existsSync(postedOutputsFile)) {
-        return false;
+      // Check combined.log files (most recent first)
+      const logFiles = ['combined9.log', 'combined8.log', 'combined7.log', 'combined6.log', 
+        'combined5.log', 'combined4.log', 'combined3.log', 'combined2.log', 
+        'combined1.log', 'combined.log'];
+      
+      for (const logFile of logFiles) {
+        const logPath = path.join(process.cwd(), logFile);
+        if (fs.existsSync(logPath)) {
+          const content = fs.readFileSync(logPath, 'utf8');
+          // Check for "Posted final translation to Twitter for tweet {tweetId}"
+          const regex = new RegExp(`Posted final translation to Twitter for tweet ${tweetId}`, 'm');
+          if (regex.test(content)) {
+            return true;
+          }
+        }
       }
-
-      const content = fs.readFileSync(postedOutputsFile, 'utf8');
-      // Check if the tweet ID appears in the format "timestamp [tweetId] content"
-      const regex = new RegExp(`^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}\\.\\d{3}Z \\[${tweetId}\\]`, 'm');
-      return regex.test(content);
+      
+      return false;
     } catch (error) {
       logger.error(`Error checking if tweet ${tweetId} was posted: ${error}`);
       return false;
@@ -160,10 +165,10 @@ class TweetTracker {
   }
 
   /**
-     * Get the last processed timestamp
-     */
-  public getLastProcessedAt(): Date | null {
-    return this.lastProcessedAt;
+   * Get all processed tweet IDs
+   */
+  public getProcessedTweetIds(): string[] {
+    return Array.from(this.processed.keys());
   }
 
   /**

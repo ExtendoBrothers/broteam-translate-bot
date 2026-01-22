@@ -3,6 +3,9 @@ import { logger } from '../utils/logger';
 import { splitTweet } from '../utils/tweetSplitter';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 
+// Minimum seconds between posts to avoid hitting rate limits (proactive throttling)
+const MIN_POST_INTERVAL_SECONDS = 960; // 16 minutes between posts
+
 export async function postTweet(client: TwitterClient, content: string, sourceTweetId?: string) {
   const isDryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';
     
@@ -31,15 +34,17 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     
   try {
     let previousTweetId: string | undefined = sourceTweetId;
+    let lastRateLimit: { remaining: number; limit: number; reset: number } | undefined;
         
     for (let i = 0; i < chunks.length; i++) {
       const chunk = chunks[i];
             
       // Post as reply to previous tweet in thread (or source tweet for first post)
       const result = await client.postTweet(chunk, previousTweetId);
-      previousTweetId = result.id;
+      previousTweetId = result.data.id;
+      lastRateLimit = result.rateLimit;
             
-      logger.info(`Posted tweet ${i + 1}/${chunks.length} (ID: ${result.id})`);
+      logger.info(`Posted tweet ${i + 1}/${chunks.length} (ID: ${result.data.id})`);
             
       // Small delay between thread posts
       if (i < chunks.length - 1) {
@@ -49,6 +54,32 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     
     // Note: Caller is responsible for marking as processed to prevent race conditions
     // (postTweet may be called from multiple contexts - queue, retry, main flow)
+    
+    // PROACTIVE RATE LIMIT HANDLING: Use Twitter's rate limit info to avoid hitting limits
+    if (lastRateLimit) {
+      const remaining = lastRateLimit.remaining;
+      const resetTime = lastRateLimit.reset;
+      const secondsUntilReset = Math.max(0, resetTime - Math.floor(Date.now() / 1000));
+      
+      // If quota is low (<=2 remaining), set cooldown until reset time
+      if (remaining <= 2) {
+        logger.warn(`[PROACTIVE_LIMIT] Low quota (${remaining} remaining) - setting cooldown until reset at ${new Date(resetTime * 1000).toISOString()}`);
+        rateLimitTracker.setRateLimit('post', resetTime);
+      } else if (remaining <= 5) {
+        // If quota is getting low, space out posts more aggressively
+        const cooldownSeconds = Math.max(MIN_POST_INTERVAL_SECONDS, Math.ceil(secondsUntilReset / remaining));
+        logger.info(`[PROACTIVE_LIMIT] Moderate quota (${remaining} remaining) - setting ${cooldownSeconds}s cooldown`);
+        rateLimitTracker.setCooldown('post', cooldownSeconds, `proactive spacing (${remaining} remaining)`);
+      } else {
+        // Normal case: set minimum spacing between posts
+        rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'proactive post spacing');
+        logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown after successful post (${remaining} remaining)`);
+      }
+    } else {
+      // No rate limit info available - use default spacing
+      rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'proactive post spacing (no quota info)');
+      logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown (no rate limit info available)`);
+    };
         
     return { id: previousTweetId, threadLength: chunks.length };
   } catch (error: unknown) {
@@ -105,7 +136,16 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       const resetInfo = resetTime ? `Reset time: ${new Date(resetTime * 1000).toISOString()}` : 'Using fallback 15-minute wait';
       logger.warn(`Post rate limit hit (${err?.code || err?.statusCode || 'unknown'}). ${resetInfo}`);
     } else {
-      logger.error(`Failed to post tweet: ${error}`);
+      // Log detailed error information for debugging
+      const errorDetails = {
+        message: err?.message || 'Unknown error',
+        code: err?.code || err?.statusCode || 'unknown',
+        statusCode: err?.statusCode,
+        data: err?.data,
+        stack: (error as Error)?.stack
+      };
+      logger.error('Failed to post tweet with detailed error:', errorDetails);
+      logger.error(`Tweet content that failed: "${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"`);
     }
     throw error;
   }

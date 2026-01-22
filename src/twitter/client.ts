@@ -274,6 +274,16 @@ export class TwitterClient {
   }
 
   public async postTweet(content: string, replyToTweetId?: string) {
+    // Import rate limit tracker for final safety check
+    const { rateLimitTracker } = await import('../utils/rateLimitTracker');
+    
+    // FINAL SAFETY CHECK: Don't even attempt if we know we're rate limited
+    if (rateLimitTracker.isRateLimited('post')) {
+      const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
+      logger.warn(`[CLIENT_SAFETY] Blocking post attempt - rate limited for ${waitSeconds}s more`);
+      throw new Error(`Rate limited for ${waitSeconds} more seconds`);
+    }
+    
     const tweetOptions: Record<string, unknown> = { text: content };
         
     // If this is a reply (part of a thread), add reply settings
@@ -281,6 +291,14 @@ export class TwitterClient {
       tweetOptions.reply = { in_reply_to_tweet_id: replyToTweetId };
     }
     const tweet = await this.withRefreshOn401(() => this.client.v2.tweet(tweetOptions));
-    return tweet.data;
+    
+    // Extract rate limit info from response headers for proactive tracking
+    // twitter-api-v2 stores rate limit info on the response object (may not be typed)
+    const rateLimit = (tweet as unknown as { rateLimit?: { remaining: number; limit: number; reset: number } }).rateLimit;
+    if (rateLimit) {
+      logger.info(`[RATE_LIMIT_INFO] Post quota: ${rateLimit.remaining}/${rateLimit.limit} remaining, resets at ${new Date(rateLimit.reset * 1000).toISOString()}`);
+    }
+    
+    return { data: tweet.data, rateLimit };
   }
 }

@@ -96,8 +96,12 @@ class RateLimitTracker {
 
   /**
      * Check if we're currently rate limited
+     * Always reloads state from file first to ensure fresh data across worker runs
      */
   public isRateLimited(key: string): boolean {
+    // CRITICAL: Reload state from file to pick up rate limits set by other processes/runs
+    this.loadState();
+    
     const entry = this.entries.get(key) || this.entries.get('global');
     if (!entry) return false;
     const dt = entry.until;

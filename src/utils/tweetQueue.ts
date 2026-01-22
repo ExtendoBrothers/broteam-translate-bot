@@ -138,6 +138,25 @@ class TweetQueue {
   }
 
   /**
+     * Remove a specific tweet from the queue by ID (without marking as processed)
+     */
+  public removeById(sourceTweetId: string): boolean {
+    const index = this.queue.findIndex(t => t.sourceTweetId === sourceTweetId);
+    if (index === -1) return false;
+    this.queue.splice(index, 1);
+    this.saveState();
+    logger.info(`Removed tweet ${sourceTweetId} from queue. Queue size: ${this.queue.length}`);
+    return true;
+  }
+
+  /**
+     * Get the full queue (for inspection)
+     */
+  public getQueue(): QueuedTweet[] {
+    return [...this.queue];
+  }
+
+  /**
      * Clear the queue (for testing/manual override)
      */
   public clear() {
