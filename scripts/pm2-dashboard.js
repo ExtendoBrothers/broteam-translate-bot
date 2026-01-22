@@ -10,6 +10,8 @@ const util = require('util');
 const execPromise = util.promisify(exec);
 
 const PORT = process.env.PORT ? Number(process.env.PORT) : 9615;
+const LOG_ROOT = path.join(__dirname, '..', 'translation-logs');
+const LOG_ROOT_RESOLVED = path.resolve(LOG_ROOT);
 
 let cachedVersion = null;
 
@@ -136,7 +138,13 @@ async function handleRequest(req, res) {
       res.end('invalid file');
       return;
     }
-    const filePath = path.join(__dirname, '..', 'translation-logs', file);
+    const filePath = path.resolve(LOG_ROOT, file);
+    const rootWithSep = LOG_ROOT_RESOLVED.endsWith(path.sep) ? LOG_ROOT_RESOLVED : LOG_ROOT_RESOLVED + path.sep;
+    if (!filePath.startsWith(rootWithSep)) {
+      res.writeHead(403, { 'Content-Type': 'text/plain' });
+      res.end('forbidden');
+      return;
+    }
     try {
       const content = fs.readFileSync(filePath, 'utf8');
       res.writeHead(200, { 'Content-Type': 'text/plain', 'Cache-Control': 'no-store, max-age=0' });
