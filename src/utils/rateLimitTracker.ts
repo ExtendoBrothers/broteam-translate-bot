@@ -7,9 +7,9 @@
 import { logger } from './logger';
 import * as fs from 'fs';
 import * as path from 'path';
-import { config } from '../config';
 
 const RATE_LIMIT_FILE = path.join(process.cwd(), '.rate-limit-state.json');
+const MIN_COOLDOWN_AFTER_429_SECONDS = 20 * 60; // 20 minutes minimum cooldown after 429
 
 type RateLimitStateV1 = { resetTime: string | null };
 interface RateLimitStateV2 {
@@ -23,10 +23,12 @@ interface RateLimitEntry {
 }
 interface RateLimitStateV3 {
     entries: Record<string, RateLimitEntry>;
+    last429Time?: Record<string, string>; // Track when we last got a 429 for each key
 }
 
 class RateLimitTracker {
   private entries: Map<string, { until: Date; type: RateLimitType; reason?: string }> = new Map();
+  private last429Time: Map<string, Date> = new Map(); // Track when we last got a 429 for each key
 
   constructor() {
     // Load persisted state on initialization
@@ -49,6 +51,16 @@ class RateLimitTracker {
               this.entries.set(key, { until: dt, type: entry.type, reason: entry.reason });
               const label = entry.type === 'api' ? 'API limit' : 'Cooldown';
               logger.info(`Loaded persisted ${label} for '${key}'. Until ${dt.toISOString()}${entry.reason ? ` (${entry.reason})` : ''}`);
+            }
+          }
+          // Load last 429 timestamps
+          if (state.last429Time) {
+            for (const [key, timestamp] of Object.entries(state.last429Time)) {
+              const dt = new Date(timestamp);
+              if (isFinite(dt.getTime())) {
+                this.last429Time.set(key, dt);
+                logger.info(`Loaded last 429 time for '${key}': ${dt.toISOString()}`);
+              }
             }
           }
         } else if (parsed && parsed.resetTime) {
@@ -87,7 +99,11 @@ class RateLimitTracker {
       for (const [key, val] of this.entries.entries()) {
         entriesObj[key] = { until: val.until.toISOString(), type: val.type, reason: val.reason };
       }
-      const state: RateLimitStateV3 = { entries: entriesObj };
+      const last429TimeObj: Record<string, string> = {};
+      for (const [key, val] of this.last429Time.entries()) {
+        last429TimeObj[key] = val.toISOString();
+      }
+      const state: RateLimitStateV3 = { entries: entriesObj, last429Time: last429TimeObj };
       fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save rate limit state: ${error}`);
@@ -121,31 +137,55 @@ class RateLimitTracker {
     return false;
   }
 
+
+
   /**
-     * Set rate limit based on Twitter API response headers or error
+     * Set rate limit based on Twitter API response (429 error)
+     * Uses Twitter's reset time + 2 minutes buffer
+     * If an existing cooldown is later, keeps that instead (use whichever is later)
      */
   public setRateLimit(key: string, resetTimestamp?: number) {
-    const BUFFER_MS = (config.RATE_LIMIT_BUFFER_SECONDS || 10) * 1000; // configurable safety buffer
+    const BUFFER_MS = 2 * 60 * 1000; // 2 minute buffer for Twitter rate limits
     let dt: Date;
     if (resetTimestamp) {
       dt = new Date(resetTimestamp * 1000 + BUFFER_MS);
-      logger.error(`API rate limit exceeded for '${key}'. Reset (with buffer) at ${dt.toISOString()}`);
+      logger.error(`API rate limit exceeded for '${key}'. Twitter reset: ${new Date(resetTimestamp * 1000).toISOString()}, with 2min buffer: ${dt.toISOString()}`);
     } else {
-      dt = new Date(Date.now() + 15 * 60 * 1000 + BUFFER_MS);
-      logger.error(`API rate limit exceeded for '${key}'. Using fallback 15-minute wait (buffered) until ${dt.toISOString()}`);
+      // Fallback: 15 minutes + 2 minute buffer if no reset time available
+      dt = new Date(Date.now() + 17 * 60 * 1000);
+      logger.error(`API rate limit exceeded for '${key}'. No reset time available, using 17-minute fallback until ${dt.toISOString()}`);
     }
-    this.entries.set(key, { until: dt, type: 'api', reason: resetTimestamp ? 'reset header' : 'fallback 15m' });
+    
+    // Use whichever is later: the new rate limit or existing cooldown
+    const minCooldownUntil = new Date(Date.now() + MIN_COOLDOWN_AFTER_429_SECONDS * 1000);
+    if (minCooldownUntil > dt) {
+      logger.warn(`Extending rate limit cooldown to 20 minutes minimum. Until ${minCooldownUntil.toISOString()}`);
+      dt = minCooldownUntil;
+    }
+    
+    this.entries.set(key, { until: dt, type: 'api', reason: resetTimestamp ? 'reset header +2min' : 'fallback 15m +2min' });
     this.saveState();
   }
 
   /**
      * Set a cooldown window proactively (e.g., after a successful call) to avoid re-hitting limits.
      * The cooldown is persisted and respected across restarts.
+     * Only sets the cooldown if the new time is LONGER than existing limit.
      */
   public setCooldown(key: string, seconds: number, reason?: string) {
-    const BUFFER_MS = (config.RATE_LIMIT_BUFFER_SECONDS || 10) * 1000; // small safety buffer
-    const dt = new Date(Date.now() + seconds * 1000 + BUFFER_MS);
+    // Reload state first to get current limits
+    this.loadState();
+    
+    const dt = new Date(Date.now() + seconds * 1000);
     const why = reason ? ` (${reason})` : '';
+    
+    // Check if there's already a longer limit in place
+    const existing = this.entries.get(key);
+    if (existing && existing.until > dt) {
+      logger.info(`Cooldown for '${key}' not set - existing limit until ${existing.until.toISOString()} is longer than proposed ${dt.toISOString()}`);
+      return;
+    }
+    
     logger.info(`Setting cooldown for '${key}' for ${seconds}s${why}. Until ${dt.toISOString()}`);
     this.entries.set(key, { until: dt, type: 'cooldown', reason });
     this.saveState();

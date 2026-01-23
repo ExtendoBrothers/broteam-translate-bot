@@ -26,6 +26,7 @@ import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
+import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
 import fs from 'fs';
@@ -65,8 +66,40 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     /(\w+)\s+\1\s+\1/,  // Repeated words (Central Central Central)
     /(\w{3,})\s+\1\s+\1\s+\1/,  // Multiple repetitions
     /(.)\1{4,}/,  // Character repetition (aaaaa, 11111)
+    /(\w{2,})-\1-\1-\1/i,  // Hyphenated repetition 4+ times (St-St-St-St)
+    /(\w{3,})\1\1\1/i,  // Concatenated repetition without spaces (CENTCENT...)
   ];
   let repetitive = spamPatterns.some(pattern => pattern.test(textOnly));
+  
+  // Check for repeated substrings (catches "cententcent", "CENTCENT", etc.)
+  if (!repetitive && textOnly.length > 20) {
+    // Look for any 3-8 char substring that repeats 4+ times consecutively
+    for (let len = 3; len <= 8; len++) {
+      const pattern = new RegExp(`(.{${len}})\\1{3,}`, 'i');
+      if (pattern.test(textOnly.replace(/\s+/g, ''))) {
+        repetitive = true;
+        break;
+      }
+    }
+  }
+  
+  // Check for hyphenated repetition patterns like "St-St-St-St" or "cent-cent-cent"
+  if (!repetitive) {
+    const hyphenParts = textOnly.split('-').map(p => p.trim().toLowerCase());
+    if (hyphenParts.length >= 4) {
+      const counts: Record<string, number> = {};
+      for (const part of hyphenParts) {
+        if (part.length >= 2) {
+          counts[part] = (counts[part] || 0) + 1;
+          if (counts[part] >= 4) {
+            repetitive = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  
   // Additional: block if any word appears more than 10 times (non-consecutive)
   if (!repetitive) {
     const wordCounts: Record<string, number> = {};
@@ -79,6 +112,9 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       }
     }
   }
+
+  // Check if output exceeds Twitter character limit (280 + 8 buffer for edge cases)
+  const tooLong = trimmed.length > 288;
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Try lexicon-based detection first for short texts
@@ -108,6 +144,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
   if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+  if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
   if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
@@ -684,7 +721,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           } else {
             logger.info(`[QUEUE_DEBUG] Post skipped for queued tweet ${queuedTweet.sourceTweetId} (rate limited)`);
             tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
-            // Leave in queue for retry
+            // Rate limited - break out of the loop
+            blockedByPostLimit = true;
+            break;
           }
         }
         lastPostTime = Date.now();
@@ -692,25 +731,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } catch (error: unknown) {
         logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
         tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
-        // Leave in queue for retry
+        // Re-throw to be handled by outer catch (rate limit detection)
+        throw error;
       }
                 
       // Add delay between posts
       await delay(5000);
     } catch (error: unknown) {
-      // If rate limit hit (429 or 403), stop processing queue
+      // If rate limit hit (429 or 403), stop processing queue but NEVER remove from queue
       const err = error as { code?: number; message?: string };
       if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
         logger.error(`[QUEUE_DEBUG] Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
         
-        // Check if too many attempts after rate limit
+        // NEVER remove tweets for rate limit failures - they will eventually succeed
         const updatedQueuedTweet = tweetQueue.peek();
-        if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
-          logger.error(`[QUEUE_DEBUG] Removing rate-limited tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts`);
-          tweetQueue.dequeue();
-          logger.info(`[QUEUE_DEBUG] Dequeued rate-limited tweet after too many failures. New queue size: ${tweetQueue.size()}`);
-        }
+        logger.info(`[QUEUE_DEBUG] Tweet ${updatedQueuedTweet?.sourceTweetId} has ${updatedQueuedTweet?.attemptCount} attempts, keeping in queue for retry`);
         
         blockedByPostLimit = true;
         break;
@@ -719,19 +755,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       logger.error(`[QUEUE_DEBUG] Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
       tweetQueue.incrementAttempt();
                 
-      // If too many failures, remove from queue and let it be re-fetched/retried later
-      const updatedQueuedTweet = tweetQueue.peek();
-      if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
-        logger.error(`[QUEUE_DEBUG] Removing tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts - will retry on next fetch`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued tweet after too many failures. New queue size: ${tweetQueue.size()}`);
-        // Do NOT mark as processed - allow retry in future runs
-      } else {
-        // For non-rate-limit errors, stop processing the queue to avoid rapid retries
-        // The tweet will be retried on the next worker run (every 30 minutes)
-        logger.info(`[QUEUE_DEBUG] Stopping queue processing due to non-rate-limit error. Will retry tweet ${queuedTweet.sourceTweetId} on next run.`);
-        blockedByPostLimit = true;
-      }
+      // For non-rate-limit errors, keep retrying indefinitely
+      // These could be temporary network issues, auth problems that get fixed, etc.
+      logger.info(`[QUEUE_DEBUG] Non-rate-limit error for tweet ${queuedTweet.sourceTweetId}. Keeping in queue for retry on next run.`);
+      blockedByPostLimit = true;
       break;
     }
   }
@@ -845,12 +872,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           const unexpScore = unexpectednessScore(candidate.result, originalText);
           const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          // Initialize unified humor score with base value (will be modified by heuristics later)
-          const baseHumorScore = humorScore.isHumorous 
-            ? humorScore.score 
-            : (1 - humorScore.score);
+          // Evaluate user-defined heuristics
+          const heuristicEvaluation = evaluateHeuristics(candidate.result, originalText);
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore };
+          // Initialize unified humor score with the score directly
+          // The scoreHumor() function returns the humor probability directly (higher = funnier)
+          // - Heuristic scorer: score IS the humor probability
+          // - ML model (if enabled): we need to handle it differently in humorScorer.ts
+          const baseHumorScore = humorScore.score;
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore, heuristicEvaluation };
         })
       );
 
@@ -967,8 +998,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
         }
         
-        // Apply bonus (cap at 0.1 total to avoid over-weighting)
-        const appliedBonus = Math.min(bonus, 0.1);
+        // Apply user-defined heuristic evaluation first
+        if (candidate.heuristicEvaluation.score !== 0) {
+          bonus += candidate.heuristicEvaluation.score;
+          bonusDetails.push(...candidate.heuristicEvaluation.details.map(d => `${d} ${candidate.heuristicEvaluation.score > 0 ? '+' : ''}${candidate.heuristicEvaluation.score.toFixed(3)}`));
+        }
+        
+        // Apply bonus (cap at 0.15 total to account for user heuristics)
+        const appliedBonus = Math.min(bonus, 0.15);
         
         // Update unified humor score by adding heuristic bonuses
         const originalUnifiedScore = candidate.unifiedHumorScore;
@@ -1020,7 +1057,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             humorLabel: c.humorScore.label,
             isEnglish: c.isEnglish,
             tieBreaker: c.tieBreaker,
-            acceptable: c.acceptable
+            acceptable: c.acceptable,
+            heuristicEvaluation: c.heuristicEvaluation
           })),
           botSelected: bestCandidate.source,
           selectedResult: bestCandidate.result,
