@@ -36,7 +36,7 @@ export function getVersion(): string {
     const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf-8'));
     cachedVersion = packageJson.version || 'unknown';
     return cachedVersion as string;
-  } catch (error) {
+  } catch {
     cachedVersion = 'unknown';
     return cachedVersion as string;
   }
