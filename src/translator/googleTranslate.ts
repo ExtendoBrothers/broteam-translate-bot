@@ -6,10 +6,21 @@
  *  - LIBRETRANSLATE_API_KEY (optional) — added to request body as "api_key"
  */
 
-import { logger } from '../utils/logger';
+import { logger, rotateLogFile } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Helper function to append to translation debug log with rotation
+function appendToDebugLog(content: string) {
+  const debugLogPath = path.join(process.cwd(), 'translation-logs', 'translation-debug.log');
+  rotateLogFile(debugLogPath, 10 * 1024 * 1024); // 10MB
+  try {
+    fs.appendFileSync(debugLogPath, content, 'utf8');
+  } catch (err) {
+    logger.error('[ERROR] Failed to write to translation-debug.log:', err);
+  }
+}
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -112,7 +123,7 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
     if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
 
     // Debug log the API request
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`, 'utf8');
+    appendToDebugLog(`[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`);
 
     const res = await fetchWithTimeout(LIBRE_URL, {
       method: 'POST',
