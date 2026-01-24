@@ -1,6 +1,5 @@
 import { createLogger, format, transports } from 'winston';
 import * as fs from 'fs';
-import * as path from 'path';
 
 export const logger = createLogger({
   level: 'info',

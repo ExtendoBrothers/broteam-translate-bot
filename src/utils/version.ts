@@ -37,7 +37,6 @@ export function getVersion(): string {
     cachedVersion = packageJson.version || 'unknown';
     return cachedVersion as string;
   } catch (error) {
-    console.warn('Failed to read version from package.json:', error);
     cachedVersion = 'unknown';
     return cachedVersion as string;
   }
