@@ -34,5 +34,24 @@ describe('Spam Filtering', () => {
       const textWithPunctuation = 'word, word. word! word? word';
       expect(isSpammyResult(textWithPunctuation)).toBe(false);
     });
-  });
-});
+
+    it('should return true for text containing URLs', () => {
+      const textWithUrl = 'This is a http://example.com translation';
+      expect(isSpammyResult(textWithUrl)).toBe(true);
+    });
+
+    it('should return true for text containing domains without protocol', () => {
+      const textWithDomain = 'This is a www.example.com translation';
+      expect(isSpammyResult(textWithDomain)).toBe(true);
+    });
+
+    it('should return true for text containing suspicious domains', () => {
+      const textWithSuspiciousDomain = 'This is azerbaijanphoto.com a translation';
+      expect(isSpammyResult(textWithSuspiciousDomain)).toBe(true);
+    });
+
+    it('should return true for text containing other suspicious domains', () => {
+      const textWithEatinKorea = 'This is eatin.korea a translation';
+      expect(isSpammyResult(textWithEatinKorea)).toBe(true);
+    });
+  });});
