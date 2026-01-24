@@ -17,14 +17,6 @@ export function isSpammyResult(result: string): boolean {
   }
   if (result.length > 5000) return true;
   
-  // Block URLs and suspicious domains
-  const urlRegex = /(?:https?:\/\/)?(?:www\.)?([a-zA-Z0-9-]+\.)*[a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s]*)?/gi;
-  const urls = result.match(urlRegex);
-  if (urls) {
-    // Block any URLs in translation results - translations shouldn't contain URLs
-    return true;
-  }
-  
   // Block suspicious domains that have appeared in poisoned translations
   const suspiciousDomains = ['azerbaijanphoto.com', 'eatin.korea', 'sissyhypno', 'mctitittttvvvvvtvtepe.com', 'eatkorea'];
   const lowerResult = result.toLowerCase();
