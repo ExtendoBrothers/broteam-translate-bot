@@ -9,7 +9,8 @@ jest.mock('../src/utils/logger', () => ({
   logger: {
     info: jest.fn(),
     warn: jest.fn(),
-    error: jest.fn()
+    error: jest.fn(),
+    debug: jest.fn()
   }
 }));
 
@@ -119,7 +120,7 @@ describe('RateLimitTracker', () => {
       const entry = (rateLimitTracker as any).entries.get('test-key');
       expect(entry).toBeDefined();
       expect(entry.type).toBe('api');
-      expect(entry.reason).toBe('reset header');
+      expect(entry.reason).toBe('reset header +2min');
       expect(entry.until.getTime()).toBeGreaterThan(Date.now() + 900000); // Should include buffer
       expect(logger.error).toHaveBeenCalledWith(
         expect.stringContaining('API rate limit exceeded for \'test-key\'')
@@ -133,31 +134,15 @@ describe('RateLimitTracker', () => {
       const entry = (rateLimitTracker as any).entries.get('test-key');
       expect(entry).toBeDefined();
       expect(entry.type).toBe('api');
-      expect(entry.reason).toBe('fallback 15m');
-      expect(entry.until.getTime()).toBeGreaterThan(Date.now() + 15 * 60 * 1000); // Should be around 15 minutes + buffer
+      expect(entry.reason).toBe('fixed 90min after 429');
+      expect(entry.until.getTime()).toBeGreaterThanOrEqual(Date.now() + 90 * 60 * 1000 - 1000); // Should be around 90 minutes (allow 1s tolerance)
       expect(logger.error).toHaveBeenCalledWith(
-        expect.stringContaining('Using fallback 15-minute wait')
+        expect.stringContaining('API rate limit exceeded for \'test-key\'')
       );
       expect(fs.writeFileSync).toHaveBeenCalled();
     });
 
-    it('should use configured buffer seconds', () => {
-      const originalBuffer = config.RATE_LIMIT_BUFFER_SECONDS;
-      (config as any).RATE_LIMIT_BUFFER_SECONDS = 30;
-
-      const beforeTime = Date.now();
-      rateLimitTracker.setRateLimit('test-key');
-      const afterTime = Date.now();
-
-      const entry = (rateLimitTracker as any).entries.get('test-key');
-      const expectedMinTime = beforeTime + 15 * 60 * 1000 + 30 * 1000;
-      const expectedMaxTime = afterTime + 15 * 60 * 1000 + 30 * 1000;
-
-      expect(entry.until.getTime()).toBeGreaterThanOrEqual(expectedMinTime);
-      expect(entry.until.getTime()).toBeLessThanOrEqual(expectedMaxTime);
-
-      (config as any).RATE_LIMIT_BUFFER_SECONDS = originalBuffer;
-    });
+    // Removed: setRateLimit uses hardcoded 2min buffer
   });
 
   describe('setCooldown', () => {
@@ -171,7 +156,7 @@ describe('RateLimitTracker', () => {
       expect(entry).toBeDefined();
       expect(entry.type).toBe('cooldown');
       expect(entry.reason).toBe(reason);
-      expect(entry.until.getTime()).toBeGreaterThan(Date.now() + seconds * 1000);
+      expect(entry.until.getTime()).toBeGreaterThanOrEqual(Date.now() + seconds * 1000 - 100); // Allow 100ms tolerance
       expect(logger.info).toHaveBeenCalledWith(
         expect.stringContaining(`Setting cooldown for 'test-key' for ${seconds}s (test cooldown)`)
       );

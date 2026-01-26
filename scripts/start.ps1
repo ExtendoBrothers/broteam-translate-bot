@@ -20,13 +20,18 @@ $lockFile = Join-Path $repo '.bot-lock'
 if (Test-Path $lockFile) {
     try {
         $lockData = Get-Content $lockFile | ConvertFrom-Json
-        # ...existing code...
-        if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
-            Write-Host "Bot is already running (PID: $pid). Exiting."
-            exit 0
-        } else {
-            Write-Host "Removing stale lock file from PID $pid."
+        if (-not $lockData -or -not $lockData.pid) {
+            Write-Host "Lock file missing PID, removing it."
             Remove-Item $lockFile
+        } else {
+            $pid = [int]$lockData.pid
+            if (Get-Process -Id $pid -ErrorAction SilentlyContinue) {
+                Write-Host "Bot is already running (PID: $pid). Exiting."
+                exit 0
+            } else {
+                Write-Host "Removing stale lock file from PID $pid."
+                Remove-Item $lockFile
+            }
         }
     } catch {
         Write-Host "Error reading lock file, removing it."

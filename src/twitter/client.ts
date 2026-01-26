@@ -188,7 +188,7 @@ export class TwitterClient {
     }
   }
 
-  private async withRefreshOn401<T>(request: () => Promise<T>): Promise<T> {
+  private async withRefreshOn401<T>(request: () => Promise<T>, isPostRequest: boolean = false): Promise<T> {
     try {
       await this.ensureFreshToken();
       return await request();
@@ -198,15 +198,38 @@ export class TwitterClient {
       
       // Only attempt OAuth2 refresh if we're using OAuth2 and have a refresh token
       if ((code === 401 || status === 401) && !this.usingOAuth1 && this.oauth2Tokens?.refreshToken) {
+        if (isPostRequest) {
+          logger.warn('[AUTH_RETRY] Post attempt got 401 - refreshing OAuth2 token before retry');
+        }
         logger.warn('401 received from Twitter API. Attempting OAuth2 token refresh...');
         const refreshed = await this.refreshOAuth2Token(this.oauth2Tokens);
         // If refresh succeeded and we have a new access token, retry the request once.
         if (refreshed) {
+          // CRITICAL: Re-check rate limit before retrying post requests
+          if (isPostRequest) {
+            const { rateLimitTracker } = await import('../utils/rateLimitTracker');
+            if (rateLimitTracker.isRateLimited('post')) {
+              const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
+              logger.warn(`[RETRY_BLOCKED] Not retrying post after token refresh - rate limited for ${waitSeconds}s more`);
+              throw new Error(`Rate limited for ${waitSeconds} more seconds`);
+            }
+            logger.info('[AUTH_RETRY] Token refreshed successfully - retrying post attempt');
+          }
           return await request();
         }
         // If we fell back to OAuth1 during refresh, retry the request
         if (this.usingOAuth1) {
           logger.info('Retrying request with OAuth1 credentials...');
+          // CRITICAL: Re-check rate limit before retrying post requests
+          if (isPostRequest) {
+            const { rateLimitTracker } = await import('../utils/rateLimitTracker');
+            if (rateLimitTracker.isRateLimited('post')) {
+              const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
+              logger.warn(`[RETRY_BLOCKED] Not retrying post after OAuth1 fallback - rate limited for ${waitSeconds}s more`);
+              throw new Error(`Rate limited for ${waitSeconds} more seconds`);
+            }
+            logger.info('[AUTH_RETRY] Fell back to OAuth1 - retrying post attempt');
+          }
           return await request();
         }
       }
@@ -277,6 +300,14 @@ export class TwitterClient {
     // Import rate limit tracker for final safety check
     const { rateLimitTracker } = await import('../utils/rateLimitTracker');
     
+    // STEP 1: Proactively ensure OAuth token is fresh BEFORE checking rate limits
+    // This prevents the 401 retry flow from triggering after rate limit checks
+    if (!this.usingOAuth1) {
+      await this.ensureFreshToken();
+      logger.info('[PRE_POST] OAuth2 token validated before post attempt');
+    }
+    
+    // STEP 2: Check rate limits after ensuring fresh auth
     // FINAL SAFETY CHECK: Don't even attempt if we know we're rate limited
     if (rateLimitTracker.isRateLimited('post')) {
       const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
@@ -290,7 +321,7 @@ export class TwitterClient {
     if (replyToTweetId) {
       tweetOptions.reply = { in_reply_to_tweet_id: replyToTweetId };
     }
-    const tweet = await this.withRefreshOn401(() => this.client.v2.tweet(tweetOptions));
+    const tweet = await this.withRefreshOn401(() => this.client.v2.tweet(tweetOptions), true);
     
     // Extract rate limit info from response headers for proactive tracking
     // twitter-api-v2 stores rate limit info on the response object (may not be typed)

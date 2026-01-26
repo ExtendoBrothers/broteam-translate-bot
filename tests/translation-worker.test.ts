@@ -117,9 +117,7 @@ jest.mock('langdetect', () => ({
 
 import { logger } from '../src/utils/logger';
 import { config } from '../src/config';
-import fs from 'fs';
-import path from 'path';
-import { detectLanguageByLexicon } from '../src/translator/lexicon';
+// Removed unused imports: fs, path, detectLanguageByLexicon
 // Removed langdetect import to avoid TypeScript issues
 
 // Import the functions we want to test by extracting them from the module
@@ -435,7 +433,6 @@ describe('Translation Worker Utilities', () => {
 
     it('should return random languages when useOldschool is false', () => {
       // Mock shuffle to return reversed array for predictable testing
-      const originalShuffle = shuffleArray;
       jest.spyOn(Math, 'random').mockReturnValue(0.5);
 
       const result = getTranslationLanguages(false);

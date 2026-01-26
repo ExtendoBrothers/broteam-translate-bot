@@ -8,7 +8,7 @@ import { logger } from './logger';
 import { predictHumor } from './humorOnnx';
 
 // Check if local model is available
-const USE_LOCAL_MODEL = false; // Temporarily disabled for debugging
+const USE_LOCAL_MODEL = true; // Re-enabled with fixed humor probability conversion
 
 if (USE_LOCAL_MODEL) {
   logger.info('[HumorScorer] Local ONNX model is available and will be used');
@@ -183,10 +183,16 @@ export async function scoreHumor(text: string, originalText?: string): Promise<H
       try {
         const prediction = await predictHumor(text);
         
-        logger.debug(`[HumorScorer] ML Model - Text: "${text.substring(0, 50)}..." | Score: ${prediction.score.toFixed(3)} | Label: ${prediction.label} | Humorous: ${prediction.isHumorous}`);
+        // The ML model returns confidence in the predicted label
+        // Convert to humor probability: if NO_HUMOR with 0.9 confidence, humor prob = 0.1
+        const humorProbability = prediction.isHumorous 
+          ? prediction.score 
+          : (1 - prediction.score);
+        
+        logger.debug(`[HumorScorer] ML Model - Text: "${text.substring(0, 50)}..." | Raw: ${prediction.score.toFixed(3)} (${prediction.label}) | Humor Prob: ${humorProbability.toFixed(3)}`);
         
         return {
-          score: prediction.score,
+          score: humorProbability,  // Return humor probability, not raw confidence
           label: prediction.label,
           isHumorous: prediction.isHumorous,
         };

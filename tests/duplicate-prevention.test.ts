@@ -183,27 +183,6 @@ describe('Duplicate Prevention', () => {
       expect(logger.warn).toHaveBeenCalledWith('Translation stability issues detected: issue1, issue2');
     });
 
-    it('should block when minimum post interval not met', async () => {
-      // Set last post time to 10 minutes ago (less than 15 minutes required)
-      const tenMinutesAgo = 1000000000 - (10 * 60 * 1000);
-      jest.spyOn(Date, 'now').mockReturnValue(1000000000);
-
-      // Mock the internal lastPostTime by calling updateLastPostTime first
-      // We need to simulate the last post time being recent
-      (acquireLock as jest.Mock).mockReturnValue(true);
-      (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
-      (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
-      (postTracker.canPost as jest.Mock).mockReturnValue(true);
-      (isContentDuplicate as jest.Mock).mockReturnValue(false);
-      (checkTranslationStability as jest.Mock).mockReturnValue({
-        isStable: true,
-        issues: []
-      });
-
-      // This is tricky to test because lastPostTime is module-scoped
-      // Let's test the success case instead and assume the interval check works
-    });
-
     it('should allow when all checks pass', async () => {
       (acquireLock as jest.Mock).mockReturnValue(true);
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);

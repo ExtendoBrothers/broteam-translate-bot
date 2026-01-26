@@ -710,14 +710,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       //   }
       // }
       
-      // Mark as processed before posting
-      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+      // Mark as processed before posting (only for real posts, not dry runs)
+      let markedAsProcessed = false;
       
       try {
         if (isDryRun) {
           logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
           tweetQueue.dequeue();
         } else {
+          tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+          markedAsProcessed = true;
           const result = await postTweet(client, queuedTweet.finalTranslation);
           if (result) {
             logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
@@ -727,6 +729,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           } else {
             logger.info(`[QUEUE_DEBUG] Post skipped for queued tweet ${queuedTweet.sourceTweetId} (rate limited)`);
             tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+            markedAsProcessed = false;
             // Rate limited - break out of the loop
             blockedByPostLimit = true;
             break;
@@ -736,7 +739,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.info(`[QUEUE_DEBUG] Dequeued tweet. New queue size: ${tweetQueue.size()}`);
       } catch (error: unknown) {
         logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
-        tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+        if (markedAsProcessed) {
+          tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+        }
         // Re-throw to be handled by outer catch (rate limit detection)
         throw error;
       }
