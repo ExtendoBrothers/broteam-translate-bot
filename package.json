@@ -42,6 +42,7 @@
     "@typescript-eslint/parser": "^8.49.0",
     "eslint": "^9.39.2",
     "jest": "^30.2.0",
+    "lodash": "^4.17.23",
     "pm2": "^6.0.14",
     "ts-jest": "^29.4.6",
     "ts-node": "^10.9.1",
@@ -59,10 +60,6 @@
       "!src/index.ts"
     ],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
-  },
-  "overrides": {
-    "js-yaml": "^4.1.1",
-    "lodash": "^4.17.23"
   },
   "version": "0.10.0"
 }
