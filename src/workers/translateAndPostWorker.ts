@@ -147,8 +147,6 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       appendToDebugLog(`[DEBUG] Langdetect error for "${textOnly}": ${e}\n`);
       logger.warn(`Language detection failed: ${e}`);
     }
-  } else if (lexiconResult === null) {
-    appendToDebugLog('[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n');
   }
   const notEnglish = detectedLang !== 'en';
 
