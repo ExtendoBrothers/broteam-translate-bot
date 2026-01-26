@@ -19,20 +19,33 @@ import { postTweet } from '../twitter/postTweets';
 import { TwitterClient } from '../twitter/client';
 import { translateText } from '../translator/googleTranslate';
 import { config } from '../config';
-import { logger } from '../utils/logger';
+import { logger, rotateLogFile } from '../utils/logger';
 import { tweetTracker } from '../utils/tweetTracker';
 import { tweetQueue } from '../utils/tweetQueue';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
+import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
+import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
+
+// Helper function to append to translation debug log with rotation
+function appendToDebugLog(content: string) {
+  const debugLogPath = path.join(process.cwd(), 'translation-logs', 'translation-debug.log');
+  rotateLogFile(debugLogPath, 10 * 1024 * 1024); // 10MB
+  try {
+    fs.appendFileSync(debugLogPath, content, 'utf8');
+  } catch (err) {
+    logger.error('[ERROR] Failed to write to translation-debug.log:', err);
+  }
+}
 
 // Helper function to evaluate if a translation result meets all quality criteria for posting.
 // Checks for length, content validity, duplicates, language, and problematic characters.
@@ -59,11 +72,66 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Check for problematic starting characters or empty-like strings
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
+  // Check for repetitive/spammy content
+  const spamPatterns = [
+    /(\w+)\s+\1\s+\1/,  // Repeated words (Central Central Central)
+    /(\w{3,})\s+\1\s+\1\s+\1/,  // Multiple repetitions
+    /(.)\1{4,}/,  // Character repetition (aaaaa, 11111)
+    /(\w{2,})-\1-\1-\1/i,  // Hyphenated repetition 4+ times (St-St-St-St)
+    /(\w{3,})\1\1\1/i,  // Concatenated repetition without spaces (CENTCENT...)
+  ];
+  let repetitive = spamPatterns.some(pattern => pattern.test(textOnly));
+  
+  // Check for repeated substrings (catches "cententcent", "CENTCENT", etc.)
+  if (!repetitive && textOnly.length > 20) {
+    // Look for any 3-8 char substring that repeats 4+ times consecutively
+    for (let len = 3; len <= 8; len++) {
+      const pattern = new RegExp(`(.{${len}})\\1{3,}`, 'i');
+      if (pattern.test(textOnly.replace(/\s+/g, ''))) {
+        repetitive = true;
+        break;
+      }
+    }
+  }
+  
+  // Check for hyphenated repetition patterns like "St-St-St-St" or "cent-cent-cent"
+  if (!repetitive) {
+    const hyphenParts = textOnly.split('-').map(p => p.trim().toLowerCase());
+    if (hyphenParts.length >= 4) {
+      const counts: Record<string, number> = {};
+      for (const part of hyphenParts) {
+        if (part.length >= 2) {
+          counts[part] = (counts[part] || 0) + 1;
+          if (counts[part] >= 4) {
+            repetitive = true;
+            break;
+          }
+        }
+      }
+    }
+  }
+  
+  // Additional: block if any word appears more than 10 times (non-consecutive)
+  if (!repetitive) {
+    const wordCounts: Record<string, number> = {};
+    for (const word of textOnly.split(/\s+/)) {
+      if (!word) continue;
+      wordCounts[word] = (wordCounts[word] || 0) + 1;
+      if (wordCounts[word] > 10) {
+        repetitive = true;
+        break;
+      }
+    }
+  }
+
+  // Check if output exceeds Twitter character limit (280 + 8 buffer for edge cases)
+  const tooLong = trimmed.length > 288;
+
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Try lexicon-based detection first for short texts
   const lexiconResult = detectLanguageByLexicon(textOnly);
   let detectedLang = lexiconResult || 'und';
-  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult}\n`, 'utf8');
+  appendToDebugLog(`[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult}\n`);
   
   // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
   // If lexicon explicitly returned null (checked all languages, none matched), trust that result
@@ -71,34 +139,34 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     // Lexicon couldn't determine language, try langdetect as fallback
     try {
       const detections = langdetect.detect(textOnly);
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
+      appendToDebugLog(`[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`);
       if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
         detectedLang = detections[0].lang;
       }
     } catch (e) {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Langdetect error for "${textOnly}": ${e}\n`, 'utf8');
+      appendToDebugLog(`[DEBUG] Langdetect error for "${textOnly}": ${e}\n`);
       logger.warn(`Language detection failed: ${e}`);
     }
-  } else if (lexiconResult === null) {
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), '[DEBUG] Lexicon found no match (not English), skipping langdetect fallback\n', 'utf8');
   }
   const notEnglish = detectedLang !== 'en';
 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
   if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+  if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
   if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
   if (sameAsInput) unacceptableReasons.push('Output is the same as the input');
   if (notEnglish) unacceptableReasons.push(`Detected language is not English: ${detectedLang}`);
   if (problematicChar) unacceptableReasons.push('Output is a problematic character or starts with /');
+  if (repetitive) unacceptableReasons.push('Output contains repetitive/spammy content');
 
   const acceptable = unacceptableReasons.length === 0;
   const reason = unacceptableReasons.join('; ');
 
   // Temporary debug log
-  fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', textOnly='${textOnly}', acceptable=${acceptable}, reason='${reason}'\n`, 'utf8');
+  appendToDebugLog(`[DEBUG] isAcceptable: finalResult='${finalResult}', originalText='${originalText}', textOnly='${textOnly}', acceptable=${acceptable}, reason='${reason}'\n`);
 
   return { acceptable, reason };
 }
@@ -120,8 +188,8 @@ let lastPostTime = 0;
 // Prevents wasting time on broken language pairs.
 interface CircuitState { failures: number; openedAt?: number; }
 const circuit: Record<string, CircuitState> = {};
-const FAILURE_THRESHOLD = 2; // Open circuit after 2 failures
-const CIRCUIT_COOLDOWN_MS = 7 * 24 * 60 * 60 * 1000; // 7 days cooldown
+const FAILURE_THRESHOLD = 5; // Open circuit after 5 failures
+const CIRCUIT_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 hour cooldown
 
 // Check if circuit is open for a language (skip if too many recent failures)
 function isCircuitOpen(lang: string): boolean {
@@ -140,6 +208,7 @@ function isCircuitOpen(lang: string): boolean {
 
 // Record a failure for a language, potentially opening the circuit
 function recordFailure(lang: string): void {
+  if (lang === 'en') return; // Don't record failures for English
   const state = circuit[lang] || { failures: 0 };
   state.failures += 1;
   if (state.failures === FAILURE_THRESHOLD && !state.openedAt) {
@@ -201,20 +270,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   function logTranslationStep(lang: string, text: string) {
     const entry = `${new Date().toISOString()} [${lang}] ${text.replace(/\n/g, ' ')}\n`;
     // Log every step to debug log
-    try {
-      fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] [${lang}] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`, 'utf8');
-    } catch (err) {
-      logger.error('[ERROR] Failed to write to translation-debug.log:', err);
-    }
+    appendToDebugLog(`[DEBUG] [${lang}] ${new Date().toISOString()} ${text.replace(/\n/g, ' ')}\n`);
     try {
       fs.appendFileSync(translationLogPath, entry, 'utf8');
     } catch (err) {
       logger.error('[ERROR] Failed to write to translation-steps.log:', err);
-      try {
-        fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[ERROR] [${lang}] ${new Date().toISOString()} ${err}\n`, 'utf8');
-      } catch (e2) {
-        logger.error('[ERROR] Failed to write error to translation-debug.log:', e2);
-      }
+      appendToDebugLog(`[ERROR] [${lang}] ${new Date().toISOString()} ${err}\n`);
     }
   }
   logger.debug(`Worker started at ${new Date().toISOString()}`);
@@ -274,7 +335,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     let translationAttempted = false;
 
     for (const lang of selectedLangs) {
-      if (isCircuitOpen(lang)) {
+      if (isCircuitOpen(lang) && lang !== 'en') {
         logger.warn(`[${chainLabel}] Skipping language ${lang} due to open circuit`);
         continue;
       }
@@ -366,7 +427,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       finalResult = chainResult.result;
       const check = isAcceptable(finalResult, inputText, postedOutputs);
-      acceptable = check.acceptable;
+      const isResultSpammy = isSpammyResult(finalResult);
+      acceptable = check.acceptable && !isResultSpammy;
 
       // Log detailed evaluation of each criterion for debugging (using same logic as isAcceptable)
       const trimmed = finalResult.trim();
@@ -386,7 +448,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (detectedLang === 'und') {
         try {
           const detections = langdetect.detect(textOnly);
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`, 'utf8');
+          appendToDebugLog(`[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`);
           if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
             detectedLang = detections[0].lang;
           }
@@ -402,9 +464,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
       
       try {
-        fs.appendFileSync(
-          path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
-          `[DEBUG][${chainLabel}] Attempt ${attempts} evaluation: acceptable=${check.acceptable}\n` +
+        appendToDebugLog(
+          `[DEBUG][${chainLabel}] Attempt ${attempts} evaluation: acceptable=${check.acceptable}, spammy=${isResultSpammy}, final=${acceptable}\n` +
           `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
           `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
           `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
@@ -412,8 +473,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
           `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
           `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
-          `Result: '${finalResult}'\n\n`,
-          'utf8'
+          `Spam check: ${isResultSpammy ? 'FAIL' : 'pass'}\n` +
+          `Result: '${finalResult}'\n\n`
         );
       } catch (err) {
         logger.error(`[ERROR][${chainLabel}] Failed to write evaluation to translation-debug.log:`, err);
@@ -422,7 +483,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       if (acceptable) {
         logger.info(`[${chainLabel}] ✓ Acceptable result achieved after ${attempts} attempt(s)`);
       } else {
-        logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${check.reason}`);
+        const reasons = [check.reason];
+        if (isResultSpammy) reasons.push('spammy content');
+        logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${reasons.join(', ')}`);
       }
     }
 
@@ -478,6 +541,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
       
       const check = isAcceptable(chainResult.result, inputText, postedOutputs);
+      const isResultSpammy = isSpammyResult(chainResult.result);
       
       // Log detailed evaluation of each criterion for debugging (same as executeChainWithRetries)
       const trimmed = chainResult.result.trim();
@@ -514,7 +578,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       try {
         fs.appendFileSync(
           path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
-          `[DEBUG][RANDOM_COLLECT] Attempt ${totalAttempts} evaluation: acceptable=${check.acceptable}\n` +
+          `[DEBUG][RANDOM_COLLECT] Attempt ${totalAttempts} evaluation: acceptable=${check.acceptable}, spammy=${isResultSpammy}, final=${check.acceptable && !isResultSpammy}\n` +
           `Length check: ${tooShort ? 'FAIL' : 'pass'} (${textOnly.length}/${originalTextOnly.length})\n` +
           `Empty check: ${empty ? 'FAIL' : 'pass'}\n` +
           `Punctuation check: ${punctuationOnly ? 'FAIL' : 'pass'}\n` +
@@ -522,6 +586,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           `Same as input check: ${sameAsInput ? 'FAIL' : 'pass'}\n` +
           `Problematic char check: ${problematicChar ? 'FAIL' : 'pass'}\n` +
           `Language check: ${notEnglish ? 'FAIL' : 'pass'} (detected: ${detectedLang})\n` +
+          `Spam check: ${isResultSpammy ? 'FAIL' : 'pass'}\n` +
           `Result: '${chainResult.result}'\n\n`,
           'utf8'
         );
@@ -529,11 +594,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.error('[ERROR][RANDOM_COLLECT] Failed to write evaluation to translation-debug.log:', err);
       }
       
-      if (check.acceptable) {
+      if (check.acceptable && !isResultSpammy) {
         acceptableResults.push({ result: chainResult.result, attempts: totalAttempts });
         logger.info(`[RANDOM_COLLECT] ✓ Collected result ${acceptableResults.length}/${targetCount}`);
       } else {
-        logger.warn(`[RANDOM_COLLECT] Attempt ${totalAttempts} unacceptable: ${check.reason}`);
+        const reasons = [check.reason];
+        if (isResultSpammy) reasons.push('spammy content');
+        logger.warn(`[RANDOM_COLLECT] Attempt ${totalAttempts} unacceptable: ${reasons.join(', ')}`);
       }
     }
     
@@ -546,12 +613,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.info(`[RANDOM_COLLECT] Selecting ${needed} most funny/unexpected results from ${englishResults.length} English candidates...`);
         
         // Score all English results by funniness/unexpectedness
-        const scoredResults = englishResults.map(r => {
-          const diff = differenceScore(r.result, inputText);
-          const unexp = unexpectednessScore(r.result, inputText);
-          const score = diff + unexp * 2; // Weight unexpectedness higher
-          return { ...r, score };
-        });
+        const scoredResults = englishResults
+          .filter(r => r.result.trim() !== inputText.trim()) // Exclude results identical to input
+          .map(r => {
+            const diff = differenceScore(r.result, inputText);
+            const unexp = unexpectednessScore(r.result, inputText);
+            const score = diff + unexp * 2; // Weight unexpectedness higher
+            return { ...r, score };
+          });
         
         // Sort by score descending and take top N
         scoredResults.sort((a, b) => b.score - a.score);
@@ -589,7 +658,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     // Check if we're rate limited for posting
     if (rateLimitTracker.isRateLimited('post')) {
       const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
-      logger.info(`[QUEUE_DEBUG] Cannot post queued tweets - rate limited for ${waitSeconds} more seconds`);
+      const nextAllowed = new Date(Date.now() + waitSeconds * 1000).toISOString();
+      logger.info(`[QUEUE_DEBUG][RATE_LIMIT] Cannot post queued tweets - rate limited for ${waitSeconds} more seconds. Next allowed post: ${nextAllowed}, current time: ${new Date().toISOString()}`);
       blockedByPostLimit = true;
       break;
     }
@@ -614,71 +684,109 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
       
+      // Safety check for error messages in queued tweets
+      if (queuedTweet.finalTranslation.includes('rate limit') || queuedTweet.finalTranslation.includes('retranslation') || queuedTweet.finalTranslation.includes('removed due to')) {
+        logger.warn(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} due to error message in translation: '${queuedTweet.finalTranslation}'`);
+        tweetQueue.dequeue(); // Remove it from queue
+        continue;
+      }
+      
       // COMPREHENSIVE DUPLICATE PREVENTION CHECK FOR QUEUED TWEETS
-      const duplicateCheck = await checkForDuplicates(
-        queuedTweet.sourceTweetId,
-        queuedTweet.finalTranslation,
-        '', // We don't have original text for queued tweets
-        'queued',
-        queuedTweet.attemptCount
-      );
+      // Skipped for queued tweets as they are already vetted during enqueue
+      // const duplicateCheck = await checkForDuplicates(
+      //   queuedTweet.sourceTweetId,
+      //   queuedTweet.finalTranslation,
+      //   '', // We don't have original text for queued tweets
+      //   'queued',
+      //   queuedTweet.attemptCount
+      // );
 
-      if (!duplicateCheck.canProceed) {
-        logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
-        if (duplicateCheck.severity === 'block') {
+      // if (!duplicateCheck.canProceed) {
+      //   logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
+      //   if (duplicateCheck.severity === 'block') {
+      //     tweetQueue.dequeue();
+      //     logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);
+      //     continue;
+      //   }
+      // }
+      
+      // Mark as processed before posting (only for real posts, not dry runs)
+      let markedAsProcessed = false;
+      
+      try {
+        if (isDryRun) {
+          logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
           tweetQueue.dequeue();
-          logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);
-          continue;
+        } else {
+          tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+          markedAsProcessed = true;
+          const result = await postTweet(client, queuedTweet.finalTranslation);
+          if (result) {
+            logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
+            // COMPREHENSIVE POST RECORDING FOR QUEUED TWEETS
+            recordSuccessfulPost(queuedTweet.sourceTweetId, queuedTweet.finalTranslation);
+            tweetQueue.dequeue();
+          } else {
+            logger.info(`[QUEUE_DEBUG] Post skipped for queued tweet ${queuedTweet.sourceTweetId} (rate limited)`);
+            tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+            markedAsProcessed = false;
+            // Rate limited - break out of the loop
+            blockedByPostLimit = true;
+            break;
+          }
         }
+        lastPostTime = Date.now();
+        logger.info(`[QUEUE_DEBUG] Dequeued tweet. New queue size: ${tweetQueue.size()}`);
+      } catch (error: unknown) {
+        logger.error(`Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+        if (markedAsProcessed) {
+          tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+        }
+        // Re-throw to be handled by outer catch (rate limit detection)
+        throw error;
       }
-      
-      if (isDryRun) {
-        logger.warn(`[DRY_RUN] Would have posted queued tweet ${queuedTweet.sourceTweetId}: ${queuedTweet.finalTranslation}`);
-      } else {
-        await postTweet(client, queuedTweet.finalTranslation);
-        logger.info(`[QUEUE_DEBUG] Successfully posted queued tweet ${queuedTweet.sourceTweetId}`);
-
-        // COMPREHENSIVE POST RECORDING FOR QUEUED TWEETS
-        recordSuccessfulPost(queuedTweet.sourceTweetId, queuedTweet.finalTranslation);
-      }
-      
-      tweetQueue.dequeue();
-      lastPostTime = Date.now();
-      logger.info(`[QUEUE_DEBUG] Dequeued tweet. New queue size: ${tweetQueue.size()}`);
                 
       // Add delay between posts
       await delay(5000);
     } catch (error: unknown) {
-      // If rate limit hit (429 or 403), stop processing queue
+      // Handle different types of errors appropriately
       const err = error as { code?: number; message?: string };
-      if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
+      
+      // 429 = Rate limit exceeded - set rate limit cooldown and stop processing queue
+      if (err?.code === 429 || err?.message?.includes('429')) {
         logger.error(`[QUEUE_DEBUG] Rate limit hit (${err?.code || 'unknown'}) while posting queued tweet. Will retry next run.`);
         tweetQueue.incrementAttempt();
         
-        // Check if too many attempts after rate limit
+        // NEVER remove tweets for rate limit failures - they will eventually succeed
         const updatedQueuedTweet = tweetQueue.peek();
-        if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
-          logger.error(`[QUEUE_DEBUG] Removing rate-limited tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts`);
-          tweetQueue.dequeue();
-          logger.info(`[QUEUE_DEBUG] Dequeued rate-limited tweet after too many failures. New queue size: ${tweetQueue.size()}`);
-        }
+        logger.info(`[QUEUE_DEBUG] Tweet ${updatedQueuedTweet?.sourceTweetId} has ${updatedQueuedTweet?.attemptCount} attempts, keeping in queue for retry`);
         
         blockedByPostLimit = true;
         break;
       }
-      // For other errors, increment attempt count but keep in queue
-      logger.error(`[QUEUE_DEBUG] Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
-      tweetQueue.incrementAttempt();
-                
-      // If too many failures, remove from queue and let it be re-fetched/retried later
-      const updatedQueuedTweet = tweetQueue.peek();
-      if (updatedQueuedTweet && updatedQueuedTweet.attemptCount >= 5) {
-        logger.error(`[QUEUE_DEBUG] Removing tweet ${updatedQueuedTweet.sourceTweetId} from queue after ${updatedQueuedTweet.attemptCount} failed attempts - will retry on next fetch`);
-        tweetQueue.dequeue();
-        logger.info(`[QUEUE_DEBUG] Dequeued tweet after too many failures. New queue size: ${tweetQueue.size()}`);
-        // Do NOT mark as processed - allow retry in future runs
+      // 401/403 = Auth errors - set auth cooldown but continue processing (don't stop queue)
+      else if (err?.code === 401 || err?.code === 403 || err?.message?.includes('401') || err?.message?.includes('403')) {
+        logger.error(`[QUEUE_DEBUG] Auth error (${err?.code || 'unknown'}) while posting queued tweet. Setting auth cooldown.`);
+        // Set a cooldown for auth issues to prevent overwhelming Twitter
+        rateLimitTracker.setCooldown('post', 30 * 60, 'auth error cooldown'); // 30 minutes
+        tweetQueue.incrementAttempt();
+        
+        // Keep in queue for retry, but don't stop processing other tweets
+        logger.info(`[QUEUE_DEBUG] Auth error for tweet ${queuedTweet.sourceTweetId}. Keeping in queue for retry.`);
+        blockedByPostLimit = true;
+        // Don't break - continue to next tweet (but will be blocked by cooldown)
       }
-      break;
+      // Other errors (network, etc.) - increment attempt but keep in queue
+      else {
+        logger.error(`[QUEUE_DEBUG] Failed to post queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+        tweetQueue.incrementAttempt();
+                
+        // For non-rate-limit/auth errors, keep retrying indefinitely
+        // These could be temporary network issues, etc.
+        logger.info(`[QUEUE_DEBUG] Non-critical error for tweet ${queuedTweet.sourceTweetId}. Keeping in queue for retry on next run.`);
+        blockedByPostLimit = true;
+        break;
+      }
     }
   }
 
@@ -747,12 +855,23 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
       ];
 
-      logger.info(`[MULTI_CHAIN] Comparing ${allCandidates.length} candidates (${randomResults.length} random + 1 oldschool)...`);
+      // All candidates should already be acceptable and non-spammy at this point
+      // But double-check for any edge cases
+      const filteredCandidates = allCandidates.filter(candidate => {
+        const isResultSpammy = isSpammyResult(candidate.result);
+        if (isResultSpammy) {
+          logger.warn(`[SPAM_FILTER] Unexpected spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+          return false;
+        }
+        return true;
+      });
+
+      logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out as spam)...`);
 
       // Detect language of each candidate and only score English results
       const originalText = tweet.text; // Store for tie-breaker calculations
       const scoredCandidates = await Promise.all(
-        allCandidates.map(async (candidate) => {
+        filteredCandidates.map(async (candidate) => {
           // Detect language
           const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
           const textOnly = candidate.result.replace(tokenPattern, '').trim();
@@ -780,12 +899,16 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           const unexpScore = unexpectednessScore(candidate.result, originalText);
           const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          // Initialize unified humor score with base value (will be modified by heuristics later)
-          const baseHumorScore = humorScore.isHumorous 
-            ? humorScore.score 
-            : (1 - humorScore.score);
+          // Evaluate user-defined heuristics
+          const heuristicEvaluation = evaluateHeuristics(candidate.result, originalText);
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore };
+          // Initialize unified humor score with the score directly
+          // The scoreHumor() function returns the humor probability directly (higher = funnier)
+          // - Heuristic scorer: score IS the humor probability
+          // - ML model (if enabled): we need to handle it differently in humorScorer.ts
+          const baseHumorScore = humorScore.score;
+          
+          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore, heuristicEvaluation };
         })
       );
 
@@ -902,8 +1025,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
         }
         
-        // Apply bonus (cap at 0.1 total to avoid over-weighting)
-        const appliedBonus = Math.min(bonus, 0.1);
+        // Apply user-defined heuristic evaluation first
+        if (candidate.heuristicEvaluation.score !== 0) {
+          bonus += candidate.heuristicEvaluation.score;
+          bonusDetails.push(...candidate.heuristicEvaluation.details.map(d => `${d} ${candidate.heuristicEvaluation.score > 0 ? '+' : ''}${candidate.heuristicEvaluation.score.toFixed(3)}`));
+        }
+        
+        // Apply bonus (cap at 0.15 total to account for user heuristics)
+        const appliedBonus = Math.min(bonus, 0.15);
         
         // Update unified humor score by adding heuristic bonuses
         const originalUnifiedScore = candidate.unifiedHumorScore;
@@ -916,7 +1045,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       });
       // Select the funniest result using unified humor scores
       // Higher unified score = more likely funny (consistent for all results)
-      let bestCandidate = scoredCandidates[0];
+      let bestCandidate;
+      if (scoredCandidates.length === 0) {
+        logger.error(`[MULTI_CHAIN] No acceptable candidates found for tweet ${tweet.id}. All translation attempts failed.`);
+        // Skip this tweet entirely - don't post error messages
+        continue;
+      }
+      
+      bestCandidate = scoredCandidates[0];
       
       for (const candidate of scoredCandidates) {
         // Prioritize English results over non-English
@@ -955,7 +1091,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             humorLabel: c.humorScore.label,
             isEnglish: c.isEnglish,
             tieBreaker: c.tieBreaker,
-            acceptable: c.acceptable
+            acceptable: c.acceptable,
+            heuristicEvaluation: c.heuristicEvaluation
           })),
           botSelected: bestCandidate.source,
           selectedResult: bestCandidate.result,
@@ -981,11 +1118,23 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
         }
         
-        // Add new entry
-        existingEntries.push(feedbackEntry);
-        
-        // Write back all entries
-        const jsonlContent = existingEntries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
+        // Spam/repetition filter: block entries with excessive repeated words or length
+        if (!isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
+          existingEntries.push(feedbackEntry);
+        } else {
+          logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
+        }
+        // Write back all entries (ensure single-line JSON)
+        const jsonlContent = existingEntries.map(entry => {
+          // Create a copy and escape newlines in string values to prevent multiline JSON
+          const sanitizedEntry = JSON.parse(JSON.stringify(entry, (key, value) => {
+            if (typeof value === 'string') {
+              return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+            }
+            return value;
+          }));
+          return JSON.stringify(sanitizedEntry);
+        }).join('\n') + '\n';
         fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
         
         // Check if feedback threshold reached for analysis (every 5 feedbacks)
@@ -1003,7 +1152,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       const finalResult = bestCandidate.result;
-      const acceptable = bestCandidate.acceptable || randomResults.length > 0; // Accept if we got any random results
+      const acceptable = bestCandidate.acceptable; // Only accept if the best candidate meets quality criteria
       const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
       const translationAttempted = true;
       const selectedChain = bestCandidate.source;
@@ -1013,11 +1162,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       // Log the initial result evaluation (if we have one)
       if (acceptable && translationAttempted) {
-        try {
-          fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Final result evaluation: acceptable=${acceptable}\nSelected chain: ${selectedChain}\nfinalResult='${finalResult}'\nReason: ${initialCheck.reason}\n`, 'utf8');
-        } catch (err) {
-          logger.error('[ERROR] Failed to write evaluation to translation-debug.log:', err);
-        }
+        appendToDebugLog(`[DEBUG] Final result evaluation: acceptable=${acceptable}\nSelected chain: ${selectedChain}\nfinalResult='${finalResult}'\nReason: ${initialCheck.reason}\n`);
       }
 
       logger.info(`Selected translation (${selectedChain}, humor: ${chosenHumorScore.toFixed(3)}): ${finalResult}`);
@@ -1071,7 +1216,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
 
           // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
-          if (!finalResult || finalResult.trim() === '/') {
+          if (!finalResult || finalResult.trim() === '/' || finalResult.includes('rate limit') || finalResult.includes('retranslation') || finalResult.includes('removed due to')) {
             const queued = tweetQueue.peek();
             if (queued && queued.sourceTweetId === tweet.id) {
               queued.attemptCount = (queued.attemptCount || 0) + 1;
@@ -1089,33 +1234,38 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
             }
           }
 
+          // Mark as processed before posting to prevent race conditions
+          tweetTracker.markProcessed(tweet.id);
+
           // Post the tweet
           try {
             if (isDryRun) {
               logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
+              didWork = true;
+              lastPostTime = Date.now();
             } else {
-              await postTweet(client, finalResult);
-              logger.info(`Successfully posted translated tweet ${tweet.id}`);
-
-              // COMPREHENSIVE POST RECORDING
-              recordSuccessfulPost(tweet.id, finalResult);
+              const result = await postTweet(client, finalResult);
+              if (result) {
+                logger.info(`Successfully posted translated tweet ${tweet.id}`);
+                // COMPREHENSIVE POST RECORDING
+                recordSuccessfulPost(tweet.id, finalResult);
+                didWork = true;
+                lastPostTime = Date.now();
+              } else {
+                logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
+                await tweetQueue.enqueue(tweet.id, finalResult);
+                tweetTracker.unmarkProcessed(tweet.id);
+              }
             }
-
-            didWork = true;
-            lastPostTime = Date.now();
 
             // Add delay between posts
             await delay(5000);
           } catch (error: unknown) {
-            const err = error as { code?: number; message?: string };
-            if (err?.code === 429 || err?.code === 403 || err?.message?.includes('429') || err?.message?.includes('403')) {
-              logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
-              await tweetQueue.enqueue(tweet.id, finalResult);
-            } else {
-              logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
-              // Enqueue for retry
-              await tweetQueue.enqueue(tweet.id, finalResult);
-            }
+            // removed unused variable 'err' to fix lint error
+            logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
+            // Enqueue for retry
+            await tweetQueue.enqueue(tweet.id, finalResult);
+            tweetTracker.unmarkProcessed(tweet.id);
           }
         }
       }

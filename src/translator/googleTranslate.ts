@@ -6,10 +6,21 @@
  *  - LIBRETRANSLATE_API_KEY (optional) — added to request body as "api_key"
  */
 
-import { logger } from '../utils/logger';
+import { logger, rotateLogFile } from '../utils/logger';
 import { normalizeNFC, protectTokens, restoreTokens } from './tokenizer';
 import * as fs from 'fs';
 import * as path from 'path';
+
+// Helper function to append to translation debug log with rotation
+function appendToDebugLog(content: string) {
+  const debugLogPath = path.join(process.cwd(), 'translation-logs', 'translation-debug.log');
+  rotateLogFile(debugLogPath, 10 * 1024 * 1024); // 10MB
+  try {
+    fs.appendFileSync(debugLogPath, content, 'utf8');
+  } catch (err) {
+    logger.error('[ERROR] Failed to write to translation-debug.log:', err);
+  }
+}
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -82,18 +93,23 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
   // Use provided source language, or detect it
   let detectedSource = sourceLanguage || 'auto';
   if (!sourceLanguage) {
-    try {
-      const detections = langdetect.detect(q);
-      if (detections && detections.length > 0 && detections[0].prob > 0.5) {
-        const detectedCode = detections[0].lang;
-        if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
-          detectedSource = detectedCode;
-        } else {
-          detectedSource = 'auto';
+    // For English target, always use 'auto' to avoid source language issues
+    if (targetLanguage === 'en') {
+      detectedSource = 'auto';
+    } else {
+      try {
+        const detections = langdetect.detect(q);
+        if (detections && detections.length > 0 && detections[0].prob > 0.5) {
+          const detectedCode = detections[0].lang;
+          if (detectedCode && detectedCode !== 'und' && LIBRE_SUPPORTED.includes(detectedCode)) {
+            detectedSource = detectedCode;
+          } else {
+            detectedSource = 'auto';
+          }
         }
+      } catch (e) {
+        logger.warn(`langdetect language detection failed: ${e}`);
       }
-    } catch (e) {
-      logger.warn(`langdetect language detection failed: ${e}`);
     }
   }
   let lastError: any = null;
@@ -107,7 +123,7 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
     if (LIBRE_API_KEY) bodyPayload.api_key = LIBRE_API_KEY;
 
     // Debug log the API request
-    fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`, 'utf8');
+    appendToDebugLog(`[DEBUG] LibreTranslate request: source=${trySource}, target=${targetLanguage}, q="${q.substring(0, 100)}..."\n`);
 
     const res = await fetchWithTimeout(LIBRE_URL, {
       method: 'POST',
@@ -144,14 +160,16 @@ export async function translateText(text: string, targetLanguage: string, source
   text = normalizeNFC(text);
   const sanitized = protectTokens(text);
 
-  const MAX_RETRIES = 3;
+  const MAX_RETRIES = 5;
   const BASE_TIMEOUT_MS = 30000; // 30s per attempt (increased from 15s)
   let lastErr: unknown;
   let triedChunkFallback = false;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
-      const raw = await translateWithTokenProtection(sanitized, targetLanguage, sourceLanguage);
+      // For English target, don't specify source to let LibreTranslate auto-detect
+      const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;
+      const raw = await translateWithTokenProtection(sanitized, targetLanguage, effectiveSource);
       return restoreTokens(raw).replace(/__XNL__/g, '\n');
     } catch (error: unknown) {
       lastErr = error;
@@ -179,7 +197,8 @@ export async function translateText(text: string, targetLanguage: string, source
           const chunks = splitProtectedIntoChunks(sanitized, 220);
           const outPieces: string[] = [];
           for (const ch of chunks) {
-            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, sourceLanguage);
+            const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;
+            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, effectiveSource);
             outPieces.push(piece);
             await new Promise(r => setTimeout(r, 150));
           }

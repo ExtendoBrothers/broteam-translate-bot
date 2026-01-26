@@ -77,7 +77,12 @@ function addFeedback() {
       if (feedback.wasCorrect !== undefined) console.log('  Bot correct?:', feedback.wasCorrect ? 'Yes' : 'No');
       if (feedback.notes) console.log('  Notes:', feedback.notes);
       
-      updatedLines.push(JSON.stringify(entry));
+      updatedLines.push(JSON.stringify(entry, (key, value) => {
+        if (typeof value === 'string') {
+          return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+        }
+        return value;
+      }));
     } else {
       updatedLines.push(line);
     }

@@ -30,7 +30,7 @@ function validateEnv(): boolean {
 
 async function main() {
   try {
-    // Global safety net for unhandled rejections
+    // Global safety net for unhandled errors
     process.on('unhandledRejection', (reason: unknown) => {
       try {
         const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
@@ -38,6 +38,15 @@ async function main() {
       } catch {
         // ignore
       }
+    });
+
+    process.on('uncaughtException', (error: Error) => {
+      try {
+        logger.error(`Uncaught exception: ${error.message}\n${error.stack}`);
+      } catch {
+        // ignore
+      }
+      process.exit(1);
     });
         
     // Ensure only one instance runs at a time
@@ -53,8 +62,26 @@ async function main() {
     // Log version information
     const version = getVersion();
     logger.info(`Starting BroTeam Translate Bot v${version}...`);
-        
-    // Run an immediate initial pass
+    
+    // Log startup information for debugging
+    const startupInfo = {
+      timestamp: new Date().toISOString(),
+      pid: process.pid,
+      ppid: process.ppid,
+      platform: process.platform,
+      nodeVersion: process.version,
+      execPath: process.execPath,
+      cwd: process.cwd(),
+      argv: process.argv,
+      env: {
+        DRY_RUN: process.env.DRY_RUN,
+        NODE_ENV: process.env.NODE_ENV,
+        PM2_HOME: process.env.PM2_HOME,
+        PM2_INSTANCE: process.env.PM2_INSTANCE,
+        PM2_PROCESS_NAME: process.env.PM2_PROCESS_NAME
+      }
+    };
+    logger.info(`Startup information: ${JSON.stringify(startupInfo)}`);
     await translateAndPostWorker();
     const now = new Date();
     recordLastRun(now);

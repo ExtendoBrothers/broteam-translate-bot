@@ -69,17 +69,11 @@ class TweetTracker {
       for (const [id, dt] of this.processed.entries()) {
         processedObj[id] = dt.toISOString();
       }
-      if (Object.keys(processedObj).length === 0) {
-        logger.warn('[SAFEGUARD] Attempted to save processed tweets file with zero entries. Save aborted to prevent data loss.');
-        return;
-      }
       const state: TweetTrackerStateV2 = {
         processed: processedObj,
         lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
       };
-      const tmp = TWEET_TRACKER_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, TWEET_TRACKER_FILE);
+      fs.writeFileSync(TWEET_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save tweet tracker state: ${error}`);
     }
@@ -94,6 +88,13 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
       return false;
     }
+
+    // Also check if tweet was posted (more reliable)
+    if (this.wasPosted(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already posted`);
+      return false;
+    }
+
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       logger.debug(`shouldProcess: ${tweetId} already in posting queue`);
@@ -109,10 +110,39 @@ class TweetTracker {
   }
 
   /**
+     * Check if tweet has already been posted (by checking combined.log files)
+     */
+  private wasPosted(tweetId: string): boolean {
+    try {
+      // Check combined.log files (most recent first)
+      const logFiles = ['combined9.log', 'combined8.log', 'combined7.log', 'combined6.log', 
+        'combined5.log', 'combined4.log', 'combined3.log', 'combined2.log', 
+        'combined1.log', 'combined.log'];
+      
+      for (const logFile of logFiles) {
+        const logPath = path.join(process.cwd(), logFile);
+        if (fs.existsSync(logPath)) {
+          const content = fs.readFileSync(logPath, 'utf8');
+          // Check for "Posted final translation to Twitter for tweet {tweetId}"
+          const regex = new RegExp(`Posted final translation to Twitter for tweet ${tweetId}`, 'm');
+          if (regex.test(content)) {
+            return true;
+          }
+        }
+      }
+      
+      return false;
+    } catch (error) {
+      logger.error(`Error checking if tweet ${tweetId} was posted: ${error}`);
+      return false;
+    }
+  }
+
+  /**
      * Check if tweet has already been processed (for duplicate prevention)
      */
   public isProcessed(tweetId: string): boolean {
-    return this.processed.has(tweetId);
+    return this.processed.has(tweetId) || this.wasPosted(tweetId);
   }
 
   /**
@@ -126,10 +156,19 @@ class TweetTracker {
   }
 
   /**
-     * Get the last processed timestamp
+     * Unmark tweet as processed (for failed posts)
      */
-  public getLastProcessedAt(): Date | null {
-    return this.lastProcessedAt;
+  public unmarkProcessed(tweetId: string) {
+    this.processed.delete(tweetId);
+    this.saveState();
+    logger.info(`Unmarked tweet ${tweetId} as processed`);
+  }
+
+  /**
+   * Get all processed tweet IDs
+   */
+  public getProcessedTweetIds(): string[] {
+    return Array.from(this.processed.keys());
   }
 
   /**

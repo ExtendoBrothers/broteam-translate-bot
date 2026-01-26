@@ -152,7 +152,7 @@ async function manualTokenEntry() {
 
   // Save to .twitter-oauth2-tokens.json
   const tokenPath = path.join(process.cwd(), '.twitter-oauth2-tokens.json');
-  const tmp = tokenPath + '.tmp';
+  const tmp = tokenPath + '.tmp.' + Date.now();
   fs.writeFileSync(tmp, JSON.stringify(tokens, null, 2));
   fs.renameSync(tmp, tokenPath);
 

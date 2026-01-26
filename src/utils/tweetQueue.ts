@@ -51,9 +51,7 @@ class TweetQueue {
       const state: QueueState = {
         queue: this.queue
       };
-      const tmp = QUEUE_FILE + '.tmp';
-      fs.writeFileSync(tmp, JSON.stringify(state, null, 2), 'utf-8');
-      fs.renameSync(tmp, QUEUE_FILE);
+      fs.writeFileSync(QUEUE_FILE, JSON.stringify(state, null, 2), 'utf-8');
     } catch (error) {
       logger.error(`Failed to save tweet queue state: ${error}`);
     }
@@ -137,6 +135,25 @@ class TweetQueue {
      */
   public isQueued(sourceTweetId: string): boolean {
     return this.queue.some(t => t.sourceTweetId === sourceTweetId);
+  }
+
+  /**
+     * Remove a specific tweet from the queue by ID (without marking as processed)
+     */
+  public removeById(sourceTweetId: string): boolean {
+    const index = this.queue.findIndex(t => t.sourceTweetId === sourceTweetId);
+    if (index === -1) return false;
+    this.queue.splice(index, 1);
+    this.saveState();
+    logger.info(`Removed tweet ${sourceTweetId} from queue. Queue size: ${this.queue.length}`);
+    return true;
+  }
+
+  /**
+     * Get the full queue (for inspection)
+     */
+  public getQueue(): QueuedTweet[] {
+    return [...this.queue];
   }
 
   /**

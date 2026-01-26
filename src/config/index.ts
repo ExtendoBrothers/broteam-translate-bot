@@ -19,7 +19,7 @@ export const config = {
   MONTHLY_FETCH_LIMIT: Number(process.env.MONTHLY_FETCH_LIMIT || '100'),
   // Enable dynamic spacing of fetches across the month so we do not exceed the cap prematurely.
   FETCH_SPREAD: (process.env.FETCH_SPREAD || 'true').toLowerCase() === 'true',
-  RATE_LIMIT_BUFFER_SECONDS: Number(process.env.RATE_LIMIT_BUFFER_SECONDS || '10'),
+  RATE_LIMIT_BUFFER_SECONDS: Number(process.env.RATE_LIMIT_BUFFER_SECONDS || '120'),
   // OAuth2 refresh retry config
   OAUTH2_REFRESH_MAX_RETRIES: Number(process.env.OAUTH2_REFRESH_MAX_RETRIES || '3'),
   OAUTH2_REFRESH_BACKOFF_MS: Number(process.env.OAUTH2_REFRESH_BACKOFF_MS || '1000'),

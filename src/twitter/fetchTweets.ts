@@ -29,9 +29,7 @@ function readLastTwitterApiFetch(): Date | null {
 
 function recordTwitterApiFetch(when: Date) {
   try {
-    const tmp = LAST_TWITTER_API_FETCH_FILE + '.tmp';
-    fs.writeFileSync(tmp, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
-    fs.renameSync(tmp, LAST_TWITTER_API_FETCH_FILE);
+    fs.writeFileSync(LAST_TWITTER_API_FETCH_FILE, JSON.stringify({ lastFetch: when.toISOString() }, null, 2), 'utf-8');
   } catch {
     // ignore
   }

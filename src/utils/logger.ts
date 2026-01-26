@@ -1,4 +1,5 @@
 import { createLogger, format, transports } from 'winston';
+import * as fs from 'fs';
 
 export const logger = createLogger({
   level: 'info',
@@ -24,3 +25,37 @@ export const logInfo = (message: string) => {
 export const logError = (message: string) => {
   logger.error(message);
 };
+
+/**
+ * Rotate a log file if it exceeds maxSize bytes, keeping all rotated files (no deletion)
+ */
+export function rotateLogFile(logPath: string, maxSize: number) {
+  try {
+    if (!fs.existsSync(logPath)) return;
+
+    const stat = fs.statSync(logPath);
+    if (stat.size < maxSize) return;
+
+    // Find the highest numbered rotated file
+    let highest = 0;
+    for (let i = 1; ; i++) {
+      if (fs.existsSync(`${logPath}.${i}`)) {
+        highest = i;
+      } else {
+        break;
+      }
+    }
+
+    // Rotate existing files from highest down to 1
+    for (let i = highest; i >= 1; i--) {
+      const oldFile = `${logPath}.${i}`;
+      const newFile = `${logPath}.${i + 1}`;
+      fs.renameSync(oldFile, newFile);
+    }
+
+    // Rename current to .1
+    fs.renameSync(logPath, `${logPath}.1`);
+  } catch (error) {
+    logger.error(`Failed to rotate log file ${logPath}: ${error}`);
+  }
+}
