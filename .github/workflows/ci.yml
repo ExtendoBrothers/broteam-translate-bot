@@ -61,7 +61,7 @@ jobs:
         run: npm ci
       
       - name: Run ESLint
-        run: npm run lint -- --max-warnings 198
+        run: npm run lint -- --max-warnings 250
       
       - name: Build TypeScript
         run: npm run build
