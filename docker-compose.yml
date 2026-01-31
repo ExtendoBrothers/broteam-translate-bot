@@ -1,5 +1,7 @@
 version: '3.8'
+
 services:
+  # LibreTranslate translation service
   libretranslate:
     image: libretranslate/libretranslate:latest
     container_name: libretranslate
@@ -17,4 +19,89 @@ services:
       - MKL_NUM_THREADS=1
       - NUMEXPR_NUM_THREADS=1
       - TOKENIZERS_PARALLELISM=false
+    volumes:
+      - libretranslate-models:/home/libretranslate/.local
     restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/languages"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    networks:
+      - translate-network
+
+  # Translation bot service
+  bot:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: broteam-translate-bot
+    depends_on:
+      libretranslate:
+        condition: service_healthy
+    environment:
+      # Translation service
+      - LIBRETRANSLATE_URL=http://libretranslate:5000
+      
+      # Twitter OAuth2 (required - set in .env file)
+      - TWITTER_OAUTH2_CLIENT_ID=${TWITTER_OAUTH2_CLIENT_ID}
+      - TWITTER_CLIENT_ID=${TWITTER_CLIENT_ID}
+      - TWITTER_CLIENT_SECRET=${TWITTER_CLIENT_SECRET}
+      - TWITTER_OAUTH2_ACCESS_TOKEN=${TWITTER_OAUTH2_ACCESS_TOKEN}
+      - TWITTER_OAUTH2_REFRESH_TOKEN=${TWITTER_OAUTH2_REFRESH_TOKEN}
+      
+      # Twitter OAuth1 fallback (optional)
+      - TWITTER_API_KEY=${TWITTER_API_KEY:-}
+      - TWITTER_API_SECRET=${TWITTER_API_SECRET:-}
+      - TWITTER_ACCESS_TOKEN=${TWITTER_ACCESS_TOKEN:-}
+      - TWITTER_ACCESS_SECRET=${TWITTER_ACCESS_SECRET:-}
+      
+      # OpenAI/LLM configuration
+      - OPENAI_API_KEY=${OPENAI_API_KEY:-}
+      - ANTHROPIC_API_KEY=${ANTHROPIC_API_KEY:-}
+      
+      # Bot configuration
+      - TRANSLATE_FROM_USERNAME=${TRANSLATE_FROM_USERNAME}
+      - TARGET_LANGUAGES=${TARGET_LANGUAGES:-es,fr,de,pt,nl,it,pl}
+      - FETCH_INTERVAL_MS=${FETCH_INTERVAL_MS:-300000}
+      - POST_REPLY_DELAY_MS=${POST_REPLY_DELAY_MS:-2000}
+      - MAX_TWEETS_PER_FETCH=${MAX_TWEETS_PER_FETCH:-10}
+      
+      # Performance and monitoring
+      - NODE_ENV=production
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+      - ENABLE_PERFORMANCE_METRICS=${ENABLE_PERFORMANCE_METRICS:-true}
+      
+    volumes:
+      # Persistent data
+      - bot-data:/app/data
+      - bot-logs:/app/logs
+      # OAuth tokens (if using file-based storage)
+      - ./.twitter-oauth2-tokens.json:/app/.twitter-oauth2-tokens.json:rw
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "node", "-e", "require('http').get('http://localhost:3000/health', (r) => process.exit(r.statusCode === 200 ? 0 : 1));"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    networks:
+      - translate-network
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  translate-network:
+    driver: bridge
+
+volumes:
+  libretranslate-models:
+    driver: local
+  bot-data:
+    driver: local
+  bot-logs:
+    driver: local

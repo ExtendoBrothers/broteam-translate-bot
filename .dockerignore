@@ -1,0 +1,53 @@
+# Docker ignore patterns for efficient builds
+node_modules/
+npm-debug.log
+dist/
+.git/
+.github/
+.vscode/
+.env
+.env.local
+
+# Test files
+tests/
+*.test.ts
+*.test.js
+coverage/
+jest.config.js
+
+# Documentation
+*.md
+docs/
+
+# Development files
+.eslintrc.json
+.prettierrc
+.editorconfig
+
+# Logs and temporary files
+*.log
+*.tmp
+.twitter-oauth2-tokens.json
+posted-outputs.log*
+feedback-data.jsonl*
+translation-logs/
+
+# Model files (too large for container)
+models/
+
+# Scripts not needed in production
+scripts/
+examine-content.js
+extract-objects.js
+fix-jsonl.js
+fix-replace.js
+test-*.js
+
+# PM2 and ecosystem files
+ecosystem.config.js
+pm2-wrapper.js
+
+# Docker files
+Dockerfile*
+docker-compose*.yml
+.dockerignore
