@@ -65,9 +65,19 @@ function tokenize(text: string): number[] {
 async function getSession(): Promise<ort.InferenceSession> {
   if (session) return session;
   
+  // Verify model files exist before attempting to load
+  if (!isModelAvailable()) {
+    throw new Error(`Humor model files not found. Expected at: ${MODEL_DIR}`);
+  }
+  
   logger.info(`[HumorONNX] Loading ONNX model from: ${MODEL_PATH}`);
-  session = await ort.InferenceSession.create(MODEL_PATH);
-  logger.info('[HumorONNX] Model loaded successfully');
+  try {
+    session = await ort.InferenceSession.create(MODEL_PATH);
+    logger.info('[HumorONNX] Model loaded successfully');
+  } catch (error) {
+    logger.error(`[HumorONNX] Failed to load model: ${error}`);
+    throw new Error(`Failed to initialize humor model: ${error}`);
+  }
   
   return session;
 }

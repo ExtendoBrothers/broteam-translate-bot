@@ -1,12 +1,12 @@
-# Setup Windows Task Scheduler to run OAuth2 health check daily
+# Setup Windows Task Scheduler to run OAuth2 health check hourly
 # This script will prompt for admin rights if needed
 
 $TaskName = "BroTeam-OAuth2-HealthCheck"
-$ScriptPath = Join-Path $PSScriptRoot 'check-oauth2-health.ps1'
-$Description = "Daily health check for BroTeam bot OAuth2 tokens"
+$ScriptPath = Join-Path $PSScriptRoot 'enhanced-oauth2-monitor.ps1'
+$Description = "Hourly health check for BroTeam bot OAuth2 tokens"
 
 Write-Host "Setting up automated OAuth2 health monitoring..." -ForegroundColor Cyan
-Write-Host "This will create a scheduled task that runs daily at 9:00 AM`n" -ForegroundColor White
+Write-Host "This will create a scheduled task that runs hourly`n" -ForegroundColor White
 
 # Check if running as admin
 $isAdmin = ([Security.Principal.WindowsPrincipal] [Security.Principal.WindowsIdentity]::GetCurrent()).IsInRole([Security.Principal.WindowsBuiltInRole]::Administrator)
@@ -28,12 +28,12 @@ if ($existingTask) {
     Unregister-ScheduledTask -TaskName $TaskName -Confirm:$false
 }
 
-# Create the action (run PowerShell script)
+# Create the action (run PowerShell script with notification)
 $Action = New-ScheduledTaskAction -Execute "PowerShell.exe" `
-    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`""
+    -Argument "-NoProfile -ExecutionPolicy Bypass -File `"$ScriptPath`" -SendNotification"
 
-# Create the trigger (daily at 9 AM)
-$Trigger = New-ScheduledTaskTrigger -Daily -At 9AM
+# Create the trigger (hourly)
+$Trigger = New-ScheduledTaskTrigger -Once -At (Get-Date) -RepetitionInterval (New-TimeSpan -Hours 1) -RepetitionDuration (New-TimeSpan -Days 365)
 
 # Create the principal (run as current user, no admin required)
 $Principal = New-ScheduledTaskPrincipal -UserId $env:USERNAME -LogonType S4U
@@ -52,7 +52,7 @@ try {
         -Description $Description | Out-Null
 
     Write-Host "`n✅ Task scheduled successfully!" -ForegroundColor Green
-    Write-Host "The OAuth2 health check will run daily at 9:00 AM" -ForegroundColor Cyan
+    Write-Host "The OAuth2 health check will run hourly" -ForegroundColor Cyan
     Write-Host "`nYou can also run it manually with:" -ForegroundColor White
     Write-Host "  npm run oauth2:check" -ForegroundColor Yellow
     Write-Host "`nTo view the task in Task Scheduler:" -ForegroundColor White

@@ -38,4 +38,6 @@ export const config = {
   HUMOR_DETECTION_ENABLED: (process.env.HUMOR_DETECTION_ENABLED || 'false').toLowerCase() === 'true',
   HUMOR_THRESHOLD: Number(process.env.HUMOR_THRESHOLD || '0.5'), // Minimum score to consider text humorous
   HUGGINGFACE_TOKEN: process.env.HUGGINGFACE_TOKEN || '', // Optional API token for Hugging Face
+  // Blocked tweet contents - tweets with these exact texts will be skipped
+  BLOCKED_TWEET_CONTENTS: process.env.BLOCKED_TWEET_CONTENTS ? process.env.BLOCKED_TWEET_CONTENTS.split(',').map(s => s.trim().replace(/\\n/g, '\n')) : [],
 };

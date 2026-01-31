@@ -11,8 +11,13 @@ module.exports = {
       instances: 1,
       exec_mode: 'fork',
       watch: false,
+<<<<<<< HEAD
       autorestart: true,
       max_memory_restart: '300M',
+=======
+      autorestart: false,
+      max_memory_restart: '520M',
+>>>>>>> de0d211 (feat: stability & humor improvements)
       time: true,
       windowsHide: true,
       kill_timeout: 3000,

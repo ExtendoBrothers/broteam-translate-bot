@@ -1,46 +1,30 @@
 import { translateAndPostWorker } from '../workers/translateAndPostWorker';
 import { logger } from '../utils/logger';
-import * as fs from 'fs';
 import * as path from 'path';
+import { safeReadJsonSync, safeWriteJsonSync } from '../utils/safeFileOps';
 
 const LAST_RUN_FILE = path.join(process.cwd(), '.last-run.json');
 
 function readLastRun(): Date | null {
-  try {
-    if (!fs.existsSync(LAST_RUN_FILE)) return null;
-    const raw = fs.readFileSync(LAST_RUN_FILE, 'utf-8');
-    const parsed = JSON.parse(raw) as { lastRun?: string };
-    const dt = new Date(parsed.lastRun || '');
-    return isFinite(dt.getTime()) ? dt : null;
-  } catch {
-    return null;
-  }
+  const parsed = safeReadJsonSync<{ lastRun?: string }>(LAST_RUN_FILE, {});
+  const dt = new Date(parsed.lastRun || '');
+  return isFinite(dt.getTime()) ? dt : null;
 }
 
 export function recordLastRun(when: Date) {
-  try {
-    fs.writeFileSync(LAST_RUN_FILE, JSON.stringify({ lastRun: when.toISOString() }, null, 2), 'utf-8');
-  } catch {
-    // ignore
-  }
+  safeWriteJsonSync(LAST_RUN_FILE, { lastRun: when.toISOString() });
 }
 
 // No monthly spreading for posts; cadence is based on last post time
 
 function readLastPost(): Date | null {
-  try {
-    const file = path.join(process.cwd(), '.post-tracker.json');
-    if (!fs.existsSync(file)) return readLastRun(); // Fallback to last run timestamp
-    const raw = fs.readFileSync(file, 'utf-8');
-    const parsed = JSON.parse(raw) as { postTimestamps?: string[] };
-    const arr = parsed.postTimestamps || [];
-    if (!arr.length) return readLastRun(); // Fallback if no post timestamps
-    const latestIso = arr.reduce((max, cur) => (cur > max ? cur : max));
-    const dt = new Date(latestIso);
-    return isFinite(dt.getTime()) ? dt : readLastRun(); // Fallback if invalid date
-  } catch {
-    return readLastRun(); // Fallback on error
-  }
+  const file = path.join(process.cwd(), '.post-tracker.json');
+  const parsed = safeReadJsonSync<{ postTimestamps?: string[] }>(file, {});
+  const arr = parsed.postTimestamps || [];
+  if (!arr.length) return readLastRun(); // Fallback if no post timestamps
+  const latestIso = arr.reduce((max, cur) => (cur > max ? cur : max));
+  const dt = new Date(latestIso);
+  return isFinite(dt.getTime()) ? dt : readLastRun(); // Fallback if invalid date
 }
 
 function computeDynamicIntervalMs(): number {

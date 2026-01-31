@@ -33,7 +33,7 @@ try {
 } catch { }
 
 # Handle stale lock
-$lockPath = Join-Path $repoRoot '.bot-lock'
+$lockPath = Join-Path $repoRoot '.bot-instance.lock'
 if (Test-Path $lockPath) {
   try {
     $lockObj = Get-Content $lockPath -Raw | ConvertFrom-Json
@@ -44,7 +44,7 @@ if (Test-Path $lockPath) {
   } catch { }
   try {
     Remove-Item $lockPath -Force -ErrorAction SilentlyContinue
-    Write-Host "[migrate-to-pm2] Removed .bot-lock"
+    Write-Host "[migrate-to-pm2] Removed .bot-instance.lock"
   } catch { }
 }
 

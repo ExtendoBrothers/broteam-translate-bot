@@ -7,6 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { tweetQueue } from './tweetQueue';
+import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
+import { searchLogFile } from './streamLogReader';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
 const START_DATE = new Date('2025-11-12T00:00:00.000Z'); // Ignore tweets before this date
@@ -22,6 +24,7 @@ interface TweetTrackerStateV2 {
 
 class TweetTracker {
   private processed: Map<string, Date> = new Map();
+  private postedCache: Set<string> = new Set(); // Cache for wasPosted checks
   private lastProcessedAt: Date | null = null;
 
   constructor() {
@@ -32,31 +35,25 @@ class TweetTracker {
      * Load persisted state from file
      */
   private loadState() {
-    try {
-      if (fs.existsSync(TWEET_TRACKER_FILE)) {
-        const data = fs.readFileSync(TWEET_TRACKER_FILE, 'utf-8');
-        const parsed = JSON.parse(data);
-        if (parsed && parsed.processed) {
-          const state = parsed as TweetTrackerStateV2;
-          for (const [id, ts] of Object.entries(state.processed)) {
-            const dt = new Date(ts);
-            if (isFinite(dt.getTime())) this.processed.set(id, dt);
-          }
-          this.lastProcessedAt = state.lastProcessedAt ? new Date(state.lastProcessedAt) : null;
-          logger.info(`Loaded ${this.processed.size} processed tweet IDs from tracker (v2)`);
-        } else {
-          const state = parsed as TweetTrackerStateV1;
-          const now = new Date();
-          for (const id of state.processedTweetIds || []) {
-            this.processed.set(id, now);
-          }
-          this.lastProcessedAt = state.lastProcessedAt ? new Date(state.lastProcessedAt) : null;
-          logger.info(`Loaded ${this.processed.size} processed tweet IDs from tracker (v1→v2)`);
-          this.saveState();
-        }
+    const parsed = safeReadJsonSync<TweetTrackerStateV1 | TweetTrackerStateV2>(TWEET_TRACKER_FILE, { processedTweetIds: [], lastProcessedAt: null });
+    
+    if ('processed' in parsed) {
+      const state = parsed as TweetTrackerStateV2;
+      for (const [id, ts] of Object.entries(state.processed)) {
+        const dt = new Date(ts);
+        if (isFinite(dt.getTime())) this.processed.set(id, dt);
       }
-    } catch (error) {
-      logger.error(`Failed to load tweet tracker state: ${error}`);
+      this.lastProcessedAt = state.lastProcessedAt ? new Date(state.lastProcessedAt) : null;
+      logger.info(`Loaded ${this.processed.size} processed tweet IDs from tracker (v2)`);
+    } else {
+      const state = parsed as TweetTrackerStateV1;
+      const now = new Date();
+      for (const id of state.processedTweetIds || []) {
+        this.processed.set(id, now);
+      }
+      this.lastProcessedAt = state.lastProcessedAt ? new Date(state.lastProcessedAt) : null;
+      logger.info(`Loaded ${this.processed.size} processed tweet IDs from tracker (v1→v2)`);
+      this.saveState();
     }
   }
 
@@ -64,25 +61,21 @@ class TweetTracker {
      * Save state to file
      */
   private saveState() {
-    try {
-      const processedObj: Record<string, string> = {};
-      for (const [id, dt] of this.processed.entries()) {
-        processedObj[id] = dt.toISOString();
-      }
-      const state: TweetTrackerStateV2 = {
-        processed: processedObj,
-        lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
-      };
-      fs.writeFileSync(TWEET_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
-    } catch (error) {
-      logger.error(`Failed to save tweet tracker state: ${error}`);
+    const processedObj: Record<string, string> = {};
+    for (const [id, dt] of this.processed.entries()) {
+      processedObj[id] = dt.toISOString();
     }
+    const state: TweetTrackerStateV2 = {
+      processed: processedObj,
+      lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
+    };
+    safeWriteJsonSync(TWEET_TRACKER_FILE, state);
   }
 
   /**
      * Check if tweet should be processed
      */
-  public shouldProcess(tweetId: string, createdAt: string): boolean {
+  public async shouldProcessAsync(tweetId: string, createdAt: string): Promise<boolean> {
     // Debug: log every check
     if (this.processed.has(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
@@ -90,7 +83,7 @@ class TweetTracker {
     }
 
     // Also check if tweet was posted (more reliable)
-    if (this.wasPosted(tweetId)) {
+    if (await this.wasPosted(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already posted`);
       return false;
     }
@@ -108,26 +101,56 @@ class TweetTracker {
     logger.debug(`shouldProcess: ${tweetId} will be processed`);
     return true;
   }
+  
+  /**
+     * Check if tweet should be processed (sync version using cache only)
+     */
+  public shouldProcess(tweetId: string, createdAt: string): boolean {
+    // Use synchronous checks only (cache-based)
+    if (this.processed.has(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already processed`);
+      return false;
+    }
+
+    // Check cache for posted tweets
+    if (this.postedCache.has(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already posted (cached)`);
+      return false;
+    }
+
+    if (tweetQueue.isQueued(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
+      return false;
+    }
+    const tweetDate = new Date(createdAt);
+    if (tweetDate < START_DATE) {
+      logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
+      return false;
+    }
+    return true;
+  }
 
   /**
      * Check if tweet has already been posted (by checking combined.log files)
      */
-  private wasPosted(tweetId: string): boolean {
+  private async wasPosted(tweetId: string): Promise<boolean> {
+    // Check cache first
+    if (this.postedCache.has(tweetId)) {
+      return true;
+    }
+    
     try {
       // Check combined.log files (most recent first)
-      const logFiles = ['combined9.log', 'combined8.log', 'combined7.log', 'combined6.log', 
-        'combined5.log', 'combined4.log', 'combined3.log', 'combined2.log', 
-        'combined1.log', 'combined.log'];
+      const logFiles = ['combined.log', 'combined1.log', 'combined2.log', 'combined3.log'];
+      const pattern = new RegExp(`Posted final translation to Twitter for tweet ${tweetId}`, 'm');
       
       for (const logFile of logFiles) {
         const logPath = path.join(process.cwd(), logFile);
-        if (fs.existsSync(logPath)) {
-          const content = fs.readFileSync(logPath, 'utf8');
-          // Check for "Posted final translation to Twitter for tweet {tweetId}"
-          const regex = new RegExp(`Posted final translation to Twitter for tweet ${tweetId}`, 'm');
-          if (regex.test(content)) {
-            return true;
-          }
+        const matches = await searchLogFile(logPath, pattern, 1);
+        
+        if (matches.length > 0) {
+          this.postedCache.add(tweetId);
+          return true;
         }
       }
       
@@ -142,7 +165,14 @@ class TweetTracker {
      * Check if tweet has already been processed (for duplicate prevention)
      */
   public isProcessed(tweetId: string): boolean {
-    return this.processed.has(tweetId) || this.wasPosted(tweetId);
+    return this.processed.has(tweetId) || this.postedCache.has(tweetId);
+  }
+  
+  /**
+     * Check if tweet has already been processed (async version with full check)
+     */
+  public async isProcessedAsync(tweetId: string): Promise<boolean> {
+    return this.processed.has(tweetId) || await this.wasPosted(tweetId);
   }
 
   /**

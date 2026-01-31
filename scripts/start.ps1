@@ -16,7 +16,7 @@ if (-not $env:DRY_RUN) { $env:DRY_RUN = '0' }
 try { $nodeVer = node --version; Write-Host "Node: $nodeVer" } catch { Write-Host "Node not found in PATH" }
 
 # Check if bot is already running
-$lockFile = Join-Path $repo '.bot-lock'
+$lockFile = Join-Path $repo '.bot-instance.lock'
 if (Test-Path $lockFile) {
     try {
         $lockData = Get-Content $lockFile | ConvertFrom-Json
@@ -52,6 +52,10 @@ while ($true) {
 	}
 	if ($code -eq 0) {
 		Write-Host "Bot exited cleanly (code 0)."
+		break
+	}
+	if ($code -eq 1) {
+		Write-Host "Bot exited with code 1 (another instance running). Not restarting."
 		break
 	}
 	Write-Host "Bot exited with code $code. Restarting in 10s..."

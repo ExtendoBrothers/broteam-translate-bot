@@ -7,6 +7,8 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { detectLanguageByLexicon } from '../translator/lexicon';
+import { calculateSimilarity, normalizeText as optimizedNormalize } from './optimizedDuplicateCheck';
+import { processLogFileLines } from './streamLogReader';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -15,46 +17,79 @@ const POSTED_OUTPUTS_FILE = path.join(process.cwd(), 'posted-outputs.log');
 const SIMILARITY_THRESHOLD = 0.85; // Jaccard similarity threshold for duplicates
 
 /**
- * Normalize text for better duplicate detection
- * - Convert to lowercase
- * - Remove punctuation and extra whitespace
- * - Sort words to catch reordered duplicates
+ * Normalize text for better duplicate detection (uses optimized version)
  */
 function normalizeText(text: string): string {
-  return text
-    .toLowerCase()
-    .replace(/[^\w\s]/g, ' ') // Remove punctuation
-    .replace(/\s+/g, ' ') // Normalize whitespace
-    .trim()
-    .split(/\s+/)
-    .sort() // Sort words to catch rephrased duplicates
-    .join(' ');
+  return optimizedNormalize(text);
 }
 
 /**
- * Calculate Jaccard similarity between two texts
+ * Calculate Jaccard similarity between two texts (uses optimized version)
  */
-function calculateSimilarity(text1: string, text2: string): number {
-  const words1 = new Set(text1.split(/\s+/));
-  const words2 = new Set(text2.split(/\s+/));
-
-  const intersection = new Set([...words1].filter(x => words2.has(x)));
-  const union = new Set([...words1, ...words2]);
-
-  return intersection.size / union.size;
+function calculateSimilarityInternal(text1: string, text2: string): number {
+  return calculateSimilarity(text1, text2);
 }
 
 /**
- * Check if content is too similar to previously posted content
+ * Check if content is too similar to previously posted content (optimized with streaming)
  */
-export function isContentDuplicate(newContent: string): boolean {
+export async function isContentDuplicate(newContent: string): Promise<boolean> {
   try {
     if (!fs.existsSync(POSTED_OUTPUTS_FILE)) {
       return false;
     }
 
     const normalizedNew = normalizeText(newContent);
-    const lines = fs.readFileSync(POSTED_OUTPUTS_FILE, 'utf8').split('\n').filter(line => line.trim());
+    let isDuplicate = false;
+
+    // Use streaming to avoid loading entire file
+    await processLogFileLines(POSTED_OUTPUTS_FILE, (line) => {
+      try {
+        const entry = JSON.parse(line.trim());
+        const existingContent = entry.content;
+        const normalizedExisting = normalizeText(existingContent);
+
+        // Exact match check
+        if (normalizedNew === normalizedExisting) {
+          logger.warn(`Duplicate content detected (exact match): "${newContent}"`);
+          isDuplicate = true;
+          return false; // Stop processing
+        }
+
+        // Similarity check
+        const similarity = calculateSimilarityInternal(normalizedNew, normalizedExisting);
+        if (similarity >= SIMILARITY_THRESHOLD) {
+          logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
+          isDuplicate = true;
+          return false; // Stop processing
+        }
+      } catch {
+        // Ignore parse errors
+      }
+      return true; // Continue processing
+    });
+
+    return isDuplicate;
+  } catch (error) {
+    logger.error(`Error checking content duplicates: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Synchronous version for backwards compatibility (checks only recent entries)
+ */
+export function isContentDuplicateSync(newContent: string): boolean {
+  try {
+    if (!fs.existsSync(POSTED_OUTPUTS_FILE)) {
+      return false;
+    }
+
+    const normalizedNew = normalizeText(newContent);
+    const lines = fs.readFileSync(POSTED_OUTPUTS_FILE, 'utf8')
+      .split('\n')
+      .filter(line => line.trim())
+      .slice(-500); // Check only last 500 entries
 
     for (const line of lines) {
       try {
@@ -69,7 +104,7 @@ export function isContentDuplicate(newContent: string): boolean {
         }
 
         // Similarity check
-        const similarity = calculateSimilarity(normalizedNew, normalizedExisting);
+        const similarity = calculateSimilarityInternal(normalizedNew, normalizedExisting);
         if (similarity >= SIMILARITY_THRESHOLD) {
           logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
           return true;
@@ -110,8 +145,8 @@ export function isAcceptableWithSemanticCheck(
   const sameAsInput = textOnly === originalTextOnly;
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
 
-  // NEW: Semantic duplicate check
-  const semanticDuplicate = isContentDuplicate(trimmed);
+  // NEW: Semantic duplicate check (using sync version)
+  const semanticDuplicate = isContentDuplicateSync(trimmed);
 
   // Language detection (existing logic)
   let detectedLang = 'und';

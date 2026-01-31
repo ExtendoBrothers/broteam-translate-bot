@@ -45,6 +45,7 @@ jest.mock('../src/utils/tweetQueue', () => ({
 
 jest.mock('../src/utils/contentDeduplication', () => ({
   isContentDuplicate: jest.fn(),
+  isContentDuplicateSync: jest.fn(),
   logPostedContent: jest.fn(),
   prunePostedOutputs: jest.fn()
 }));
@@ -62,7 +63,7 @@ import { logger } from '../src/utils/logger';
 import { tweetTracker } from '../src/utils/tweetTracker';
 import { postTracker } from '../src/utils/postTracker';
 import { tweetQueue } from '../src/utils/tweetQueue';
-import { isContentDuplicate, logPostedContent, prunePostedOutputs } from '../src/utils/contentDeduplication';
+import { isContentDuplicate, isContentDuplicateSync, logPostedContent, prunePostedOutputs } from '../src/utils/contentDeduplication';
 import { checkTranslationStability, pruneStabilityLog } from '../src/utils/translationStability';
 import { acquireLock } from '../src/utils/enhancedInstanceLock';
 
@@ -84,13 +85,17 @@ describe('Duplicate Prevention', () => {
     const mockChain = 'en->es->en';
     const mockAttempt = 1;
 
-    it('should block when another instance is running', async () => {
-      (acquireLock as jest.Mock).mockReturnValue(false);
+    it('should block when post rate limit is reached', async () => {
+      (acquireLock as jest.Mock).mockReturnValue(true);
+      (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
+      (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
+      (postTracker.canPost as jest.Mock).mockReturnValue(false);
+      (postTracker.getPostCount24h as jest.Mock).mockReturnValue(17);
 
       const result = await checkForDuplicates(mockTweetId, mockContent, mockInputText, mockChain, mockAttempt);
 
       expect(result.canProceed).toBe(false);
-      expect(result.reason).toBe('Another bot instance is already running');
+      expect(result.reason).toBe('Post rate limit reached (17/17 posts in 24h)');
       expect(result.severity).toBe('block');
     });
 
@@ -117,26 +122,12 @@ describe('Duplicate Prevention', () => {
       expect(result.severity).toBe('block');
     });
 
-    it('should block when post rate limit is reached', async () => {
-      (acquireLock as jest.Mock).mockReturnValue(true);
-      (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
-      (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
-      (postTracker.canPost as jest.Mock).mockReturnValue(false);
-      (postTracker.getPostCount24h as jest.Mock).mockReturnValue(17);
-
-      const result = await checkForDuplicates(mockTweetId, mockContent, mockInputText, mockChain, mockAttempt);
-
-      expect(result.canProceed).toBe(false);
-      expect(result.reason).toBe('Post rate limit reached (17/17 posts in 24h)');
-      expect(result.severity).toBe('block');
-    });
-
     it('should block when content is duplicate', async () => {
       (acquireLock as jest.Mock).mockReturnValue(true);
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
       (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
       (postTracker.canPost as jest.Mock).mockReturnValue(true);
-      (isContentDuplicate as jest.Mock).mockReturnValue(true);
+      (isContentDuplicateSync as jest.Mock).mockReturnValue(true);
 
       const result = await checkForDuplicates(mockTweetId, mockContent, mockInputText, mockChain, mockAttempt);
 
@@ -150,7 +141,7 @@ describe('Duplicate Prevention', () => {
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
       (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
       (postTracker.canPost as jest.Mock).mockReturnValue(true);
-      (isContentDuplicate as jest.Mock).mockReturnValue(false);
+      (isContentDuplicateSync as jest.Mock).mockReturnValue(false);
       (checkTranslationStability as jest.Mock).mockReturnValue({
         isStable: false,
         issues: ['issue1', 'issue2', 'issue3']
@@ -169,7 +160,7 @@ describe('Duplicate Prevention', () => {
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
       (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
       (postTracker.canPost as jest.Mock).mockReturnValue(true);
-      (isContentDuplicate as jest.Mock).mockReturnValue(false);
+      (isContentDuplicateSync as jest.Mock).mockReturnValue(false);
       (checkTranslationStability as jest.Mock).mockReturnValue({
         isStable: false,
         issues: ['issue1', 'issue2']
@@ -188,7 +179,7 @@ describe('Duplicate Prevention', () => {
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
       (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
       (postTracker.canPost as jest.Mock).mockReturnValue(true);
-      (isContentDuplicate as jest.Mock).mockReturnValue(false);
+      (isContentDuplicateSync as jest.Mock).mockReturnValue(false);
       (checkTranslationStability as jest.Mock).mockReturnValue({
         isStable: true,
         issues: []

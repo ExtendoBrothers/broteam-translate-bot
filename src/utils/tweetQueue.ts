@@ -3,9 +3,9 @@
  * Persists queue to file so it survives restarts
  */
 
-import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
 
 const QUEUE_FILE = path.join(process.cwd(), '.tweet-queue.json');
 
@@ -31,30 +31,17 @@ class TweetQueue {
      * Load persisted queue from file
      */
   private loadState() {
-    try {
-      if (fs.existsSync(QUEUE_FILE)) {
-        const data = fs.readFileSync(QUEUE_FILE, 'utf-8');
-        const state: QueueState = JSON.parse(data);
-        this.queue = state.queue || [];
-        logger.info(`Loaded ${this.queue.length} queued tweets from persistent storage`);
-      }
-    } catch (error) {
-      logger.error(`Failed to load tweet queue state: ${error}`);
-    }
+    const state = safeReadJsonSync<QueueState>(QUEUE_FILE, { queue: [] });
+    this.queue = state.queue || [];
+    logger.info(`Loaded ${this.queue.length} queued tweets from persistent storage`);
   }
 
   /**
      * Save queue to file
      */
   private saveState() {
-    try {
-      const state: QueueState = {
-        queue: this.queue
-      };
-      fs.writeFileSync(QUEUE_FILE, JSON.stringify(state, null, 2), 'utf-8');
-    } catch (error) {
-      logger.error(`Failed to save tweet queue state: ${error}`);
-    }
+    const state: QueueState = { queue: this.queue };
+    safeWriteJsonSync(QUEUE_FILE, state);
   }
 
   /**
