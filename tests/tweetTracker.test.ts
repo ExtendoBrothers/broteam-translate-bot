@@ -100,7 +100,7 @@ describe('tweetTracker', () => {
 
   describe('unmarkProcessed', () => {
     it('should remove tweet from processed list', () => {
-      const now = new Date().toISOString();
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString(); // Use date after START_DATE cutoff
       tweetTracker.markProcessed('tweet1');
       tweetTracker.unmarkProcessed('tweet1');
 
