@@ -1,6 +1,7 @@
 {
   "name": "broteam-translate-bot",
   "private": true,
+  "type": "module",
   "license": "WTFPL",
   "engines": {
     "node": ">=18.0.0"
