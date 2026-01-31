@@ -112,7 +112,7 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
       }
     }
   }
-  let lastError: any = null;
+  let lastError: Error | null = null;
   for (const trySource of [detectedSource, 'auto']) {
     const bodyPayload: Record<string, unknown> = {
       q,

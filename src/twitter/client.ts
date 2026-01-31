@@ -90,13 +90,14 @@ export class TwitterClient {
       const maxRetries = config.OAUTH2_REFRESH_MAX_RETRIES || 3;
       const baseBackoffMs = config.OAUTH2_REFRESH_BACKOFF_MS || 1000;
       let attempt = 0;
-      let refreshed: any;
+      let refreshed!: { accessToken: string; refreshToken?: string; expiresIn: number; scope?: string[] };
       while (attempt <= maxRetries) {
         try {
           refreshed = await tempClient.refreshOAuth2Token(oldTokens.refreshToken as string);
           break; // success
         } catch (err: unknown) {
-          const status = (err as any)?.response?.status || (err as any)?.status || (err as any)?.code;
+          const error = err as { response?: { status?: number }; status?: number; code?: number };
+          const status = error.response?.status || error.status || error.code;
           // If status 400 or 401 this is likely invalid grant — do NOT retry
           if (status === 400 || status === 401) {
             throw err;
@@ -133,8 +134,8 @@ export class TwitterClient {
       this.client = new TwitterApi(stored.accessToken);
       return stored;
     } catch (e: unknown) {
-      const err = e as any;
-      logger.error(`Failed to refresh OAuth2 token: ${err?.message || err}`);
+      const err = e as { message?: string; status?: number; code?: number; response?: { status?: number } };
+      logger.error(`Failed to refresh OAuth2 token: ${err?.message || e}`);
       // If the refresh returned a HTTP 400, the refresh token may be invalid or revoked.
       // In that case, clear stored tokens and fall back to OAuth1 (if configured).
       const status = err?.status || err?.code || err?.response?.status;

@@ -43,8 +43,9 @@ async function main() {
       setEnvVar('TWITTER_OAUTH2_REFRESH_TOKEN', tokens.refreshToken);
     }
     logger.info('OAuth2 tokens stored. You can now run the bot.');
-  } catch (e: any) {
-    logger.error(`Failed to handle OAuth2 code/state: ${e?.message || e}`);
+  } catch (e: unknown) {
+    const error = e as { message?: string };
+    logger.error(`Failed to handle OAuth2 code/state: ${error.message || e}`);
     process.exit(1);
   }
 }
