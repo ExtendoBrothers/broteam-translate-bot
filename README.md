@@ -1,5 +1,11 @@
 # BroTeam Translate Bot
 
+[![CI](https://github.com/ExtendoBrothers/broteam-translate-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/ExtendoBrothers/broteam-translate-bot/actions/workflows/ci.yml)
+[![codecov](https://codecov.io/gh/ExtendoBrothers/broteam-translate-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/ExtendoBrothers/broteam-translate-bot)
+[![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
+[![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
+[![TypeScript](https://img.shields.io/badge/TypeScript-5.1.6-blue)](https://www.typescriptlang.org/)
+
 A production-ready, resilient Twitter bot that translates @BroTeamPills tweets through randomized language chains and posts them to @BroTeamForeign. Built with TypeScript, featuring comprehensive error handling, rate limiting, and extensive test coverage.
 
 ## ✨ Key Features
