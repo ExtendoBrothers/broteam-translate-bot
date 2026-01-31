@@ -11,7 +11,7 @@ import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
-const START_DATE = new Date('2025-11-12T00:00:00.000Z'); // Ignore tweets before this date
+const START_DATE = new Date('2026-02-01T00:00:00.000Z'); // Ignore tweets before this date
 
 interface TweetTrackerStateV1 {
     processedTweetIds: string[];

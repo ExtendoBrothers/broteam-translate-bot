@@ -1,7 +1,6 @@
 {
   "name": "broteam-translate-bot",
   "private": true,
-  "type": "module",
   "license": "WTFPL",
   "engines": {
     "node": ">=18.0.0"
@@ -62,5 +61,5 @@
     ],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
   },
-  "version": "0.10.0"
+  "version": "1.11.0"
 }
