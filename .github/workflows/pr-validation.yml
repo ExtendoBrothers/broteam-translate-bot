@@ -6,7 +6,7 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read
+  pull-requests: write
 
 jobs:
   validate:
@@ -33,7 +33,12 @@ jobs:
         run: |
           echo "Checking commit messages..."
           git log --format=%s origin/${{ github.base_ref }}..HEAD | while read msg; do
-            if ! echo "$msg" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'; then
+            # Skip merge commits
+            if echo "$msg" | grep -qE '^Merge '; then
+              echo "ℹ️ Skipping merge commit: $msg"
+              continue
+            fi
+            if ! echo "$msg" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert|security)(\(.+\))?: .+'; then
               echo "❌ Invalid commit message: $msg"
               echo "Expected format: type(scope): description"
               exit 1
