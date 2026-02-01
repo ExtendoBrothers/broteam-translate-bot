@@ -4,7 +4,6 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
-import { QueuedTweet } from '../src/utils/tweetQueue';
 
 // Mock tweetTracker before importing tweetQueue
 jest.mock('../src/utils/tweetTracker', () => ({
