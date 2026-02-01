@@ -104,10 +104,6 @@ jest.mock('../src/utils/heuristicEvaluator', () => ({
   evaluateHeuristics: jest.fn()
 }));
 
-jest.mock('../src/utils/humorScorer', () => ({
-  scoreHumor: jest.fn()
-}));
-
 jest.mock('../src/translator/lexicon', () => ({
   detectLanguageByLexicon: jest.fn()
 }));
