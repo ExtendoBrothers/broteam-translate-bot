@@ -47,7 +47,5 @@ test-*.js
 ecosystem.config.js
 pm2-wrapper.js
 
-# Docker files
-Dockerfile*
-docker-compose*.yml
+# Docker ignore file
 .dockerignore
