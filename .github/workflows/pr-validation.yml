@@ -106,7 +106,8 @@ jobs:
               check.conclusion === 'failure'
             );
             
-            let comment = '## PR Validation Results\n\n';
+            const marker = '<!-- PR_VALIDATION_COMMENT -->';
+            let comment = marker + '\n## PR Validation Results\n\n';
             
             if (failedChecks.length === 0) {
               comment += '✅ All validation checks passed!\n\n';
@@ -120,9 +121,29 @@ jobs:
               });
             }
             
-            github.rest.issues.createComment({
+            // Find existing validation comment
+            const { data: comments } = await github.rest.issues.listComments({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: comment
+              issue_number: context.payload.pull_request.number
             });
+            
+            const existingComment = comments.find(c => c.body?.includes(marker));
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+            }
