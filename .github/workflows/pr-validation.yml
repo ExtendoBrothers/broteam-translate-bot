@@ -10,6 +10,13 @@ jobs:
     runs-on: ubuntu-latest
     if: github.event.pull_request.draft == false
     
+    permissions:
+      contents: read
+      pull-requests: write
+      checks: read
+      statuses: read
+      issues: write
+    
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -28,12 +35,42 @@ jobs:
       - name: Check commit messages
         run: |
           echo "Checking commit messages..."
-          git log --format=%s origin/${{ github.base_ref }}..HEAD | while read msg; do
+          echo "Base ref: ${{ github.base_ref }}"
+          echo "Head ref: ${{ github.head_ref }}"
+          
+          # Try different approaches to get commits
+          if git log --oneline origin/${{ github.base_ref }}..HEAD >/dev/null 2>&1; then
+            echo "Using origin/${{ github.base_ref }}..HEAD"
+            COMMITS_CMD="git log --format=%s origin/${{ github.base_ref }}..HEAD"
+          elif git log --oneline ${{ github.base_ref }}..HEAD >/dev/null 2>&1; then
+            echo "Using ${{ github.base_ref }}..HEAD"
+            COMMITS_CMD="git log --format=%s ${{ github.base_ref }}..HEAD"
+          else
+            echo "Using HEAD~10..HEAD as fallback"
+            COMMITS_CMD="git log --format=%s HEAD~10..HEAD"
+          fi
+          
+          echo "Commits to check:"
+          eval "$COMMITS_CMD" || echo "No commits found"
+          echo ""
+          
+          eval "$COMMITS_CMD" | while read msg; do
+            echo "Checking: '$msg'"
+            # Skip merge commits (various formats)
+            if echo "$msg" | grep -qE '^Merge (branch|pull request|remote-tracking branch)'; then
+              echo "⏭️ Skipping merge commit: $msg"
+              continue
+            fi
+            if echo "$msg" | grep -qE '^Merge [a-f0-9]{4,40} into [a-f0-9]{4,40}'; then
+              echo "⏭️ Skipping merge commit: $msg"
+              continue
+            fi
             if ! echo "$msg" | grep -qE '^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+'; then
               echo "❌ Invalid commit message: $msg"
               echo "Expected format: type(scope): description"
               exit 1
             fi
+            echo "✅ Valid: $msg"
           done
         continue-on-error: true
       
@@ -79,35 +116,43 @@ jobs:
       - name: Comment PR
         uses: actions/github-script@v7
         if: always()
+        continue-on-error: true
         with:
           script: |
-            const { data: checks } = await github.rest.checks.listForRef({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              ref: context.payload.pull_request.head.sha
-            });
-            
-            const failedChecks = checks.check_runs.filter(check => 
-              check.conclusion === 'failure'
-            );
-            
-            let comment = '## PR Validation Results\n\n';
-            
-            if (failedChecks.length === 0) {
-              comment += '✅ All validation checks passed!\n\n';
-              comment += '- Tests: Passing\n';
-              comment += '- Lint: Passing\n';
-              comment += '- Build: Successful\n';
-            } else {
-              comment += '❌ Some checks failed:\n\n';
-              failedChecks.forEach(check => {
-                comment += `- ${check.name}: Failed\n`;
+            try {
+              const { data: checks } = await github.rest.checks.listForRef({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                ref: context.payload.pull_request.head.sha
               });
+              
+              const failedChecks = checks.check_runs.filter(check => 
+                check.conclusion === 'failure'
+              );
+              
+              let comment = '## PR Validation Results\n\n';
+              
+              if (failedChecks.length === 0) {
+                comment += '✅ All validation checks passed!\n\n';
+                comment += '- Tests: Passing\n';
+                comment += '- Lint: Passing\n';
+                comment += '- Build: Successful\n';
+              } else {
+                comment += '❌ Some checks failed:\n\n';
+                failedChecks.forEach(check => {
+                  comment += `- ${check.name}: Failed\n`;
+                });
+              }
+              
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+              
+              console.log('✅ PR comment posted successfully');
+            } catch (error) {
+              console.error('❌ Failed to post PR comment:', error.message);
+              // Don't fail the workflow if commenting fails
             }
-            
-            github.rest.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number: context.payload.pull_request.number,
-              body: comment
-            });
