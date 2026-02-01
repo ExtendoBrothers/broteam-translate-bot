@@ -29,7 +29,6 @@ jest.mock('../src/config', () => ({
 describe('OAuth2 Token Refresh Integration Tests', () => {
     let mockTwitterApi: jest.Mocked<any>;
     let mockClient: jest.Mocked<any>;
-    const OAUTH2_TOKEN_FILE = path.join(process.cwd(), '.twitter-oauth2-tokens.json');
     let originalEnv: NodeJS.ProcessEnv;
 
     beforeEach(() => {
