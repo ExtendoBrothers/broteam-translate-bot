@@ -11,14 +11,14 @@ RUN apk add --no-cache python3 make g++
 COPY package*.json ./
 COPY tsconfig.json ./
 
-# Install dependencies
-RUN npm ci --only=production
+# Install all dependencies (including devDependencies for build)
+RUN npm ci
 
 # Copy source code
 COPY src ./src
 
-# Build TypeScript
-RUN npm run build
+# Build TypeScript and prune devDependencies
+RUN npm run build && npm prune --production
 
 # Create directory for OAuth tokens and logs
 RUN mkdir -p /app/data /app/logs
