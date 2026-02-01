@@ -15,7 +15,7 @@ import {
   countLines
 } from '../src/utils/safeFileOps';
 
-const TEST_DIR = path.join(__dirname, 'test-data');
+const TEST_DIR = path.join(__dirname, 'test-data-safeFileOps');
 const TEST_FILE = path.join(TEST_DIR, 'test.json');
 const TEST_LOG = path.join(TEST_DIR, 'test.log');
 
