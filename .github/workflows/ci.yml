@@ -1,3 +1,5 @@
+name: build
+
 on:
   push:
     branches: [ main, development ]
@@ -45,7 +47,7 @@ jobs:
           files: ./coverage/lcov.info
 
   build:
-    name: Lint & Build
+    name: build
     runs-on: ubuntu-latest
     
     steps:
