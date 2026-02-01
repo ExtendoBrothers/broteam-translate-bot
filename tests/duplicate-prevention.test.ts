@@ -63,7 +63,7 @@ import { logger } from '../src/utils/logger';
 import { tweetTracker } from '../src/utils/tweetTracker';
 import { postTracker } from '../src/utils/postTracker';
 import { tweetQueue } from '../src/utils/tweetQueue';
-import { isContentDuplicate, isContentDuplicateSync, logPostedContent, prunePostedOutputs } from '../src/utils/contentDeduplication';
+import { isContentDuplicateSync, logPostedContent, prunePostedOutputs } from '../src/utils/contentDeduplication';
 import { checkTranslationStability, pruneStabilityLog } from '../src/utils/translationStability';
 import { acquireLock } from '../src/utils/enhancedInstanceLock';
 
