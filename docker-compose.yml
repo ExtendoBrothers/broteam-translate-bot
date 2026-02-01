@@ -74,9 +74,8 @@ services:
       - ENABLE_PERFORMANCE_METRICS=${ENABLE_PERFORMANCE_METRICS:-true}
       
     volumes:
-      # Persistent data
-      - bot-data:/app/data
-      - bot-logs:/app/logs
+      # Persistent data and state files
+      - bot-data:/app
       # OAuth tokens (if using file-based storage)
       - ./.twitter-oauth2-tokens.json:/app/.twitter-oauth2-tokens.json:rw
     restart: unless-stopped
@@ -102,6 +101,4 @@ volumes:
   libretranslate-models:
     driver: local
   bot-data:
-    driver: local
-  bot-logs:
     driver: local
