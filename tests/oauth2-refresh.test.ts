@@ -1,7 +1,6 @@
 import { TwitterClient } from '../src/twitter/client';
 import { TwitterApi } from 'twitter-api-v2';
 import * as fs from 'fs';
-import * as path from 'path';
 
 jest.mock('twitter-api-v2');
 jest.mock('fs');
