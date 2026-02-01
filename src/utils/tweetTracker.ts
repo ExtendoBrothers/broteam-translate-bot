@@ -112,12 +112,6 @@ class TweetTracker {
       return false;
     }
 
-    // Check cache for posted tweets
-    if (this.postedCache.has(tweetId)) {
-      logger.info(`Skipping tweet ${tweetId} - already posted (cached)`);
-      return false;
-    }
-
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       return false;
