@@ -93,24 +93,47 @@ export async function safeAppendFile(filePath: string, content: string): Promise
 
 /**
  * Read last N lines from a file efficiently without loading entire file
+ * Reads backwards in chunks until enough lines are found
  */
 export async function readLastLines(filePath: string, lineCount: number): Promise<string[]> {
   try {
     const stat = await fsPromises.stat(filePath);
     const fileSize = stat.size;
     
-    // Estimate bytes to read (assume average 100 chars per line)
-    const estimatedBytes = Math.min(lineCount * 100, fileSize);
-    const buffer = Buffer.alloc(estimatedBytes);
+    if (fileSize === 0) {
+      return [];
+    }
     
     const fd = await fsPromises.open(filePath, 'r');
     try {
-      const { bytesRead } = await fd.read(buffer, 0, estimatedBytes, fileSize - estimatedBytes);
+      const chunkSize = 4096; // Read 4KB chunks
+      let bytesToRead = Math.min(chunkSize, fileSize);
+      let position = fileSize - bytesToRead;
+      let allContent = '';
+      let lines: string[] = [];
+      
+      // Read backwards in chunks until we have enough lines or reach start of file
+      while (lines.length < lineCount && position >= 0) {
+        const buffer = Buffer.alloc(bytesToRead);
+        const { bytesRead } = await fd.read(buffer, 0, bytesToRead, position);
+        
+        // Prepend new content to what we've read so far
+        allContent = buffer.toString('utf-8', 0, bytesRead) + allContent;
+        lines = allContent.split('\n').filter(line => line.trim());
+        
+        // If we've reached the start of the file, we're done
+        if (position === 0) {
+          break;
+        }
+        
+        // Move backwards for next chunk
+        bytesToRead = Math.min(chunkSize, position);
+        position -= bytesToRead;
+      }
+      
       await fd.close();
       
-      const content = buffer.toString('utf-8', 0, bytesRead);
-      const lines = content.split('\n').filter(line => line.trim());
-      
+      // Return the last N lines
       return lines.slice(-lineCount);
     } catch (error) {
       await fd.close();
