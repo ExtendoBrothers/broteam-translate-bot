@@ -46,7 +46,7 @@ jobs:
           fail_ci_if_error: false
           files: ./coverage/lcov.info
 
-  lint:
+  build:
     name: Lint & Build
     runs-on: ubuntu-latest
     

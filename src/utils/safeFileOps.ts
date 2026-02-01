@@ -94,6 +94,7 @@ export async function safeAppendFile(filePath: string, content: string): Promise
 /**
  * Read last N lines from a file efficiently without loading entire file
  * Reads backwards in chunks until enough lines are found
+ * Returns empty array if file doesn't exist (common case for new/rotated logs)
  */
 export async function readLastLines(filePath: string, lineCount: number): Promise<string[]> {
   try {
@@ -140,7 +141,11 @@ export async function readLastLines(filePath: string, lineCount: number): Promis
       throw error;
     }
   } catch (error) {
-    logger.error(`Failed to read last lines from ${filePath}: ${error}`);
+    const err = error as { code?: string };
+    // Don't log errors for missing files - this is normal for new/rotated logs
+    if (err.code !== 'ENOENT') {
+      logger.error(`Failed to read last lines from ${filePath}: ${error}`);
+    }
     return [];
   }
 }

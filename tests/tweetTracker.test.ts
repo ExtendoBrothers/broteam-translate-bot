@@ -300,7 +300,6 @@ describe('tweetTracker', () => {
     });
 
     it('should update cache on unmark', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       expect(tweetTracker.isProcessed('tweet1')).toBe(true);
       

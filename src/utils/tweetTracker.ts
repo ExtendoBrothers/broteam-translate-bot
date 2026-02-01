@@ -26,13 +26,14 @@ class TweetTracker {
   private processed: Map<string, Date> = new Map();
   private postedCache: Set<string> = new Set(); // Cache for wasPosted checks
   private lastProcessedAt: Date | null = null;
+  private cacheReady: Promise<void>; // Tracks when posted cache is pre-warmed
 
   constructor() {
     this.loadState();
     // Pre-warm the posted cache from log files on startup
-    this.prewarmPostedCache().catch(err => 
-      logger.warn(`Failed to pre-warm posted cache: ${err}`)
-    );
+    this.cacheReady = this.prewarmPostedCache().catch(err => {
+      logger.warn(`Failed to pre-warm posted cache: ${err}`);
+    });
   }
 
   /**
@@ -80,6 +81,9 @@ class TweetTracker {
      * Check if tweet should be processed
      */
   public async shouldProcessAsync(tweetId: string, createdAt: string): Promise<boolean> {
+    // Wait for cache to be ready for first accurate check
+    await this.cacheReady;
+    
     // Debug: log every check
     if (this.processed.has(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already processed`);
@@ -108,6 +112,8 @@ class TweetTracker {
   
   /**
      * Check if tweet should be processed (sync version using cache only)
+     * Note: Posted cache is pre-warmed asynchronously on startup. For immediate
+     * accuracy on first calls after restart, use shouldProcessAsync() instead.
      */
   public shouldProcess(tweetId: string, createdAt: string): boolean {
     // Use synchronous checks only (cache-based)
@@ -207,6 +213,9 @@ class TweetTracker {
      * Check if tweet has already been processed (async version with full check)
      */
   public async isProcessedAsync(tweetId: string): Promise<boolean> {
+    // Wait for cache to be ready for accurate results
+    await this.cacheReady;
+    
     return this.processed.has(tweetId) || await this.wasPosted(tweetId);
   }
 

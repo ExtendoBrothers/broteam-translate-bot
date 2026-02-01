@@ -101,20 +101,39 @@ export async function pruneLogFileLines(
 
     const tempFile = `${filePath}.tmp`;
     const lines: string[] = [];
+    let writeIndex = 0;
     
-    // Read file and collect last N lines
+    // Read file and collect last N lines using ring buffer approach
     await processLogFileLines(filePath, (line) => {
-      lines.push(line);
-      if (lines.length > keepLastN) {
-        lines.shift(); // Remove oldest line
+      if (lines.length < keepLastN) {
+        // Fill array until we reach keepLastN
+        lines.push(line);
+      } else {
+        // Overwrite oldest entry in circular fashion
+        lines[writeIndex] = line;
+        writeIndex = (writeIndex + 1) % keepLastN;
       }
       return true;
     });
 
     // Write pruned content to temp file
+    // If buffer wrapped, write from writeIndex to end, then from start to writeIndex
+    // Otherwise, write entire array in order
     const writeStream = fs.createWriteStream(tempFile, { encoding: 'utf-8' });
-    for (const line of lines) {
-      writeStream.write(line + '\n');
+    
+    if (lines.length === keepLastN && writeIndex > 0) {
+      // Buffer wrapped - oldest line is at writeIndex
+      for (let i = writeIndex; i < keepLastN; i++) {
+        writeStream.write(lines[i] + '\n');
+      }
+      for (let i = 0; i < writeIndex; i++) {
+        writeStream.write(lines[i] + '\n');
+      }
+    } else {
+      // Buffer didn't wrap - write in order
+      for (const line of lines) {
+        writeStream.write(line + '\n');
+      }
     }
     writeStream.end();
 

@@ -32,6 +32,12 @@ function calculateSimilarityInternal(text1: string, text2: string): number {
 
 /**
  * Check if content is too similar to previously posted content (optimized with streaming)
+ * 
+ * This is the async version that checks all entries efficiently using streaming.
+ * For synchronous checking (e.g., in hot paths), use isContentDuplicateSync() instead.
+ * 
+ * @param newContent - The content to check for duplicates
+ * @returns Promise<boolean> - true if duplicate found, false otherwise
  */
 export async function isContentDuplicate(newContent: string): Promise<boolean> {
   try {
@@ -77,7 +83,13 @@ export async function isContentDuplicate(newContent: string): Promise<boolean> {
 }
 
 /**
- * Synchronous version for backwards compatibility (checks only recent entries)
+ * Synchronous duplicate check for backwards compatibility and hot paths
+ * 
+ * This version checks only the last 500 entries to avoid blocking the event loop.
+ * For complete duplicate checking, use the async isContentDuplicate() instead.
+ * 
+ * @param newContent - The content to check for duplicates
+ * @returns boolean - true if duplicate found in recent entries, false otherwise
  */
 export function isContentDuplicateSync(newContent: string): boolean {
   try {
