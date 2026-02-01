@@ -29,6 +29,10 @@ class TweetTracker {
 
   constructor() {
     this.loadState();
+    // Pre-warm the posted cache from log files on startup
+    this.prewarmPostedCache().catch(err => 
+      logger.warn(`Failed to pre-warm posted cache: ${err}`)
+    );
   }
 
   /**
@@ -112,6 +116,12 @@ class TweetTracker {
       return false;
     }
 
+    // Check posted cache (pre-warmed on startup)
+    if (this.postedCache.has(tweetId)) {
+      logger.info(`Skipping tweet ${tweetId} - already posted (from cache)`);
+      return false;
+    }
+
     if (tweetQueue.isQueued(tweetId)) {
       logger.info(`Skipping tweet ${tweetId} - already in posting queue`);
       return false;
@@ -152,6 +162,37 @@ class TweetTracker {
     } catch (error) {
       logger.error(`Error checking if tweet ${tweetId} was posted: ${error}`);
       return false;
+    }
+  }
+
+  /**
+     * Pre-warm the posted cache by scanning log files on startup
+     * This provides a safety net for shouldProcess() after restarts
+     */
+  private async prewarmPostedCache(): Promise<void> {
+    try {
+      const logFiles = ['combined.log', 'combined1.log', 'combined2.log', 'combined3.log'];
+      const pattern = /Posted final translation to Twitter for tweet (\d+)/;
+      let cacheCount = 0;
+      
+      for (const logFile of logFiles) {
+        const logPath = path.join(process.cwd(), logFile);
+        const matches = await searchLogFile(logPath, pattern, 1000); // Get up to 1000 recent posts
+        
+        for (const match of matches) {
+          const tweetIdMatch = pattern.exec(match);
+          if (tweetIdMatch && tweetIdMatch[1]) {
+            this.postedCache.add(tweetIdMatch[1]);
+            cacheCount++;
+          }
+        }
+      }
+      
+      if (cacheCount > 0) {
+        logger.info(`Pre-warmed posted cache with ${cacheCount} tweet IDs from logs`);
+      }
+    } catch (error) {
+      logger.warn(`Error pre-warming posted cache: ${error}`);
     }
   }
 
