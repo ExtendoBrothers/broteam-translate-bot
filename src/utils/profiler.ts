@@ -21,7 +21,6 @@ interface PerformanceStats {
 
 class PerformanceProfiler {
   private metrics: Map<string, PerformanceMetric[]> = new Map();
-  private activeTimers: Map<string, number> = new Map();
 
   /**
      * Check if performance profiling is enabled
@@ -35,9 +34,6 @@ class PerformanceProfiler {
      */
   start(name: string, metadata?: Record<string, unknown>): void {
     if (!this.enabled) return;
-
-    const timerId = `${name}-${Date.now()}-${Math.random()}`;
-    this.activeTimers.set(timerId, Date.now());
 
     if (!this.metrics.has(name)) {
       this.metrics.set(name, []);
@@ -198,7 +194,6 @@ class PerformanceProfiler {
      */
   reset(): void {
     this.metrics.clear();
-    this.activeTimers.clear();
   }
 
   /**
