@@ -95,7 +95,6 @@ jobs:
         run: |
           npm ci
           npm test
-        continue-on-error: true
       
       - name: Create Pull Request
         uses: peter-evans/create-pull-request@v6
