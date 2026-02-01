@@ -7,7 +7,7 @@
 import { logger } from './logger';
 import { predictHumor } from './humorOnnx';
 
-// Simple LRU cache for humor scores to avoid recomputing
+// LRU cache for humor scores to avoid recomputing
 const scoreCache = new Map<string, { score: number; label: string; isHumorous: boolean; timestamp: number }>();
 const CACHE_MAX_SIZE = 500;
 const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
@@ -15,13 +15,20 @@ const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
 function getCachedScore(text: string) {
   const cached = scoreCache.get(text);
   if (cached && Date.now() - cached.timestamp < CACHE_MAX_AGE_MS) {
+    // LRU: Move to end by deleting and re-inserting (updates recency)
+    scoreCache.delete(text);
+    scoreCache.set(text, cached);
     return { score: cached.score, label: cached.label, isHumorous: cached.isHumorous };
+  }
+  // Remove stale entry
+  if (cached) {
+    scoreCache.delete(text);
   }
   return null;
 }
 
 function setCachedScore(text: string, score: number, label: string, isHumorous: boolean) {
-  // Simple LRU: if cache is full, remove oldest entry
+  // LRU: if cache is full, remove least recently used (first entry in Map)
   if (scoreCache.size >= CACHE_MAX_SIZE) {
     const firstKey = scoreCache.keys().next().value;
     if (firstKey !== undefined) {
