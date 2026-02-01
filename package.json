@@ -61,5 +61,5 @@
     ],
     "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
   },
-  "version": "1.11.0"
+  "version": "0.11.0"
 }
