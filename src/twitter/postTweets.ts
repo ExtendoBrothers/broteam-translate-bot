@@ -68,7 +68,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       headers?: Record<string, string>; 
       message?: string;
       statusCode?: number;
-      data?: any;
+      data?: { rateLimit?: { reset?: number } };
     };
     
     // Check for rate limit indicators (only 429, not 403 which is Forbidden/Auth)

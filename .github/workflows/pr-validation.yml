@@ -1,0 +1,149 @@
+name: PR Validation
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened, ready_for_review]
+
+permissions:
+  contents: read
+  pull-requests: write
+  checks: read
+
+jobs:
+  validate:
+    name: Validate PR
+    runs-on: ubuntu-latest
+    if: github.event.pull_request.draft == false
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+          cache: 'npm'
+      
+      - name: Install dependencies
+        run: npm ci
+      
+      - name: Check commit messages
+        run: |
+          echo "Checking commit messages..."
+          FAILED=0
+          while IFS= read -r msg; do
+            # Skip merge commits
+            if [[ "$msg" =~ ^Merge[[:space:]] ]]; then
+              echo "ℹ️ Skipping merge commit: $msg"
+              continue
+            fi
+            if ! [[ "$msg" =~ ^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert|security)(\(.+\))?:[[:space:]].+ ]]; then
+              echo "❌ Invalid commit message: $msg"
+              echo "Expected format: type(scope): description"
+              FAILED=1
+            fi
+          done < <(git log --format=%s origin/${{ github.base_ref }}..HEAD)
+          
+          if [ $FAILED -eq 1 ]; then
+            echo "⚠️ Some commits have invalid messages (continuing due to continue-on-error)"
+          fi
+        continue-on-error: true
+      
+      - name: Run tests
+        run: npm test
+      
+      - name: Check test coverage
+        run: npm run test:coverage
+      
+      - name: Lint check
+        run: npm run lint
+      
+      - name: Build check
+        run: npm run build
+      
+      - name: Check for TODO/FIXME comments
+        run: |
+          echo "Checking for TODO/FIXME comments..."
+          if git diff origin/${{ github.base_ref }}...HEAD | grep -E '^\+.*\b(TODO|FIXME)\b'; then
+            echo "⚠️ Found TODO/FIXME comments in changes"
+          fi
+        continue-on-error: true
+      
+      - name: PR size check
+        run: |
+          FILES_CHANGED=$(git diff --name-only origin/${{ github.base_ref }}...HEAD | wc -l)
+          LINES_CHANGED=$(git diff --shortstat origin/${{ github.base_ref }}...HEAD | grep -oE '[0-9]+ insertion|[0-9]+ deletion' | grep -oE '[0-9]+' | awk '{s+=$1} END {print s}')
+          
+          echo "Files changed: $FILES_CHANGED"
+          echo "Lines changed: $LINES_CHANGED"
+          
+          if [ "$FILES_CHANGED" -gt 50 ]; then
+            echo "⚠️ Large PR: $FILES_CHANGED files changed"
+            echo "Consider breaking this into smaller PRs"
+          fi
+          
+          if [ "$LINES_CHANGED" -gt 1000 ]; then
+            echo "⚠️ Large PR: $LINES_CHANGED lines changed"
+            echo "Consider breaking this into smaller PRs"
+          fi
+        continue-on-error: true
+      
+      - name: Comment PR
+        uses: actions/github-script@v7
+        if: always()
+        with:
+          script: |
+            const { data: checks } = await github.rest.checks.listForRef({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              ref: context.payload.pull_request.head.sha
+            });
+            
+            const failedChecks = checks.check_runs.filter(check => 
+              check.conclusion === 'failure'
+            );
+            
+            const marker = '<!-- PR_VALIDATION_COMMENT -->';
+            let comment = marker + '\n## PR Validation Results\n\n';
+            
+            if (failedChecks.length === 0) {
+              comment += '✅ All validation checks passed!\n\n';
+              comment += '- Tests: Passing\n';
+              comment += '- Lint: Passing\n';
+              comment += '- Build: Successful\n';
+            } else {
+              comment += '❌ Some checks failed:\n\n';
+              failedChecks.forEach(check => {
+                comment += `- ${check.name}: Failed\n`;
+              });
+            }
+            
+            // Find existing validation comment
+            const { data: comments } = await github.rest.issues.listComments({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number: context.payload.pull_request.number
+            });
+            
+            const existingComment = comments.find(c => c.body?.includes(marker));
+            
+            if (existingComment) {
+              // Update existing comment
+              await github.rest.issues.updateComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                comment_id: existingComment.id,
+                body: comment
+              });
+            } else {
+              // Create new comment
+              await github.rest.issues.createComment({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: context.payload.pull_request.number,
+                body: comment
+              });
+            }

@@ -23,6 +23,7 @@ This file contains heuristics for manually adding feedback to posted tweets. The
 - Syntactical nonsense.
 - Garbage.
 - **Foreign language words/phrases** - reduce coherence and increase incomprehensibility, even if they create juxtaposition.
+- **Short results** - prefer longer, more detailed translations (~250+ characters preferred).
 
 ### Broteampill-Specific Humor Suggestions
 - Exaggerated masculinity and bro culture: references to gym, protein, beer, gaming, pickup lines.
@@ -37,6 +38,7 @@ This file contains heuristics for manually adding feedback to posted tweets. The
 - Mistranslations creating unintentional philosophy or profound-sounding nonsense.
 - **Foreign language fragments mixed with English** - previously valued for juxtaposition, now penalized for reducing coherence and increasing incomprehensibility.
 - Technical gibberish or encoding errors that become comedic.
+- **Technical/programming terms** - code-like gibberish (int, function, leds, etc.) can be funny.
 - Maniacal repetition of self-assurance followed by contradiction.
 
 ### Example Heuristic

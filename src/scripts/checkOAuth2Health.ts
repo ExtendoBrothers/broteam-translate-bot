@@ -75,15 +75,17 @@ async function checkHealth() {
     }
 
     process.exit(0);
-  } catch (e: any) {
-    const status = e?.status || e?.code || e?.response?.status;
+  } catch (e: unknown) {
+    const error = e as { status?: number; code?: number; response?: { status?: number } };
+    const status = error.status || error.code || error.response?.status;
     
     if (status === 400 || status === 401) {
       logger.error('❌ OAuth2 refresh failed - refresh token is invalid or expired');
       logger.error('   Run: npm run oauth2:authorize');
       process.exit(1);
     } else {
-      logger.error(`❌ OAuth2 health check failed: ${e?.message || e}`);
+      const errWithMessage = e as { message?: string };
+      logger.error(`❌ OAuth2 health check failed: ${errWithMessage.message || e}`);
       process.exit(1);
     }
   }

@@ -7,6 +7,37 @@
 import { logger } from './logger';
 import { predictHumor } from './humorOnnx';
 
+// LRU cache for humor scores to avoid recomputing
+const scoreCache = new Map<string, { score: number; label: string; isHumorous: boolean; timestamp: number }>();
+const CACHE_MAX_SIZE = 500;
+const CACHE_MAX_AGE_MS = 5 * 60 * 1000; // 5 minutes
+
+function getCachedScore(text: string) {
+  const cached = scoreCache.get(text);
+  if (cached && Date.now() - cached.timestamp < CACHE_MAX_AGE_MS) {
+    // LRU: Move to end by deleting and re-inserting (updates recency)
+    scoreCache.delete(text);
+    scoreCache.set(text, cached);
+    return { score: cached.score, label: cached.label, isHumorous: cached.isHumorous };
+  }
+  // Remove stale entry
+  if (cached) {
+    scoreCache.delete(text);
+  }
+  return null;
+}
+
+function setCachedScore(text: string, score: number, label: string, isHumorous: boolean) {
+  // LRU: if cache is full, remove least recently used (first entry in Map)
+  if (scoreCache.size >= CACHE_MAX_SIZE) {
+    const firstKey = scoreCache.keys().next().value;
+    if (firstKey !== undefined) {
+      scoreCache.delete(firstKey);
+    }
+  }
+  scoreCache.set(text, { score, label, isHumorous, timestamp: Date.now() });
+}
+
 // Check if local model is available
 const USE_LOCAL_MODEL = true; // Re-enabled with fixed humor probability conversion
 
@@ -178,6 +209,13 @@ export async function scoreHumor(text: string, originalText?: string): Promise<H
       return { score: 0, label: 'not_humorous', isHumorous: false };
     }
 
+    // Check cache first
+    const cached = getCachedScore(text);
+    if (cached) {
+      logger.debug(`[HumorScorer] Cache hit for: "${text.substring(0, 50)}..."`);
+      return cached;
+    }
+
     // Try to use ML model if available
     if (USE_LOCAL_MODEL) {
       try {
@@ -191,11 +229,16 @@ export async function scoreHumor(text: string, originalText?: string): Promise<H
         
         logger.debug(`[HumorScorer] ML Model - Text: "${text.substring(0, 50)}..." | Raw: ${prediction.score.toFixed(3)} (${prediction.label}) | Humor Prob: ${humorProbability.toFixed(3)}`);
         
-        return {
+        const result = {
           score: humorProbability,  // Return humor probability, not raw confidence
           label: prediction.label,
           isHumorous: prediction.isHumorous,
         };
+        
+        // Cache the result
+        setCachedScore(text, result.score, result.label, result.isHumorous);
+        
+        return result;
       } catch (error) {
         logger.warn('[HumorScorer] ML model failed, falling back to heuristics');
         logger.debug('[HumorScorer] Error:', error);
@@ -209,11 +252,12 @@ export async function scoreHumor(text: string, originalText?: string): Promise<H
     
     logger.debug(`[HumorScorer] Heuristics - Text: "${text.substring(0, 50)}..." | Score: ${score.toFixed(3)} | Humorous: ${isHumorous}`);
 
-    return {
-      score,
-      label,
-      isHumorous,
-    };
+    const result = { score, label, isHumorous };
+    
+    // Cache heuristic results too
+    setCachedScore(text, score, label, isHumorous);
+
+    return result;
   } catch (error) {
     logger.error('[HumorScorer] Error scoring text for humor:', error);
     // Return a neutral score on error to avoid breaking the pipeline

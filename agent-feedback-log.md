@@ -547,3 +547,246 @@ This log contains the agent's reasoning for each feedback entry provided based o
 
 ---
 
+## Tweet 2015928426830463475
+**Original:** [STREAM]\n\nYou want games?
+**Bot Selected:** RANDOM_1 - "Www.azerbaijan.com\n\nChaussettes Blind socks?"
+
+**Agent Analysis:**
+- RANDOM_3 wins: "About us\n\nYou want to play?" - coherent setup-punchline structure
+- RANDOM_1: Foreign language fragments penalized per heuristics
+- RANDOM_2: Single word "Turkey" too simple
+- OLDSCHOOL: "Performance\n\nI want to play?" coherent but RANDOM_3 better flow
+
+**Rating:** 2/5
+**Best:** RANDOM_3
+**Notes:** "About us You want to play has coherent setup-punchline structure, better than foreign language gibberish"
+
+---
+
+## Tweet 2016011049762488443 (Variant 1)
+**Original:** Highguard is fucking awful, brother
+**Bot Selected:** RANDOM_2 - "To my brother"
+
+**Agent Analysis:**
+- RANDOM_1 wins: "Defense sucks" - coherent complaint, captures awful sentiment
+- RANDOM_2: "To my brother" - addresses brother but loses complaint
+- OLDSCHOOL: "The guards suck" similar to RANDOM_1
+- RANDOM_3: "The perfect path" - opposite meaning
+
+**Rating:** 2/5
+**Best:** RANDOM_1
+**Notes:** "Defense sucks maintains coherent complaint, better than addressing brother"
+
+---
+
+## Tweet 2016035745392480394 (Variant 1)
+**Original:** I went ahead and incorporated another business\n\nI can't help it
+**Bot Selected:** RANDOM_3 - "I'll make another one\n\nI can't help you"
+
+**Agent Analysis:**
+- RANDOM_3 wins (bot correct!): "I'll make another one\n\nI can't help you" - coherent absurd business incorporation
+- RANDOM_1: Incomplete "I can't"
+- RANDOM_2: "This is what I do" coherent but less funny
+- OLDSCHOOL: Business jargon, boring
+
+**Rating:** 3/5
+**Best:** RANDOM_3
+**Notes:** "I'll make another one I can't help you creates absurd business incorporation narrative"
+
+---
+
+## Tweet 2016102830075982036
+**Original:** @JewishSkinSuit\nyou are wrong
+**Bot Selected:** RANDOM_1 - "@JewishSkinSuit\nyou Axtar Tags"
+
+**Agent Analysis:**
+- RANDOM_2 wins: "@JewishSkinSuit\nyou One at a time" - coherent response
+- RANDOM_1: Foreign language "Axtar Tags" penalized
+- RANDOM_3: "%" gibberish
+- OLDSCHOOL: "I deserve it" changes meaning
+
+**Rating:** 2/5
+**Best:** RANDOM_2
+**Notes:** "One at a time maintains coherent response, better than foreign gibberish"
+
+---
+
+## Tweet 2016104776161714354
+**Original:** I'm making a stock market site where you trade on video game sentiments\n\nthis is going to be hilarious
+**Bot Selected:** OLDSCHOOL - "I created a stock market where you can change video games\n\nIt'll be fun"
+
+**Agent Analysis:**
+- OLDSCHOOL wins (bot correct!): Coherent absurd stock market for video games
+- RANDOM_1: "BLEU" foreign language
+- RANDOM_2: Long but coherent
+- RANDOM_3: Incomplete
+
+**Rating:** 3/5
+**Best:** OLDSCHOOL
+**Notes:** "I created a stock market where you can change video games It'll be fun maintains coherent absurd concept"
+
+---
+## Tweet 2016111194231431527
+**Original:** @WyattListon\nis that so
+**Bot Selected:** RANDOM_3 - "@WyattListon\nis Percent"
+
+**Agent Analysis:**
+- RANDOM_2 wins: "@WyattListon\nis You too" - coherent response
+- Others single words or gibberish
+
+**Rating:** 2/5
+**Best:** RANDOM_2
+**Notes:** "You too maintains coherent response, better than single word percent"
+## Tweet 2016104725863665971
+**Original:** I'm making a stock market site where you trade on how well video games are doing\n\nthis is going to be hilarious
+**Bot Selected:** OLDSCHOOL - "I created a stock market where you changed anything\n\nIt'll be fun"
+
+**Agent Analysis:**
+- OLDSCHOOL wins (bot correct!): "changed anything" absurd trading
+- Others too simple or incoherent
+
+**Rating:** 3/5
+**Best:** OLDSCHOOL
+**Notes:** "I created a stock market where you changed anything It'll be fun maintains absurd trading concept"
+
+---
+
+## Tweet 2016119760334078286
+**Original:** this is the silliest thing in the world but I just bought an iron condor on Counter Strike 2
+**Bot Selected:** RANDOM_2 - "It was the stupidest thing in the world, but I bought an eagle"
+
+**Agent Analysis:**
+- RANDOM_2 wins (bot correct!): Coherent absurd financial decision
+- "bought an eagle" instead of iron condor - great absurdity
+
+**Rating:** 4/5
+**Best:** RANDOM_2
+**Notes:** "It was the stupidest thing in the world, but I bought an eagle creates absurd financial decision"
+
+---
+
+## Tweet 2016245075337216139
+**Original:** No stream today\n\nI've stayed awake all night so many times in the last two months vibecoding stupid bullshit that I better just sleep for a long time\n\nsee u later
+**Bot Selected:** RANDOM_1 - "No power today\n\nI have been trying to mix every night for the past two months, so I want to go to bed for a long time\n\nHuling post"
+
+**Agent Analysis:**
+- RANDOM_1 wins (bot correct!): Coherent absurd coding narrative
+- OLDSCHOOL: "stupid chest bag" also absurd but RANDOM_1 better flow
+
+**Rating:** 3/5
+**Best:** RANDOM_1
+**Notes:** "No power today I have been trying to mix every night... Huling post creates absurd coding narrative"
+
+---
+
+## Tweet 2016566245697466686
+**Original:** feeling bearish on final fantasy x
+**Bot Selected:** OLDSCHOOL - "i felt brave in my last fantasy"
+
+**Agent Analysis:**
+- OLDSCHOOL wins (bot correct!): Coherent sentiment
+- RANDOM_2: Too close to original
+
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "i felt brave in my last fantasy maintains coherent sentiment, better than too close to original"
+
+---
+
+## Tweet 2016582996292518026
+**Original:** bro now is a good time to buy\njust saying
+**Bot Selected:** RANDOM_2 - "♪ Female start ♪\nIt is not unique."
+
+**Agent Analysis:**
+- OLDSCHOOL wins: "Time to buy something\nNotes" coherent advice
+- RANDOM_2: "Female start" gibberish
+
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "Time to buy something Notes maintains coherent advice, better than female start gibberish"
+
+---
+
+## Tweet 2016583161468375155
+**Original:** ok fine I'll share\n\ncome to GAMESTOCKS.org\n\ndiamond hands only
+**Bot Selected:** RANDOM_1 - "Good\n\nspeed GAMESTOCKS.orgXNLXNLdiamant It was just that"
+
+**Agent Analysis:**
+- RANDOM_1 wins (bot correct!): Maintains "diamant" for diamond hands meme
+- Coherent structure
+
+**Rating:** 3/5
+**Best:** RANDOM_1
+**Notes:** "Good speed GAMESTOCKS.org diamant It was just that maintains diamond hands meme, coherent"
+
+---
+
+## Tweet 2016597006051905672
+**Original:** @0fisur\nbuy games
+**Bot Selected:** RANDOM_3 - "@0fisur\nbuy teen gaztea"
+
+**Agent Analysis:**
+- RANDOM_3 wins (bot correct!): "teen gaztea" adds absurd teen reference
+- RANDOM_2: Too simple "Game"
+
+**Rating:** 2/5
+**Best:** RANDOM_3
+**Notes:** "buy teen gaztea adds absurd teen reference, better than simple game"
+
+---
+
+## Tweet 2016600811368063313
+**Original:** shit I added too many games
+**Bot Selected:** OLDSCHOOL - "I added a lot of toys"
+
+**Agent Analysis:**
+- OLDSCHOOL wins (bot correct!): "toys" absurd instead of games
+- RANDOM_1: Too close to original
+
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "I added a lot of toys creates absurd toys reference, better than too close to original"
+
+---
+
+## Tweet 2016603198392565849
+**Original:** no updates to gamestocks for a while
+**Bot Selected:** RANDOM_3 - "Int leds4:9,11,13,13:9,13; と int leds"
+
+**Agent Analysis:**
+- RANDOM_3 wins (bot correct!): Technical gibberish comedy
+- RANDOM_1: Foreign language
+- OLDSCHOOL: Too close to original
+
+**Rating:** 3/5
+**Best:** RANDOM_3
+**Notes:** "Int leds... creates technical gibberish comedy, better than foreign or too close"
+
+---
+
+## Tweet 2016625385514160312
+**Original:** stream will be late\nbusiness meeting
+**Bot Selected:** RANDOM_1 - "...\ntop 100 roles in english office centre: 100 club control"
+
+**Agent Analysis:**
+- RANDOM_1 wins (bot correct!): Absurd business gibberish
+- Others too simple
+
+**Rating:** 2/5
+**Best:** RANDOM_1
+**Notes:** "... top 100 roles... creates absurd business gibberish, better than simple slow"
+
+---
+
+## Tweet 2016677260628283620
+**Original:** ok take a bit and  let's GAME
+**Bot Selected:** RANDOM_3 - "Priradenie seven"
+
+**Agent Analysis:**
+- RANDOM_2 wins: "Play a Player" coherent gaming reference
+- RANDOM_3: Foreign gibberish
+
+**Rating:** 2/5
+**Best:** RANDOM_2
+**Notes:** "Play a Player maintains coherent gaming reference, better than foreign gibberish"
+

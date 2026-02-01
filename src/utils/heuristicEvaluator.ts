@@ -78,10 +78,16 @@ export function evaluateHeuristics(result: string, original: string): HeuristicS
     details.push('semantic breakdown/repetition');
   }
 
-  // 8. Foreign language fragments
-  if (/[áéíóúñ¿¡]/.test(text) || /[\u0400-\u04FF]/.test(text)) {
+  // 7.5. Technical gibberish (programming/code-like terms)
+  if (/\b(int|leds|function|class|var|const|let|if|for|while|array|object)\b/.test(textLower) || /[{}();=<>]/.test(text)) {
     score += 0.03;
-    details.push('foreign language fragments');
+    details.push('technical gibberish');
+  }
+
+  // 8. Foreign language fragments - NOW PENALIZED per updated heuristics
+  if (/[áéíóúñ¿¡]/.test(text) || /[\u0400-\u04FF]/.test(text)) {
+    score -= 0.03;  // Changed from +0.03 to -0.03
+    details.push('foreign language fragments (penalty)');
   }
 
   // 9. Maniacal repetition of complete phrases
@@ -106,14 +112,10 @@ export function evaluateHeuristics(result: string, original: string): HeuristicS
     details.push('dirty/sexual innuendo');
   }
 
-  // 11. Self-contradiction
-  const contradictionPatterns = [
-    /\b(nice|good|smart|fast|hot)\b.*\b(bad|evil|stupid|slow|cold)\b/,
-    /\b(assured|confident)\b.*\b(what's going on|confused|lost)\b/
-  ];
-  if (contradictionPatterns.some(pattern => pattern.test(textLower))) {
-    score += 0.035;
-    details.push('self-contradiction');
+  // 12. Length bonus - prefer longer, more detailed results
+  if (text.length > 50) {
+    score += Math.min(0.05, (text.length - 50) / 1000);  // Up to 0.05 bonus for very long results
+    details.push('length bonus');
   }
 
   // Negative heuristics - what makes results less funny

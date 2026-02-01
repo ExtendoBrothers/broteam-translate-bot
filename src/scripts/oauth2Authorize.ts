@@ -49,8 +49,9 @@ async function main() {
 
       logger.info('OAuth2 authorization completed');
       server.close(() => process.exit(0));
-    } catch (e: any) {
-      logger.error(`OAuth2 callback error: ${e?.message || e}`);
+    } catch (e: unknown) {
+      const error = e as { message?: string };
+      logger.error(`OAuth2 callback error: ${error.message || e}`);
       res.statusCode = 500;
       res.end('Error during authorization');
       server.close(() => process.exit(1));

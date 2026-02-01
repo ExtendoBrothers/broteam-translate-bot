@@ -28,7 +28,7 @@ async function testDuplicatePrevention() {
   ];
 
   for (const content of testContents) {
-    const isDuplicate = isContentDuplicate(content);
+    const isDuplicate = await isContentDuplicate(content);
     console.log(`  "${content.substring(0, 30)}..." -> ${isDuplicate ? 'DUPLICATE' : 'OK'}`);
   }
   console.log();

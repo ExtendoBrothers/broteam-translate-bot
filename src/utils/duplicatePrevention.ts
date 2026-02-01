@@ -7,7 +7,7 @@ import { logger } from './logger';
 import { tweetTracker } from './tweetTracker';
 import { postTracker } from './postTracker';
 import { tweetQueue } from './tweetQueue';
-import { isContentDuplicate, logPostedContent, prunePostedOutputs } from './contentDeduplication';
+import { isContentDuplicateSync, logPostedContent, prunePostedOutputs } from './contentDeduplication';
 import { checkTranslationStability, pruneStabilityLog } from './translationStability';
 import { acquireLock } from './enhancedInstanceLock';
 
@@ -65,8 +65,8 @@ export async function checkForDuplicates(
     };
   }
 
-  // 5. Check content-based duplicates (semantic similarity)
-  if (isContentDuplicate(content)) {
+  // 4. Check content-based duplicates (semantic similarity) - use sync version for performance
+  if (isContentDuplicateSync(content)) {
     return {
       canProceed: false,
       reason: 'Content is semantically similar to previously posted content',

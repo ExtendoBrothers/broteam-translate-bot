@@ -248,15 +248,21 @@ export interface WorkerResult {
  * 5. Handle rate limits, errors, and retries appropriately
  */
 export const translateAndPostWorker = async (): Promise<WorkerResult> => {
-  logger.debug(`translateAndPostWorker entry at ${new Date().toISOString()}`);
-  
-  // Initialize comprehensive duplicate prevention system
-  initializeDuplicatePrevention();
-  
-  const client = new TwitterClient();
   let didWork = false;
   let blockedByCooldown = false;
   let blockedByPostLimit = false;
+  
+  logger.debug(`translateAndPostWorker entry at ${new Date().toISOString()}`);
+  
+  // Initialize comprehensive duplicate prevention system
+  try {
+    initializeDuplicatePrevention();
+  } catch (error) {
+    logger.error(`Failed to initialize duplicate prevention: ${error}`);
+    return { didWork: false, blockedByCooldown: false, blockedByPostLimit: false };
+  }
+  
+  const client = new TwitterClient();
   const isDryRun = process.env.DRY_RUN_MODE === 'true';
   
   if (isDryRun) {
@@ -649,10 +655,10 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   if (!postTracker.canPost()) {
     const waitSeconds = postTracker.getTimeUntilNextSlot();
     logger.warn(`24-hour post limit reached (17/17). Next slot available in ${waitSeconds} seconds`);
+    blockedByPostLimit = true;
   }
-        
+  
   // First, try to post any queued tweets from previous runs
-  logger.info(`[QUEUE_DEBUG] Starting post queue processing. Queue size: ${tweetQueue.size()}`);
   while (!tweetQueue.isEmpty() && postTracker.canPost()) {
     logger.info(`[QUEUE_DEBUG] Queue not empty and can post. Queue size: ${tweetQueue.size()}`);
     // Check if we're rate limited for posting
@@ -796,14 +802,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   // Always fetch (worker runs every 30 minutes)
   // fetchTweets() handles monthly Twitter API limit internally and uses fallbacks
   let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
-  const monthKey = monthlyUsageTracker.getCurrentMonthKey();
-  const used = monthlyUsageTracker.getFetchCount(monthKey);
-  const limit = config.MONTHLY_FETCH_LIMIT;
-    
-  logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
-  tweets = await fetchTweets(isDryRun);
-    
-  // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
+  try {
+    const monthKey = monthlyUsageTracker.getCurrentMonthKey();
+    const used = monthlyUsageTracker.getFetchCount(monthKey);
+    const limit = config.MONTHLY_FETCH_LIMIT;
+      
+    logger.info(`Fetching tweets (Twitter API usage: ${used}/${limit} this month)`);
+    tweets = await fetchTweets(isDryRun);
+      
+    // Note: monthlyUsageTracker is incremented inside fetchTweets() only when Twitter API is actually used
+  } catch (error) {
+    logger.error(`Failed to fetch tweets: ${error}`);
+    return { didWork: false, blockedByCooldown: false, blockedByPostLimit: false };
+  }
 
   if (tweets.length === 0) {
     logger.info('No new tweets to process');
@@ -815,463 +826,466 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   logger.info(`Processing ${tweets.length} new tweet(s)`);
         
   for (const tweet of tweets) {
-    {
-      logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
+    logger.info(`Processing tweet ${tweet.id}: ${tweet.text.substring(0, 50)}...`);
 
-      // Log original tweet input to a dedicated file for easy retry
-      const inputLogPath = path.resolve(__dirname, '../../tweet-inputs.log');
-      try {
-        fs.appendFileSync(inputLogPath, `${new Date().toISOString()} [${tweet.id}] ${tweet.text}\n`, 'utf8');
-      } catch (err) {
-        logger.warn(`Failed to log tweet input: ${err}`);
+    // Check if tweet content is blocked
+    if (config.BLOCKED_TWEET_CONTENTS.includes(tweet.text.trim())) {
+      logger.info(`Skipping blocked tweet content: ${tweet.text.trim()}`);
+      continue;
+    }
+
+    // Log original tweet input to a dedicated file for easy retry
+    const inputLogPath = path.resolve(__dirname, '../../tweet-inputs.log');
+    try {
+      fs.appendFileSync(inputLogPath, `${new Date().toISOString()} [${tweet.id}] ${tweet.text}\n`, 'utf8');
+    } catch (err) {
+      logger.warn(`Failed to log tweet input: ${err}`);
+    }
+
+    // Always log the original tweet text as the first step for traceability
+    logTranslationStep('original', tweet.text);
+
+    // Load posted outputs for duplicate checking
+    const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
+    let postedOutputs: string[] = [];
+    try {
+      if (fs.existsSync(postedLogPath)) {
+        postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
       }
+    } catch (e) {
+      logger.warn(`Could not read posted-outputs.log: ${e}`);
+    }
 
-      // Always log the original tweet text as the first step for traceability
-      logTranslationStep('original', tweet.text);
+    // Collect multiple random chain results and one oldschool result
+    logger.info('[MULTI_CHAIN] Collecting 3 random chain results + 1 oldschool result...');
+      
+    logger.info('[MULTI_CHAIN] === Collecting 3 RANDOM chain results ===');
+    const randomResults = await collectMultipleRandomResults(tweet.text, postedOutputs, 3, 33);
+      
+    logger.info('[MULTI_CHAIN] === Running OLDSCHOOL chain (single run - deterministic) ===');
+    const oldschoolChainResult = await executeChainWithRetries(tweet.text, true, 'OLDSCHOOL', postedOutputs, 1);
 
-      // Load posted outputs for duplicate checking
-      const postedLogPath = path.resolve(__dirname, '../../posted-outputs.log');
-      let postedOutputs: string[] = [];
-      try {
-        if (fs.existsSync(postedLogPath)) {
-          postedOutputs = fs.readFileSync(postedLogPath, 'utf8').split('\n').filter((line: string) => Boolean(line)).map((line: string) => line.replace(/^.*?\] /, ''));
-        }
-      } catch (e) {
-        logger.warn(`Could not read posted-outputs.log: ${e}`);
+    // Prepare all candidates for humor comparison
+    const allCandidates: Array<{ result: string; source: string; attempts: number; acceptable: boolean }> = [
+      ...randomResults.map((r, idx) => ({ result: r.result, source: `RANDOM_${idx + 1}`, attempts: r.attempts, acceptable: true })),
+      { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
+    ];
+
+    // All candidates should already be acceptable and non-spammy at this point
+    // But double-check for any edge cases
+    const filteredCandidates = allCandidates.filter(candidate => {
+      const isResultSpammy = isSpammyResult(candidate.result);
+      if (isResultSpammy) {
+        logger.warn(`[SPAM_FILTER] Unexpected spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+        return false;
       }
+      return true;
+    });
 
-      // Collect multiple random chain results and one oldschool result
-      logger.info('[MULTI_CHAIN] Collecting 3 random chain results + 1 oldschool result...');
-      
-      logger.info('[MULTI_CHAIN] === Collecting 3 RANDOM chain results ===');
-      const randomResults = await collectMultipleRandomResults(tweet.text, postedOutputs, 3, 33);
-      
-      logger.info('[MULTI_CHAIN] === Running OLDSCHOOL chain (single run - deterministic) ===');
-      const oldschoolChainResult = await executeChainWithRetries(tweet.text, true, 'OLDSCHOOL', postedOutputs, 1);
+    logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out as spam)...`);
 
-      // Prepare all candidates for humor comparison
-      const allCandidates: Array<{ result: string; source: string; attempts: number; acceptable: boolean }> = [
-        ...randomResults.map((r, idx) => ({ result: r.result, source: `RANDOM_${idx + 1}`, attempts: r.attempts, acceptable: true })),
-        { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
-      ];
-
-      // All candidates should already be acceptable and non-spammy at this point
-      // But double-check for any edge cases
-      const filteredCandidates = allCandidates.filter(candidate => {
-        const isResultSpammy = isSpammyResult(candidate.result);
-        if (isResultSpammy) {
-          logger.warn(`[SPAM_FILTER] Unexpected spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
-          return false;
-        }
-        return true;
-      });
-
-      logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out as spam)...`);
-
-      // Detect language of each candidate and only score English results
-      const originalText = tweet.text; // Store for tie-breaker calculations
-      const scoredCandidates = await Promise.all(
-        filteredCandidates.map(async (candidate) => {
-          // Detect language
-          const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-          const textOnly = candidate.result.replace(tokenPattern, '').trim();
-          let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
+    // Detect language of each candidate and only score English results
+    const originalText = tweet.text; // Store for tie-breaker calculations
+    const scoredCandidates = await Promise.all(
+      filteredCandidates.map(async (candidate) => {
+        // Detect language
+        const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+        const textOnly = candidate.result.replace(tokenPattern, '').trim();
+        let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
           
-          if (detectedLang === 'und') {
-            try {
-              const detections = langdetect.detect(textOnly);
-              if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-                detectedLang = detections[0].lang;
-              }
-            } catch {
-              // ignore
+        if (detectedLang === 'und') {
+          try {
+            const detections = langdetect.detect(textOnly);
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+              detectedLang = detections[0].lang;
             }
+          } catch {
+            // ignore
           }
+        }
           
-          // Only score English results (humor model is trained on English)
-          const isEnglish = detectedLang === 'en';
-          const humorScore = isEnglish 
-            ? await scoreHumor(candidate.result, originalText)
-            : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
+        // Only score English results (humor model is trained on English)
+        const isEnglish = detectedLang === 'en';
+        const humorScore = isEnglish 
+          ? await scoreHumor(candidate.result, originalText)
+          : { score: 0, label: 'NOT_SCORED_NON_ENGLISH', isHumorous: false };
           
-          // Calculate secondary metrics for tie-breaking
-          const diffScore = differenceScore(candidate.result, originalText);
-          const unexpScore = unexpectednessScore(candidate.result, originalText);
-          const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
+        // Calculate secondary metrics for tie-breaking
+        const diffScore = differenceScore(candidate.result, originalText);
+        const unexpScore = unexpectednessScore(candidate.result, originalText);
+        const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
           
-          // Evaluate user-defined heuristics
-          const heuristicEvaluation = evaluateHeuristics(candidate.result, originalText);
+        // Evaluate user-defined heuristics
+        const heuristicEvaluation = evaluateHeuristics(candidate.result, originalText);
           
-          // Initialize unified humor score with the score directly
-          // The scoreHumor() function returns the humor probability directly (higher = funnier)
-          // - Heuristic scorer: score IS the humor probability
-          // - ML model (if enabled): we need to handle it differently in humorScorer.ts
-          const baseHumorScore = humorScore.score;
+        // Initialize unified humor score with the score directly
+        // The scoreHumor() function returns the humor probability directly (higher = funnier)
+        // - Heuristic scorer: score IS the humor probability
+        // - ML model (if enabled): we need to handle it differently in humorScorer.ts
+        const baseHumorScore = humorScore.score;
           
-          return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore, heuristicEvaluation };
-        })
-      );
+        return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore, heuristicEvaluation };
+      })
+    );
 
-      // Log all scores (after heuristic bonuses applied)
-      for (const candidate of scoredCandidates) {
-        logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
-      }
+    // Log all scores (after heuristic bonuses applied)
+    for (const candidate of scoredCandidates) {
+      logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
+    }
 
-      // Log to debug file
-      try {
-        fs.appendFileSync(
-          path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
-          `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
+    // Log to debug file
+    try {
+      fs.appendFileSync(
+        path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
+        `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
           scoredCandidates.map(c => 
             `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, lang=${c.isEnglish ? 'en' : 'non-en'}, acceptable=${c.acceptable}\n` +
             `    Result: "${c.result}"\n`
           ).join('') + '\n',
-          'utf8'
-        );
-      } catch (err) {
-        logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
+        'utf8'
+      );
+    } catch (err) {
+      logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
+    }
+    scoredCandidates.forEach(candidate => {
+      let bonus = 0;
+      const bonusDetails = [];
+        
+      // Heuristic 4: Strong secondary preference for OLDSCHOOL
+      if (candidate.source === 'OLDSCHOOL') {
+        bonus += 0.05; // Significant boost for OLDSCHOOL
+        bonusDetails.push('OLDSCHOOL +0.05');
       }
-      scoredCandidates.forEach(candidate => {
-        let bonus = 0;
-        const bonusDetails = [];
         
-        // Heuristic 4: Strong secondary preference for OLDSCHOOL
-        if (candidate.source === 'OLDSCHOOL') {
-          bonus += 0.05; // Significant boost for OLDSCHOOL
-          bonusDetails.push('OLDSCHOOL +0.05');
-        }
+      // Heuristic 2: Favor longer results (small bonus per character)
+      const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005); // ~0.05 bonus for 100+ chars
+      if (lengthBonus > 0) {
+        bonus += lengthBonus;
+        bonusDetails.push(`length +${lengthBonus.toFixed(4)}`);
+      }
         
-        // Heuristic 2: Favor longer results (small bonus per character)
-        const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005); // ~0.05 bonus for 100+ chars
-        if (lengthBonus > 0) {
-          bonus += lengthBonus;
-          bonusDetails.push(`length +${lengthBonus.toFixed(4)}`);
-        }
+      // Heuristic 5: Coherence bonus - reward complete sentences/phrases
+      const text = candidate.result.trim();
+      const sentenceBonus = (() => {
+        // Check for sentence endings
+        const hasSentenceEndings = /[.!?]$/.test(text);
+        // Check for basic subject-verb structure (simplified)
+        const words = text.toLowerCase().split(/\s+/);
+        const hasVerbs = words.some(word => ['is', 'are', 'was', 'were', 'has', 'have', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word));
+        const coherenceScore = (hasSentenceEndings ? 0.01 : 0) + (hasVerbs ? 0.01 : 0);
+        return coherenceScore;
+      })();
+      if (sentenceBonus > 0) {
+        bonus += sentenceBonus;
+        bonusDetails.push(`coherence +${sentenceBonus.toFixed(3)}`);
+      }
         
-        // Heuristic 5: Coherence bonus - reward complete sentences/phrases
-        const text = candidate.result.trim();
-        const sentenceBonus = (() => {
-          // Check for sentence endings
-          const hasSentenceEndings = /[.!?]$/.test(text);
-          // Check for basic subject-verb structure (simplified)
-          const words = text.toLowerCase().split(/\s+/);
-          const hasVerbs = words.some(word => ['is', 'are', 'was', 'were', 'has', 'have', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word));
-          const coherenceScore = (hasSentenceEndings ? 0.01 : 0) + (hasVerbs ? 0.01 : 0);
-          return coherenceScore;
-        })();
-        if (sentenceBonus > 0) {
-          bonus += sentenceBonus;
-          bonusDetails.push(`coherence +${sentenceBonus.toFixed(3)}`);
-        }
+      // Heuristic 6: Garbage penalty - penalize low word diversity
+      const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
+      const uniqueWords = new Set(words);
+      const diversityRatio = uniqueWords.size / words.length;
+      const garbagePenalty = diversityRatio < 0.7 ? -0.02 : 0; // Penalty for <70% unique words
+      if (garbagePenalty < 0) {
+        bonus += garbagePenalty;
+        bonusDetails.push(`garbage ${garbagePenalty.toFixed(3)}`);
+      }
         
-        // Heuristic 6: Garbage penalty - penalize low word diversity
-        const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-        const uniqueWords = new Set(words);
-        const diversityRatio = uniqueWords.size / words.length;
-        const garbagePenalty = diversityRatio < 0.7 ? -0.02 : 0; // Penalty for <70% unique words
-        if (garbagePenalty < 0) {
-          bonus += garbagePenalty;
-          bonusDetails.push(`garbage ${garbagePenalty.toFixed(3)}`);
-        }
+      // Heuristic 7: Contradiction bonus - reward contradictory concepts
+      const contradictionBonus = (() => {
+        const lowerText = text.toLowerCase();
+        // Simple contradiction patterns
+        const contradictions = [
+          /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
+          /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
+          /\b(fast|quick)\b.*\b(slow)\b/,
+          /\b(hot)\b.*\b(cold)\b/
+        ];
+        const hasContradiction = contradictions.some(pattern => pattern.test(lowerText));
+        return hasContradiction ? 0.015 : 0;
+      })();
+      if (contradictionBonus > 0) {
+        bonus += contradictionBonus;
+        bonusDetails.push(`contradiction +${contradictionBonus.toFixed(3)}`);
+      }
         
-        // Heuristic 7: Contradiction bonus - reward contradictory concepts
-        const contradictionBonus = (() => {
-          const lowerText = text.toLowerCase();
-          // Simple contradiction patterns
-          const contradictions = [
-            /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
-            /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
-            /\b(fast|quick)\b.*\b(slow)\b/,
-            /\b(hot)\b.*\b(cold)\b/
-          ];
-          const hasContradiction = contradictions.some(pattern => pattern.test(lowerText));
-          return hasContradiction ? 0.015 : 0;
-        })();
-        if (contradictionBonus > 0) {
-          bonus += contradictionBonus;
-          bonusDetails.push(`contradiction +${contradictionBonus.toFixed(3)}`);
-        }
+      // Heuristic 8: Self-deprecation bonus - reward self-critical humor
+      const selfDeprecationBonus = (() => {
+        const lowerText = text.toLowerCase();
+        // Look for first-person + negative self-description
+        const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
+        const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
+        const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
+        return (hasFirstPerson && hasNegativeSelf) || hasSelfCriticism ? 0.012 : 0;
+      })();
+      if (selfDeprecationBonus > 0) {
+        bonus += selfDeprecationBonus;
+        bonusDetails.push(`self-deprecating +${selfDeprecationBonus.toFixed(3)}`);
+      }
         
-        // Heuristic 8: Self-deprecation bonus - reward self-critical humor
-        const selfDeprecationBonus = (() => {
-          const lowerText = text.toLowerCase();
-          // Look for first-person + negative self-description
-          const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
-          const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
-          const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
-          return (hasFirstPerson && hasNegativeSelf) || hasSelfCriticism ? 0.012 : 0;
-        })();
-        if (selfDeprecationBonus > 0) {
-          bonus += selfDeprecationBonus;
-          bonusDetails.push(`self-deprecating +${selfDeprecationBonus.toFixed(3)}`);
-        }
-        
-        // Heuristic 9: Absurdity bonus - reward impossible or extreme concepts
-        const absurdityBonus = (() => {
-          const lowerText = text.toLowerCase();
-          // Words indicating impossibility or extremes
-          const absurdWords = /\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/;
-          const extremeWords = /\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/;
-          const impossibleConcepts = /\b(flying pigs|square circle|cold heat|dark light)\b/;
+      // Heuristic 9: Absurdity bonus - reward impossible or extreme concepts
+      const absurdityBonus = (() => {
+        const lowerText = text.toLowerCase();
+        // Words indicating impossibility or extremes
+        const absurdWords = /\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/;
+        const extremeWords = /\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/;
+        const impossibleConcepts = /\b(flying pigs|square circle|cold heat|dark light)\b/;
           
-          const hasAbsurdWords = absurdWords.test(lowerText);
-          const hasExtremeWords = extremeWords.test(lowerText);
-          const hasImpossible = impossibleConcepts.test(lowerText);
+        const hasAbsurdWords = absurdWords.test(lowerText);
+        const hasExtremeWords = extremeWords.test(lowerText);
+        const hasImpossible = impossibleConcepts.test(lowerText);
           
-          return (hasAbsurdWords ? 0.008 : 0) + (hasExtremeWords ? 0.005 : 0) + (hasImpossible ? 0.010 : 0);
-        })();
-        if (absurdityBonus > 0) {
-          bonus += absurdityBonus;
-          bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
-        }
+        return (hasAbsurdWords ? 0.008 : 0) + (hasExtremeWords ? 0.005 : 0) + (hasImpossible ? 0.010 : 0);
+      })();
+      if (absurdityBonus > 0) {
+        bonus += absurdityBonus;
+        bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
+      }
         
-        // Apply user-defined heuristic evaluation first
-        if (candidate.heuristicEvaluation.score !== 0) {
-          bonus += candidate.heuristicEvaluation.score;
-          bonusDetails.push(...candidate.heuristicEvaluation.details.map(d => `${d} ${candidate.heuristicEvaluation.score > 0 ? '+' : ''}${candidate.heuristicEvaluation.score.toFixed(3)}`));
-        }
+      // Apply user-defined heuristic evaluation first
+      if (candidate.heuristicEvaluation.score !== 0) {
+        bonus += candidate.heuristicEvaluation.score;
+        bonusDetails.push(...candidate.heuristicEvaluation.details.map(d => `${d} ${candidate.heuristicEvaluation.score > 0 ? '+' : ''}${candidate.heuristicEvaluation.score.toFixed(3)}`));
+      }
         
-        // Apply bonus (cap at 0.15 total to account for user heuristics)
-        const appliedBonus = Math.min(bonus, 0.15);
+      // Apply bonus (cap at 0.15 total to account for user heuristics)
+      const appliedBonus = Math.min(bonus, 0.15);
         
-        // Update unified humor score by adding heuristic bonuses
-        const originalUnifiedScore = candidate.unifiedHumorScore;
-        candidate.unifiedHumorScore = Math.min(1.0, candidate.unifiedHumorScore + appliedBonus);
+      // Update unified humor score by adding heuristic bonuses
+      const originalUnifiedScore = candidate.unifiedHumorScore;
+      candidate.unifiedHumorScore = Math.min(1.0, candidate.unifiedHumorScore + appliedBonus);
         
-        // Log the heuristic application
-        if (bonusDetails.length > 0) {
-          logger.info(`[HEURISTIC] ${candidate.source}: ${originalUnifiedScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
-        }
-      });
-      // Select the funniest result using unified humor scores
-      // Higher unified score = more likely funny (consistent for all results)
-      let bestCandidate;
-      if (scoredCandidates.length === 0) {
-        logger.error(`[MULTI_CHAIN] No acceptable candidates found for tweet ${tweet.id}. All translation attempts failed.`);
-        // Skip this tweet entirely - don't post error messages
+      // Log the heuristic application
+      if (bonusDetails.length > 0) {
+        logger.info(`[HEURISTIC] ${candidate.source}: ${originalUnifiedScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
+      }
+    });
+    // Select the funniest result using unified humor scores
+    // Higher unified score = more likely funny (consistent for all results)
+    let bestCandidate;
+    if (scoredCandidates.length === 0) {
+      logger.error(`[MULTI_CHAIN] No acceptable candidates found for tweet ${tweet.id}. All translation attempts failed.`);
+      // Skip this tweet entirely - don't post error messages
+      continue;
+    }
+      
+    bestCandidate = scoredCandidates[0];
+      
+    for (const candidate of scoredCandidates) {
+      // Prioritize English results over non-English
+      if (candidate.isEnglish && !bestCandidate.isEnglish) {
+        bestCandidate = candidate;
         continue;
       }
-      
-      bestCandidate = scoredCandidates[0];
-      
-      for (const candidate of scoredCandidates) {
-        // Prioritize English results over non-English
-        if (candidate.isEnglish && !bestCandidate.isEnglish) {
-          bestCandidate = candidate;
-          continue;
-        }
-        // If best is English but current isn't, skip current
-        if (!candidate.isEnglish && bestCandidate.isEnglish) {
-          continue;
-        }
-        
-        // Both are English, compare unified humor scores (higher = better)
-        if (candidate.unifiedHumorScore > bestCandidate.unifiedHumorScore) {
-          bestCandidate = candidate;
-        }
-        // If unified scores are equal, use tie-breaker (more unexpected/different = better)
-        else if (candidate.unifiedHumorScore === bestCandidate.unifiedHumorScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
-          bestCandidate = candidate;
-        }
+      // If best is English but current isn't, skip current
+      if (!candidate.isEnglish && bestCandidate.isEnglish) {
+        continue;
       }
-
-      logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (unified score: ${bestCandidate.unifiedHumorScore.toFixed(3)})`);
-
-      // Save feedback data for manual review
-      try {
-        const feedbackEntry = {
-          timestamp: new Date().toISOString(),
-          tweetId: tweet.id,
-          originalText: tweet.text,
-          candidates: scoredCandidates.map(c => ({
-            source: c.source,
-            result: c.result,
-            humorScore: c.humorScore.score,
-            unifiedHumorScore: c.unifiedHumorScore,
-            humorLabel: c.humorScore.label,
-            isEnglish: c.isEnglish,
-            tieBreaker: c.tieBreaker,
-            acceptable: c.acceptable,
-            heuristicEvaluation: c.heuristicEvaluation
-          })),
-          botSelected: bestCandidate.source,
-          selectedResult: bestCandidate.result,
-          selectedScore: bestCandidate.unifiedHumorScore,
-          userFeedback: null
-        };
-
-        const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
         
-        // Read existing feedback data
-        let existingEntries = [];
-        if (fs.existsSync(feedbackPath)) {
-          try {
-            const content = fs.readFileSync(feedbackPath, 'utf8');
-            const lines = content.split('\n').filter(line => line.trim());
-            for (const line of lines) {
-              if (line.trim()) {
-                existingEntries.push(JSON.parse(line.trim()));
-              }
-            }
-          } catch (readErr) {
-            logger.warn('[FEEDBACK] Failed to read existing feedback data, starting fresh:', readErr);
-          }
-        }
+      // Both are English, compare unified humor scores (higher = better)
+      if (candidate.unifiedHumorScore > bestCandidate.unifiedHumorScore) {
+        bestCandidate = candidate;
+      }
+      // If unified scores are equal, use tie-breaker (more unexpected/different = better)
+      else if (candidate.unifiedHumorScore === bestCandidate.unifiedHumorScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
+        bestCandidate = candidate;
+      }
+    }
+
+    logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (unified score: ${bestCandidate.unifiedHumorScore.toFixed(3)})`);
+
+    // Save feedback data for manual review
+    try {
+      const feedbackEntry = {
+        timestamp: new Date().toISOString(),
+        tweetId: tweet.id,
+        originalText: tweet.text,
+        candidates: scoredCandidates.map(c => ({
+          source: c.source,
+          result: c.result,
+          humorScore: c.humorScore.score,
+          unifiedHumorScore: c.unifiedHumorScore,
+          humorLabel: c.humorScore.label,
+          isEnglish: c.isEnglish,
+          tieBreaker: c.tieBreaker,
+          acceptable: c.acceptable,
+          heuristicEvaluation: c.heuristicEvaluation
+        })),
+        botSelected: bestCandidate.source,
+        selectedResult: bestCandidate.result,
+        selectedScore: bestCandidate.unifiedHumorScore,
+        userFeedback: null
+      };
+
+      const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
         
-        // Spam/repetition filter: block entries with excessive repeated words or length
-        if (!isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
-          existingEntries.push(feedbackEntry);
-        } else {
-          logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
-        }
-        // Write back all entries (ensure single-line JSON)
-        const jsonlContent = existingEntries.map(entry => {
-          // Create a copy and escape newlines in string values to prevent multiline JSON
-          const sanitizedEntry = JSON.parse(JSON.stringify(entry, (key, value) => {
-            if (typeof value === 'string') {
-              return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-            }
-            return value;
-          }));
-          return JSON.stringify(sanitizedEntry);
-        }).join('\n') + '\n';
-        fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
-        
-        // Check if feedback threshold reached for analysis (every 5 feedbacks)
+      // Read existing feedback data
+      let existingEntries = [];
+      if (fs.existsSync(feedbackPath)) {
         try {
-          const { execSync } = await import('child_process');
-          execSync('node scripts/check-feedback-threshold.js', { 
-            stdio: 'inherit',
-            cwd: process.cwd()
-          });
-        } catch (checkErr) {
-          logger.warn('[FEEDBACK] Failed to run threshold check:', checkErr);
-        }
-      } catch (err) {
-        logger.error('[ERROR] Failed to save feedback data:', err);
-      }
-
-      const finalResult = bestCandidate.result;
-      const acceptable = bestCandidate.acceptable; // Only accept if the best candidate meets quality criteria
-      const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
-      const translationAttempted = true;
-      const selectedChain = bestCandidate.source;
-      const chosenHumorScore = bestCandidate.humorScore.score;
-
-      const translationLogSteps: { lang: string, text: string }[] = [];
-
-      // Log the initial result evaluation (if we have one)
-      if (acceptable && translationAttempted) {
-        appendToDebugLog(`[DEBUG] Final result evaluation: acceptable=${acceptable}\nSelected chain: ${selectedChain}\nfinalResult='${finalResult}'\nReason: ${initialCheck.reason}\n`);
-      }
-
-      logger.info(`Selected translation (${selectedChain}, humor: ${chosenHumorScore.toFixed(3)}): ${finalResult}`);
-
-      // Write detailed translation log to a single log file (append)
-      try {
-        const logDir = path.join(process.cwd(), 'translation-logs');
-        if (!fs.existsSync(logDir)) {
-          fs.mkdirSync(logDir);
-        }
-        const logFile = path.join(logDir, 'all-translations.log');
-        const timestamp = new Date().toISOString();
-        let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nChosen Chain: ${selectedChain}\nHumor Score: ${chosenHumorScore.toFixed(3)}\nSteps:\n`;
-        for (const step of translationLogSteps) {
-          logContent += `  [${step.lang}] ${step.text}\n`;
-        }
-        logContent += `Final Result: ${finalResult}\n`;
-        fs.appendFileSync(logFile, logContent, 'utf8');
-      } catch (e) {
-        logger.warn(`Failed to write detailed translation log: ${e}`);
-      }
-
-      const timeSinceLastPost = Date.now() - lastPostTime;
-      const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
-
-      // Decide whether to post immediately, queue, or skip based on conditions
-      if (acceptable) {
-        if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
-          const reason = !tweetQueue.isEmpty() ? 'queue not empty' :
-            !postTracker.canPost() ? '24h limit reached' :
-              rateLimitTracker.isRateLimited('post') ? 'rate limited' :
-                'minimum interval enforcement';
-          logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
-          logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
-          await tweetQueue.enqueue(tweet.id, finalResult);
-        } else {
-          // COMPREHENSIVE DUPLICATE PREVENTION CHECK
-          const duplicateCheck = await checkForDuplicates(
-            tweet.id,
-            finalResult,
-            tweet.text,
-            selectedChain,
-            chosenHumorScore // Using humor score as attempt count approximation
-          );
-
-          if (!duplicateCheck.canProceed) {
-            logger.warn(`[DUPLICATE_PREVENTION] Blocking post for tweet ${tweet.id}: ${duplicateCheck.reason}`);
-            if (duplicateCheck.severity === 'block') {
-              continue; // Skip this tweet entirely
+          const content = fs.readFileSync(feedbackPath, 'utf8');
+          const lines = content.split('\n').filter(line => line.trim());
+          for (const line of lines) {
+            if (line.trim()) {
+              existingEntries.push(JSON.parse(line.trim()));
             }
           }
+        } catch (readErr) {
+          logger.warn('[FEEDBACK] Failed to read existing feedback data, starting fresh:', readErr);
+        }
+      }
+        
+      // Spam/repetition filter: block entries with excessive repeated words or length
+      if (!isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
+        existingEntries.push(feedbackEntry);
+      } else {
+        logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
+      }
+      // Write back all entries (ensure single-line JSON)
+      const jsonlContent = existingEntries.map(entry => {
+        // Create a copy and escape newlines in string values to prevent multiline JSON
+        const sanitizedEntry = JSON.parse(JSON.stringify(entry, (key, value) => {
+          if (typeof value === 'string') {
+            return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+          }
+          return value;
+        }));
+        return JSON.stringify(sanitizedEntry);
+      }).join('\n') + '\n';
+      fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
+        
+      // Check if feedback threshold reached for analysis (every 5 feedbacks)
+      try {
+        const { execSync } = await import('child_process');
+        execSync('node scripts/check-feedback-threshold.js', { 
+          stdio: 'inherit',
+          cwd: process.cwd()
+        });
+      } catch (checkErr) {
+        logger.warn('[FEEDBACK] Failed to run threshold check:', checkErr);
+      }
+    } catch (err) {
+      logger.error('[ERROR] Failed to save feedback data:', err);
+    }
 
-          // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
-          if (!finalResult || finalResult.trim() === '/' || finalResult.includes('rate limit') || finalResult.includes('retranslation') || finalResult.includes('removed due to')) {
-            const queued = tweetQueue.peek();
-            if (queued && queued.sourceTweetId === tweet.id) {
-              queued.attemptCount = (queued.attemptCount || 0) + 1;
-              if (queued.attemptCount >= 3) {
-                logger.warn(`Tweet ${tweet.id} failed translation ${queued.attemptCount} times. Removing from queue.`);
-                tweetQueue.dequeue();
-                continue;
-              } else {
-                logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}' (attempt ${queued.attemptCount}/3)`);
-                continue;
-              }
+    const finalResult = bestCandidate.result;
+    const acceptable = bestCandidate.acceptable; // Only accept if the best candidate meets quality criteria
+    const initialCheck = { acceptable, reason: `Selected ${bestCandidate.source} via humor scoring from ${scoredCandidates.length} candidates` };
+    const translationAttempted = true;
+    const selectedChain = bestCandidate.source;
+    const chosenHumorScore = bestCandidate.humorScore.score;
+
+    const translationLogSteps: { lang: string, text: string }[] = [];
+
+    // Log the initial result evaluation (if we have one)
+    if (acceptable && translationAttempted) {
+      appendToDebugLog(`[DEBUG] Final result evaluation: acceptable=${acceptable}\nSelected chain: ${selectedChain}\nfinalResult='${finalResult}'\nReason: ${initialCheck.reason}\n`);
+    }
+
+    logger.info(`Selected translation (${selectedChain}, humor: ${chosenHumorScore.toFixed(3)}): ${finalResult}`);
+
+    // Write detailed translation log to a single log file (append)
+    try {
+      const logDir = path.join(process.cwd(), 'translation-logs');
+      if (!fs.existsSync(logDir)) {
+        fs.mkdirSync(logDir);
+      }
+      const logFile = path.join(logDir, 'all-translations.log');
+      const timestamp = new Date().toISOString();
+      let logContent = `---\nTimestamp: ${timestamp}\nTweet ID: ${tweet.id || 'unknown'}\nInput: ${tweet.text}\nChosen Chain: ${selectedChain}\nHumor Score: ${chosenHumorScore.toFixed(3)}\nSteps:\n`;
+      for (const step of translationLogSteps) {
+        logContent += `  [${step.lang}] ${step.text}\n`;
+      }
+      logContent += `Final Result: ${finalResult}\n`;
+      fs.appendFileSync(logFile, logContent, 'utf8');
+    } catch (e) {
+      logger.warn(`Failed to write detailed translation log: ${e}`);
+    }
+
+    const timeSinceLastPost = Date.now() - lastPostTime;
+    const needsInterval = lastPostTime > 0 && timeSinceLastPost < MIN_POST_INTERVAL_MS;
+
+    // Decide whether to post immediately, queue, or skip based on conditions
+    if (acceptable) {
+      if (!tweetQueue.isEmpty() || !postTracker.canPost() || rateLimitTracker.isRateLimited('post') || needsInterval) {
+        const reason = !tweetQueue.isEmpty() ? 'queue not empty' :
+          !postTracker.canPost() ? '24h limit reached' :
+            rateLimitTracker.isRateLimited('post') ? 'rate limited' :
+              'minimum interval enforcement';
+        logger.info(`Adding tweet ${tweet.id} to queue (${reason})`);
+        logger.info(`Queue state: isEmpty=${tweetQueue.isEmpty()}, canPost=${postTracker.canPost()}, rateLimited=${rateLimitTracker.isRateLimited('post')}, needsInterval=${needsInterval}`);
+        await tweetQueue.enqueue(tweet.id, finalResult);
+      } else {
+        // COMPREHENSIVE DUPLICATE PREVENTION CHECK
+        const duplicateCheck = await checkForDuplicates(
+          tweet.id,
+          finalResult,
+          tweet.text,
+          selectedChain,
+          chosenHumorScore // Using humor score as attempt count approximation
+        );
+
+        if (!duplicateCheck.canProceed) {
+          logger.warn(`[DUPLICATE_PREVENTION] Blocking post for tweet ${tweet.id}: ${duplicateCheck.reason}`);
+          if (duplicateCheck.severity === 'block') {
+            continue; // Skip this tweet entirely
+          }
+        }
+
+        // Additional safety check for empty/problematic results (shouldn't trigger if acceptable)
+        if (!finalResult || finalResult.trim() === '/' || finalResult.includes('rate limit') || finalResult.includes('retranslation') || finalResult.includes('removed due to')) {
+          const queued = tweetQueue.peek();
+          if (queued && queued.sourceTweetId === tweet.id) {
+            queued.attemptCount = (queued.attemptCount || 0) + 1;
+            if (queued.attemptCount >= 3) {
+              logger.warn(`Tweet ${tweet.id} failed translation ${queued.attemptCount} times. Removing from queue.`);
+              tweetQueue.dequeue();
+              continue;
             } else {
-              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
+              logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}' (attempt ${queued.attemptCount}/3)`);
               continue;
             }
+          } else {
+            logger.warn(`Skipping post for tweet ${tweet.id} due to empty or invalid translation result: '${finalResult}'`);
+            continue;
           }
+        }
 
-          // Mark as processed before posting to prevent race conditions
-          tweetTracker.markProcessed(tweet.id);
+        // Mark as processed before posting to prevent race conditions
+        tweetTracker.markProcessed(tweet.id);
 
-          // Post the tweet
-          try {
-            if (isDryRun) {
-              logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
+        // Post the tweet
+        try {
+          if (isDryRun) {
+            logger.warn(`[DRY_RUN] Would have posted tweet ${tweet.id}: ${finalResult}`);
+            didWork = true;
+            lastPostTime = Date.now();
+          } else {
+            const result = await postTweet(client, finalResult);
+            if (result) {
+              logger.info(`Successfully posted translated tweet ${tweet.id}`);
+              // COMPREHENSIVE POST RECORDING
+              recordSuccessfulPost(tweet.id, finalResult);
               didWork = true;
               lastPostTime = Date.now();
             } else {
-              const result = await postTweet(client, finalResult);
-              if (result) {
-                logger.info(`Successfully posted translated tweet ${tweet.id}`);
-                // COMPREHENSIVE POST RECORDING
-                recordSuccessfulPost(tweet.id, finalResult);
-                didWork = true;
-                lastPostTime = Date.now();
-              } else {
-                logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
-                await tweetQueue.enqueue(tweet.id, finalResult);
-                tweetTracker.unmarkProcessed(tweet.id);
-              }
+              logger.error(`Rate limit hit while posting tweet ${tweet.id}. Enqueueing for retry.`);
+              await tweetQueue.enqueue(tweet.id, finalResult);
+              tweetTracker.unmarkProcessed(tweet.id);
             }
-
-            // Add delay between posts
-            await delay(5000);
-          } catch (error: unknown) {
-            // removed unused variable 'err' to fix lint error
-            logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
-            // Enqueue for retry
-            await tweetQueue.enqueue(tweet.id, finalResult);
-            tweetTracker.unmarkProcessed(tweet.id);
           }
+
+          // Add delay between posts
+          await delay(5000);
+        } catch (error: unknown) {
+          // removed unused variable 'err' to fix lint error
+          logger.error(`Failed to post tweet ${tweet.id}: ${error}`);
+          // Enqueue for retry
+          await tweetQueue.enqueue(tweet.id, finalResult);
+          tweetTracker.unmarkProcessed(tweet.id);
         }
       }
     }
   }
-  // Return worker status for scheduling decisions
   return {
     didWork,
     blockedByCooldown,

@@ -4,6 +4,8 @@ import { logger } from './utils/logger';
 import { config } from './config';
 import { acquireLock } from './utils/instanceLock';
 import { getVersion } from './utils/version';
+import { initializeGracefulShutdown, onShutdown } from './utils/gracefulShutdown';
+import { startHealthMonitoring, logHealthReport } from './utils/healthCheck';
 
 function validateEnv(): boolean {
   const missing: string[] = [];
@@ -30,6 +32,15 @@ function validateEnv(): boolean {
 
 async function main() {
   try {
+    // Initialize graceful shutdown handlers
+    initializeGracefulShutdown();
+    
+    // Register cleanup handlers
+    onShutdown(async () => {
+      logger.info('Cleaning up resources...');
+      await logHealthReport();
+    });
+    
     // Global safety net for unhandled errors
     process.on('unhandledRejection', (reason: unknown) => {
       try {
@@ -82,6 +93,13 @@ async function main() {
       }
     };
     logger.info(`Startup information: ${JSON.stringify(startupInfo)}`);
+    
+    // Start health monitoring (check every 5 minutes)
+    startHealthMonitoring(5 * 60 * 1000);
+    
+    // Log initial health report
+    await logHealthReport();
+    
     await translateAndPostWorker();
     const now = new Date();
     recordLastRun(now);
