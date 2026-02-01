@@ -38,33 +38,38 @@ describe('tweetTracker', () => {
 
   describe('shouldProcess (sync)', () => {
     it('should return true for new tweet', () => {
-      expect(tweetTracker.shouldProcess('tweet1')).toBe(true);
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      expect(tweetTracker.shouldProcess('tweet1', now)).toBe(true);
     });
 
     it('should return false for processed tweet', () => {
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
-      expect(tweetTracker.shouldProcess('tweet1')).toBe(false);
+      expect(tweetTracker.shouldProcess('tweet1', now)).toBe(false);
     });
 
     it('should handle multiple tweets', () => {
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       tweetTracker.markProcessed('tweet2');
 
-      expect(tweetTracker.shouldProcess('tweet1')).toBe(false);
-      expect(tweetTracker.shouldProcess('tweet2')).toBe(false);
-      expect(tweetTracker.shouldProcess('tweet3')).toBe(true);
+      expect(tweetTracker.shouldProcess('tweet1', now)).toBe(false);
+      expect(tweetTracker.shouldProcess('tweet2', now)).toBe(false);
+      expect(tweetTracker.shouldProcess('tweet3', now)).toBe(true);
     });
   });
 
   describe('shouldProcessAsync', () => {
     it('should return true for new tweet', async () => {
-      const result = await tweetTracker.shouldProcessAsync('tweet1');
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const result = await tweetTracker.shouldProcessAsync('tweet1', now);
       expect(result).toBe(true);
     });
 
     it('should return false for processed tweet', async () => {
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
-      const result = await tweetTracker.shouldProcessAsync('tweet1');
+      const result = await tweetTracker.shouldProcessAsync('tweet1', now);
       expect(result).toBe(false);
     });
 
@@ -75,10 +80,11 @@ describe('tweetTracker', () => {
 
   describe('markProcessed', () => {
     it('should mark tweet as processed', () => {
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
 
       expect(tweetTracker.isProcessed('tweet1')).toBe(true);
-      expect(tweetTracker.shouldProcess('tweet1')).toBe(false);
+      expect(tweetTracker.shouldProcess('tweet1', now)).toBe(false);
     });
 
     it('should persist to file', () => {
@@ -294,6 +300,7 @@ describe('tweetTracker', () => {
     });
 
     it('should update cache on unmark', () => {
+      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       expect(tweetTracker.isProcessed('tweet1')).toBe(true);
       
