@@ -40,10 +40,19 @@ export function restoreTokens(text: string): string {
   });
 
   // Restore all XTOK placeholders in new format
+  // Add space after token if followed immediately by a word character (no space)
+  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+(\w)/g, (_m, type, _idx, b64, nextChar) => {
+    try { 
+      const original = Buffer.from(b64, 'base64').toString('utf8');
+      // Add space between restored token and next word character
+      return original + ' ' + nextChar;
+    } catch { return _m; }
+  });
+  
+  // Restore remaining tokens without the word character lookahead
   restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, type, _idx, b64) => {
     try { 
       const original = Buffer.from(b64, 'base64').toString('utf8');
-
       return original;
     } catch { return _m; }
   });
