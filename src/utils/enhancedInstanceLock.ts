@@ -196,8 +196,30 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// PM2 shutdown message
+process.on('message', (msg: any) => {
+  if (msg === 'shutdown') {
+    logger.info('Received PM2 shutdown message, releasing instance lock...');
+    instanceLock.release();
+    process.exit(0);
+  }
+});
+
 process.on('exit', () => {
   instanceLock.release();
+});
+
+// Handle uncaught exceptions - clean up lock before crash
+process.on('uncaughtException', (error) => {
+  logger.error(`Uncaught exception, releasing lock: ${error}`);
+  instanceLock.release();
+  process.exit(1);
+});
+
+process.on('unhandledRejection', (reason) => {
+  logger.error(`Unhandled rejection, releasing lock: ${reason}`);
+  instanceLock.release();
+  process.exit(1);
 });
 
 export { instanceLock };

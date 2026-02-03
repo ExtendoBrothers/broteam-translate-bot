@@ -15,7 +15,9 @@ module.exports = {
       max_memory_restart: '520M',
       time: true,
       windowsHide: true,
-      kill_timeout: 3000,
+      kill_timeout: 5000,
+      shutdown_with_message: true,
+      listen_timeout: 3000,
       env_windows: {
         NODE_ENV: 'production',
         DRY_RUN: '0'
