@@ -8,11 +8,31 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { execSync } from 'child_process';
 import { logger } from './logger';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - consider lock stale if no heartbeat
+
+/**
+ * Check if a process is alive (cross-platform)
+ */
+function isProcessAlive(pid: number): boolean {
+  try {
+    if (process.platform === 'win32') {
+      // Windows: use tasklist to check if process exists
+      const result = execSync(`tasklist /FI "PID eq ${pid}" /NH`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
+      return result.includes(pid.toString());
+    } else {
+      // Unix: use kill with signal 0
+      process.kill(pid, 0);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
 
 interface LockData {
   pid: number;
@@ -59,16 +79,16 @@ class InstanceLock {
       }
 
       // Check if process is still running
-      try {
-        process.kill(existingLock.pid, 0); // Signal 0 just checks if process exists
-        logger.error(`Another instance is already running (PID: ${existingLock.pid}, started: ${existingLock.startTime})`);
-        logger.error('If this is incorrect, delete the .bot-instance.lock file manually');
-        process.exit(1);
-      } catch {
-        // Process doesn't exist, lock is stale
+      if (!isProcessAlive(existingLock.pid)) {
         logger.warn(`Lock file exists but process ${existingLock.pid} is not running. Removing stale lock.`);
         this.forceUnlock();
+        return;
       }
+
+      // Process is alive - another instance is running
+      logger.error(`Another instance is already running (PID: ${existingLock.pid}, started: ${existingLock.startTime})`);
+      logger.error('If this is incorrect, delete the .bot-instance.lock file manually');
+      process.exit(1);
 
     } catch (error) {
       logger.error(`Error checking existing lock: ${error}`);
