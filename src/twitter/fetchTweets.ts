@@ -135,13 +135,24 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const [, , idStr, text] = match;
         const id = idStr;
         const trimmedText = text.trim();
-        const shouldProc = isDryRun || tweetTracker.shouldProcess(id, new Date().toISOString());
+        
+        // Extract timestamp from Twitter snowflake ID since manual inputs might be old
+        let createdAt: Date;
+        try {
+          const timestamp = (BigInt(id) >> 22n) + 1288834974657n;
+          createdAt = new Date(Number(timestamp));
+        } catch {
+          // Fallback to current time if snowflake parsing fails
+          createdAt = new Date();
+        }
+        
+        const shouldProc = isDryRun || tweetTracker.shouldProcess(id, createdAt.toISOString());
         // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
         if (shouldProc) {
           tweets.push({
             id,
             text: trimmedText,
-            createdAt: new Date(),
+            createdAt: createdAt,
             user: {
               id: targetUsername, // placeholder
               username: targetUsername,
