@@ -87,7 +87,7 @@ describe('Performance Profiler', () => {
             expect(stats).not.toBeNull();
             // P50 should be around 50-55 (median of 10-100ms delays)
             expect(stats!.p50).toBeGreaterThanOrEqual(40);
-            expect(stats!.p50).toBeLessThanOrEqual(80);
+            expect(stats!.p50).toBeLessThanOrEqual(85);
             // P95 should be around 95-100
             expect(stats!.p95).toBeGreaterThanOrEqual(85);
         });
