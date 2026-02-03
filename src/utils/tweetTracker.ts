@@ -11,7 +11,7 @@ import { safeReadJsonSync, atomicWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
-const START_DATE = new Date('2026-02-03T00:00:00.000Z'); // Ignore tweets before this date
+const START_DATE = new Date('2024-01-01T00:00:00.000Z'); // Ignore tweets before this date
 
 interface TweetTrackerStateV1 {
     processedTweetIds: string[];
@@ -134,9 +134,10 @@ class TweetTracker {
     }
     const tweetDate = new Date(createdAt);
     if (tweetDate < START_DATE) {
-      logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
+      logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()} (tweet date: ${tweetDate.toISOString()})`);
       return false;
     }
+    logger.debug(`Tweet ${tweetId} passed START_DATE check (${tweetDate.toISOString()} >= ${START_DATE.toISOString()})`);
     return true;
   }
 
