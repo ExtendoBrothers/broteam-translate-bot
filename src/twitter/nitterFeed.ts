@@ -47,12 +47,13 @@ async function fetchFromSyndicationAPI(username: string, maxTweets = 40): Promis
       // Always extract timestamp from Twitter snowflake ID since API created_at is unreliable
       if (!tweetId) continue;
       
+      let createdAt: Date;
       try {
         const timestamp = (BigInt(tweetId) >> 22n) + 1288834974657n;
-        var createdAt = new Date(Number(timestamp));
-      } catch (error) {
+        createdAt = new Date(Number(timestamp));
+      } catch {
         // Fallback to current time if snowflake parsing fails
-        var createdAt = new Date();
+        createdAt = new Date();
       }
       
       if (!tweetId || !text) continue;
