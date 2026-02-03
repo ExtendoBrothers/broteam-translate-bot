@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { tweetQueue } from './tweetQueue';
-import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
+import { safeReadJsonSync, atomicWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
@@ -74,7 +74,7 @@ class TweetTracker {
       processed: processedObj,
       lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
     };
-    safeWriteJsonSync(TWEET_TRACKER_FILE, state);
+    atomicWriteJsonSync(TWEET_TRACKER_FILE, state);
   }
 
   /**
