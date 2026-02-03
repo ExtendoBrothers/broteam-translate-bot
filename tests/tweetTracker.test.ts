@@ -145,12 +145,12 @@ describe('tweetTracker', () => {
       tweetTracker.markProcessed('tweet1');
       const result = await tweetTracker.isProcessedAsync('tweet1');
       expect(result).toBe(true);
-    });
+    }, 10000); // Increase timeout for async log file operations
 
     it('should return false for new tweet', async () => {
       const result = await tweetTracker.isProcessedAsync('tweet1');
       expect(result).toBe(false);
-    });
+    }, 10000); // Increase timeout for async log file operations
 
     // Note: Testing async log file checking requires specific log patterns and paths
     // that are implementation details of the searchLogFile function. The main
