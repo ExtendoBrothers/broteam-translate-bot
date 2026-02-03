@@ -11,7 +11,6 @@ import { setEnvVar } from '../utils/envWriter';
 import { tweetTracker } from '../utils/tweetTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import * as fs from 'fs';
-import { atomicWriteJsonSync } from '../utils/safeFileOps';
 import * as path from 'path';
 
 const LAST_TWITTER_API_FETCH_FILE = path.join(process.cwd(), '.last-twitter-api-fetch.json');

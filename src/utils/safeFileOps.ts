@@ -5,7 +5,6 @@
 
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
-import * as path from 'path';
 import { logger } from './logger';
 
 /**
