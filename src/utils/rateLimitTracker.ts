@@ -201,9 +201,6 @@ class RateLimitTracker {
      * Only sets the cooldown if the new time is LONGER than existing limit.
      */
   public setCooldown(key: string, seconds: number, reason?: string) {
-    // Reload state first to get current limits
-    this.loadState();
-    
     const dt = new Date(Date.now() + seconds * 1000);
     const why = reason ? ` (${reason})` : '';
     
