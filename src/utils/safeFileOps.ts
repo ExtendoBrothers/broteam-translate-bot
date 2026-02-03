@@ -5,6 +5,7 @@
 
 import * as fs from 'fs';
 import { promises as fsPromises } from 'fs';
+import * as path from 'path';
 import { logger } from './logger';
 
 /**
@@ -37,6 +38,33 @@ export function safeWriteJsonSync<T>(filePath: string, data: T): boolean {
 }
 
 /**
+ * Atomically write JSON file to prevent corruption
+ * Uses temp file + rename strategy for atomic operation
+ */
+export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
+  const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  try {
+    // Write to temp file first
+    fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+    
+    // Atomic rename (replaces existing file)
+    fs.renameSync(tempFile, filePath);
+    return true;
+  } catch (error) {
+    logger.error(`Failed to atomically write JSON to ${filePath}: ${error}`);
+    // Clean up temp file if it exists
+    try {
+      if (fs.existsSync(tempFile)) {
+        fs.unlinkSync(tempFile);
+      }
+    } catch {
+      // Ignore cleanup errors
+    }
+    return false;
+  }
+}
+
+/**
  * Async version of safe JSON read
  */
 export async function safeReadJson<T>(filePath: string, defaultValue: T): Promise<T> {
@@ -61,6 +89,31 @@ export async function safeWriteJson<T>(filePath: string, data: T): Promise<boole
     return true;
   } catch (error) {
     logger.error(`Failed to write JSON to ${filePath}: ${error}`);
+    return false;
+  }
+}
+
+/**
+ * Async atomic write for JSON files
+ * Uses temp file + rename strategy for atomic operation
+ */
+export async function atomicWriteJson<T>(filePath: string, data: T): Promise<boolean> {
+  const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  try {
+    // Write to temp file first
+    await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf-8');
+    
+    // Atomic rename (replaces existing file)
+    await fsPromises.rename(tempFile, filePath);
+    return true;
+  } catch (error) {
+    logger.error(`Failed to atomically write JSON to ${filePath}: ${error}`);
+    // Clean up temp file if it exists
+    try {
+      await fsPromises.unlink(tempFile);
+    } catch {
+      // Ignore cleanup errors
+    }
     return false;
   }
 }

@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { config } from '../config';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 // Persist monthly fetch usage counts to survive restarts
 // Structure: { "2025-11": { fetches: 12, firstFetchAt: "ISO" } }
@@ -47,7 +48,7 @@ class MonthlyUsageTracker {
       const monthsObj: Record<string, MonthRecord> = {};
       for (const [k, v] of this.months.entries()) monthsObj[k] = v;
       const state: UsageState = { months: monthsObj };
-      fs.writeFileSync(USAGE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      atomicWriteJsonSync(USAGE_FILE, state);
     } catch (err) {
       logger.error(`Failed to save monthly usage tracker: ${err}`);
     }

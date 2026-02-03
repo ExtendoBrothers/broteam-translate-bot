@@ -1,6 +1,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 const USER_CACHE_FILE = path.join(process.cwd(), '.twitter-user-cache.json');
 
@@ -20,7 +21,7 @@ function loadCache(): CacheShape {
 
 function saveCache(cache: CacheShape) {
   try {
-    fs.writeFileSync(USER_CACHE_FILE, JSON.stringify(cache, null, 2), 'utf-8');
+    atomicWriteJsonSync(USER_CACHE_FILE, cache);
   } catch (e) {
     logger.error(`Failed to save user cache: ${e}`);
   }

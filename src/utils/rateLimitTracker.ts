@@ -7,6 +7,7 @@
 import { logger } from './logger';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 const RATE_LIMIT_FILE = path.join(process.cwd(), '.rate-limit-state.json');
 const MIN_COOLDOWN_AFTER_429_SECONDS = 90 * 60; // 90 minutes minimum cooldown after 429 (guarantees max 17 posts/24h)
@@ -106,8 +107,8 @@ class RateLimitTracker {
         state.last429Time![key] = val;
       }
       
-      // Write directly to file - more reliable on Windows
-      fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      // Use atomic write to prevent corruption
+      atomicWriteJsonSync(RATE_LIMIT_FILE, state);
       logger.info(`[DEBUG] Saved rate limit state with ${Object.keys(state.entries).length} entries`);
     } catch (error) {
       logger.error(`Failed to save rate limit state: ${error}`);

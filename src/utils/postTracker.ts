@@ -6,6 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 const POST_TRACKER_FILE = path.join(process.cwd(), '.post-tracker.json');
 const MAX_POSTS_PER_24H = 17;
@@ -51,7 +52,7 @@ class PostTracker {
       const state: PostTrackerState = {
         postTimestamps: this.postTimestamps.map(date => date.toISOString())
       };
-      fs.writeFileSync(POST_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      atomicWriteJsonSync(POST_TRACKER_FILE, state);
     } catch (error) {
       logger.error(`Failed to save post tracker state: ${error}`);
     }
