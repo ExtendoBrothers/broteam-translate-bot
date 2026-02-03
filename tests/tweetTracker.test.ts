@@ -38,18 +38,18 @@ describe('tweetTracker', () => {
 
   describe('shouldProcess (sync)', () => {
     it('should return true for new tweet', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       expect(tweetTracker.shouldProcess('tweet1', now)).toBe(true);
     });
 
     it('should return false for processed tweet', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       expect(tweetTracker.shouldProcess('tweet1', now)).toBe(false);
     });
 
     it('should handle multiple tweets', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       tweetTracker.markProcessed('tweet2');
 
@@ -61,13 +61,13 @@ describe('tweetTracker', () => {
 
   describe('shouldProcessAsync', () => {
     it('should return true for new tweet', async () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       const result = await tweetTracker.shouldProcessAsync('tweet1', now);
       expect(result).toBe(true);
     });
 
     it('should return false for processed tweet', async () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
       const result = await tweetTracker.shouldProcessAsync('tweet1', now);
       expect(result).toBe(false);
@@ -80,7 +80,7 @@ describe('tweetTracker', () => {
 
   describe('markProcessed', () => {
     it('should mark tweet as processed', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString();
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString();
       tweetTracker.markProcessed('tweet1');
 
       expect(tweetTracker.isProcessed('tweet1')).toBe(true);
@@ -106,7 +106,7 @@ describe('tweetTracker', () => {
 
   describe('unmarkProcessed', () => {
     it('should remove tweet from processed list', () => {
-      const now = new Date('2026-02-02T00:00:00.000Z').toISOString(); // Use date after START_DATE cutoff
+      const now = new Date('2026-02-04T00:00:00.000Z').toISOString(); // Use date after START_DATE cutoff
       tweetTracker.markProcessed('tweet1');
       tweetTracker.unmarkProcessed('tweet1');
 
