@@ -70,7 +70,7 @@ for (let i = 0; i < lines.length; i++) {
     seenTweetIds.add(entry.tweetId);
     validEntries.push(entry);
     
-  } catch (parseError) {
+  } catch {
     // Try to fix common issues
     try {
       // Remove any trailing commas, extra newlines, etc.
@@ -97,7 +97,7 @@ for (let i = 0; i < lines.length; i++) {
       
     } catch {
       malformed++;
-      console.log(`   ⚠️  Line ${i + 1}: ${parseError.message}`);
+      console.log(`   ⚠️  Line ${i + 1}: Unable to fix malformed JSON`);
     }
   }
 }
