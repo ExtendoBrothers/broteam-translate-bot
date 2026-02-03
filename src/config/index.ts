@@ -39,5 +39,5 @@ export const config = {
   HUMOR_THRESHOLD: Number(process.env.HUMOR_THRESHOLD || '0.5'), // Minimum score to consider text humorous
   HUGGINGFACE_TOKEN: process.env.HUGGINGFACE_TOKEN || '', // Optional API token for Hugging Face
   // Blocked tweet contents - tweets with these exact texts will be skipped
-  BLOCKED_TWEET_CONTENTS: process.env.BLOCKED_TWEET_CONTENTS ? process.env.BLOCKED_TWEET_CONTENTS.split(',').map(s => s.trim().replace(/\\n/g, '\n')) : [],
-};
+  BLOCKED_TWEET_CONTENTS: process.env.BLOCKED_TWEET_CONTENTS ? process.env.BLOCKED_TWEET_CONTENTS.split(',').map(s => s.trim().replace(/\\n/g, '\n')) : [],  // Start date - ignore tweets before this timestamp (ISO 8601 format)
+  START_DATE: process.env.START_DATE || '2026-02-03T09:52:27.000Z',};

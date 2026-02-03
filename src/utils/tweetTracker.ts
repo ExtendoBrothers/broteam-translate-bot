@@ -9,9 +9,10 @@ import { logger } from './logger';
 import { tweetQueue } from './tweetQueue';
 import { safeReadJsonSync, atomicWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
+import { config } from '../config';
 
 const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
-const START_DATE = new Date('2026-02-03T00:00:00.000Z'); // Ignore tweets before this date
+const START_DATE = new Date(config.START_DATE); // Ignore tweets before this date
 
 interface TweetTrackerStateV1 {
     processedTweetIds: string[];
