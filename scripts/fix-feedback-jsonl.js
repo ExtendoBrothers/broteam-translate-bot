@@ -95,7 +95,7 @@ for (let i = 0; i < lines.length; i++) {
       validEntries.push(entry);
       fixed++;
       
-    } catch (fixError) {
+    } catch {
       malformed++;
       console.log(`   ⚠️  Line ${i + 1}: ${parseError.message}`);
     }
