@@ -1140,8 +1140,19 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } else {
         logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
       }
+      
+      // Deduplicate by tweetId before writing
+      const seenIds = new Set<string>();
+      const uniqueEntries = existingEntries.filter(entry => {
+        if (seenIds.has(entry.tweetId)) {
+          return false;
+        }
+        seenIds.add(entry.tweetId);
+        return true;
+      });
+      
       // Write back all entries (ensure single-line JSON)
-      const jsonlContent = existingEntries.map(entry => {
+      const jsonlContent = uniqueEntries.map(entry => {
         // Create a copy and escape newlines in string values to prevent multiline JSON
         const sanitizedEntry = JSON.parse(JSON.stringify(entry, (key, value) => {
           if (typeof value === 'string') {
@@ -1149,8 +1160,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           return value;
         }));
-        return JSON.stringify(sanitizedEntry);
-      }).join('\n') + '\n';
+        // Validate the JSON can be parsed before writing
+        const jsonStr = JSON.stringify(sanitizedEntry);
+        try {
+          JSON.parse(jsonStr); // Validate it's valid JSON
+          return jsonStr;
+        } catch {
+          logger.error('[FEEDBACK] Failed to serialize entry, skipping:', entry.tweetId);
+          return null;
+        }
+      }).filter(Boolean).join('\n') + '\n';
+      
       fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
         
       // Check if feedback threshold reached for analysis (every 5 feedbacks)

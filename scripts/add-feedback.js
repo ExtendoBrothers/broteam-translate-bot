@@ -58,42 +58,63 @@ function addFeedback() {
     process.exit(1);
   }
 
-  const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n').filter(Boolean);
+  const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n').filter(l => l.trim());
   let found = false;
   let updatedLines = [];
+  const seenIds = new Set();
 
   for (const line of lines) {
-    const entry = JSON.parse(line);
-    
-    if (entry.tweetId === tweetId) {
-      found = true;
-      entry.userFeedback = feedback;
+    try {
+      const entry = JSON.parse(line);
       
-      console.log('✓ Feedback added for tweet:', tweetId);
-      console.log('  Original:', entry.originalText);
-      console.log('  Bot selected:', entry.botSelected, '-', entry.selectedResult);
-      if (feedback.rating) console.log('  Your rating:', feedback.rating + '/5');
-      if (feedback.actualBest) console.log('  Actually funniest:', feedback.actualBest);
-      if (feedback.wasCorrect !== undefined) console.log('  Bot correct?:', feedback.wasCorrect ? 'Yes' : 'No');
-      if (feedback.notes) console.log('  Notes:', feedback.notes);
+      // Skip duplicates
+      if (seenIds.has(entry.tweetId)) {
+        console.log('⚠️  Skipping duplicate entry for:', entry.tweetId);
+        continue;
+      }
+      seenIds.add(entry.tweetId);
       
-      updatedLines.push(JSON.stringify(entry, (key, value) => {
-        if (typeof value === 'string') {
-          return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
-        }
-        return value;
-      }));
-    } else {
-      updatedLines.push(line);
+      if (entry.tweetId === tweetId) {
+        found = true;
+        entry.userFeedback = feedback;
+        
+        console.log('✓ Feedback added for tweet:', tweetId);
+        console.log('  Original:', entry.originalText);
+        console.log('  Bot selected:', entry.botSelected, '-', entry.selectedResult);
+        if (feedback.rating) console.log('  Your rating:', feedback.rating + '/5');
+        if (feedback.actualBest) console.log('  Actually funniest:', feedback.actualBest);
+        if (feedback.wasCorrect !== undefined) console.log('  Bot correct?:', feedback.wasCorrect ? 'Yes' : 'No');
+        if (feedback.notes) console.log('  Notes:', feedback.notes);
+        
+        updatedLines.push(JSON.stringify(entry, (key, value) => {
+          if (typeof value === 'string') {
+            return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+          }
+          return value;
+        }));
+      } else {
+        updatedLines.push(JSON.stringify(entry, (key, value) => {
+          if (typeof value === 'string') {
+            return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+          }
+          return value;
+        }));
+      }
+    } catch (parseError) {
+      console.log('⚠️  Skipping malformed line:', parseError.message);
     }
   }
 
   if (!found) {
     console.error('Error: Tweet ID not found in feedback data:', tweetId);
     console.log('\nAvailable recent tweets:');
-    lines.slice(-5).forEach(line => {
-      const entry = JSON.parse(line);
-      console.log(`  ${entry.tweetId}: "${entry.originalText.substring(0, 50)}..."`);
+    updatedLines.slice(-5).forEach(line => {
+      try {
+        const entry = JSON.parse(line);
+        console.log(`  ${entry.tweetId}: "${entry.originalText.substring(0, 50)}..."`);
+      } catch {
+        // Skip
+      }
     });
     process.exit(1);
   }
