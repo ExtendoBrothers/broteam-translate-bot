@@ -137,7 +137,6 @@ class TweetTracker {
       logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()} (tweet date: ${tweetDate.toISOString()})`);
       return false;
     }
-    logger.debug(`Tweet ${tweetId} passed START_DATE check (${tweetDate.toISOString()} >= ${START_DATE.toISOString()})`);
     return true;
   }
 
