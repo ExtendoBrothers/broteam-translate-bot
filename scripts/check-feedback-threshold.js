@@ -30,7 +30,7 @@ for (const line of lines) {
   try {
     const entry = JSON.parse(line);
     entries.push(entry);
-  } catch (error) {
+  } catch {
     // Skip malformed lines silently
     skippedLines++;
   }
