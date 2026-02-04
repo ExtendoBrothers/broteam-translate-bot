@@ -96,6 +96,13 @@ class PostTracker {
   }
 
   /**
+     * Get the maximum number of posts allowed per 24 hours
+     */
+  public getMaxPosts24h(): number {
+    return MAX_POSTS_PER_24H;
+  }
+
+  /**
      * Record a new post
      */
   public recordPost() {

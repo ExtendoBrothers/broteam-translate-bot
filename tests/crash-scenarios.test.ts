@@ -77,11 +77,12 @@ jest.mock('../src/utils/monthlyUsageTracker', () => ({
 
 jest.mock('../src/utils/postTracker', () => ({
   postTracker: {
-    canPost: jest.fn(),
+    canPost: jest.fn().mockReturnValue(true),
     recordPost: jest.fn(),
-    getPostCount24h: jest.fn(),
-    getRemainingPosts: jest.fn(),
-    getTimeUntilNextSlot: jest.fn()
+    getPostCount24h: jest.fn().mockReturnValue(0),
+    getMaxPosts24h: jest.fn().mockReturnValue(12),
+    getRemainingPosts: jest.fn().mockReturnValue(12),
+    getTimeUntilNextSlot: jest.fn().mockReturnValue(0)
   }
 }));
 

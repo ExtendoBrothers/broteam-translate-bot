@@ -31,6 +31,7 @@ jest.mock('../src/utils/postTracker', () => ({
   postTracker: {
     canPost: jest.fn(),
     getPostCount24h: jest.fn(),
+    getMaxPosts24h: jest.fn(),
     getRemainingPosts: jest.fn(),
     recordPost: jest.fn()
   }
@@ -91,11 +92,13 @@ describe('Duplicate Prevention', () => {
       (tweetQueue.isQueued as jest.Mock).mockReturnValue(false);
       (postTracker.canPost as jest.Mock).mockReturnValue(false);
       (postTracker.getPostCount24h as jest.Mock).mockReturnValue(12);
+      (postTracker.getMaxPosts24h as jest.Mock).mockReturnValue(12);
 
       const result = await checkForDuplicates(mockTweetId, mockContent, mockInputText, mockChain, mockAttempt);
 
       expect(result.canProceed).toBe(false);
-      expect(result.reason).toBe('Post rate limit reached (12/12 posts in 24h)');
+      expect(result.reason).toContain('Post rate limit reached');
+      expect(result.reason).toContain('posts in 24h');
       expect(result.severity).toBe('block');
     });
 

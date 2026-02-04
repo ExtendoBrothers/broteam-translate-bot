@@ -34,6 +34,9 @@ Thumbs.db
 .twitter-oauth2-tokens.json
 .oauth2-meta.json
 
+# Temp files from atomic writes
+*.json.tmp.*
+
 # Logs (explicit)
 combined.log
 error.log
@@ -46,6 +49,7 @@ tweet-inputs.log
 
 # Coverage / test
 coverage/
+test-output.txt
 
 # ML Models (too large for GitHub)
 models/humor-detector/*.onnx

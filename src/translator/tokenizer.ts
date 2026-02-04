@@ -42,7 +42,8 @@ export function restoreTokens(text: string): string {
   // Restore all XTOK placeholders in new format
   // Add space after token if followed immediately by a word character (no space)
   // BUT: Don't add space if the restored token ends with whitespace (newline, space, etc.)
-  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+(\w)/g, (_m, type, _idx, b64, nextChar) => {
+  // Use Unicode-aware character class to match letters/numbers in any language
+  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+([\p{L}\p{N}])/gu, (_m, type, _idx, b64, nextChar) => {
     try { 
       const original = Buffer.from(b64, 'base64').toString('utf8');
       // Don't add space if original already ends with whitespace

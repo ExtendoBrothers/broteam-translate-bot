@@ -651,7 +651,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   tweetTracker.prune(90, 50000);
   // Check 24-hour post limit status
   const remainingPosts = postTracker.getRemainingPosts();
-  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/12 posts in last 24h, ${remainingPosts} remaining`);
+  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/${postTracker.getMaxPosts24h()} posts in last 24h, ${remainingPosts} remaining`);
         
   if (!postTracker.canPost()) {
     const waitSeconds = postTracker.getTimeUntilNextSlot();
@@ -1142,15 +1142,18 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
       }
       
-      // Deduplicate by tweetId before writing
+      // Deduplicate by tweetId before writing, keeping the most recent entry
       const seenIds = new Set<string>();
-      const uniqueEntries = existingEntries.filter(entry => {
+      const uniqueEntriesReversed: typeof existingEntries = [];
+      for (let i = existingEntries.length - 1; i >= 0; i--) {
+        const entry = existingEntries[i];
         if (seenIds.has(entry.tweetId)) {
-          return false;
+          continue;
         }
         seenIds.add(entry.tweetId);
-        return true;
-      });
+        uniqueEntriesReversed.push(entry);
+      }
+      const uniqueEntries = uniqueEntriesReversed.reverse();
       
       // Write back all entries (ensure single-line JSON)
       const jsonlContent = uniqueEntries.map(entry => {

@@ -28,7 +28,7 @@ class TweetTracker {
   private postedCache: Set<string> = new Set(); // Cache for wasPosted checks
   private lastProcessedAt: Date | null = null;
   private cacheReady: Promise<void>; // Tracks when posted cache is pre-warmed
-  private isTestEnv = process.env.NODE_ENV === 'test' || process.env.DISABLE_USAGE_TRACKING === 'true';
+  private isTestEnv = process.env.NODE_ENV === 'test';
 
   constructor() {
     this.loadState();

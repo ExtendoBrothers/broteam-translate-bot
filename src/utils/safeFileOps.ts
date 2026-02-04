@@ -39,6 +39,7 @@ export function safeWriteJsonSync<T>(filePath: string, data: T): boolean {
 /**
  * Atomically write JSON file to prevent corruption
  * Uses temp file + rename strategy for atomic operation
+ * Windows-safe: deletes target file before rename if needed
  */
 export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
   const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
@@ -46,7 +47,12 @@ export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
     // Write to temp file first
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     
-    // Atomic rename (replaces existing file)
+    // On Windows, rename fails if target exists - delete it first
+    if (process.platform === 'win32' && fs.existsSync(filePath)) {
+      fs.unlinkSync(filePath);
+    }
+    
+    // Atomic rename (replaces existing file on Unix, now safe on Windows)
     fs.renameSync(tempFile, filePath);
     return true;
   } catch (error) {
@@ -95,6 +101,7 @@ export async function safeWriteJson<T>(filePath: string, data: T): Promise<boole
 /**
  * Async atomic write for JSON files
  * Uses temp file + rename strategy for atomic operation
+ * Windows-safe: deletes target file before rename if needed
  */
 export async function atomicWriteJson<T>(filePath: string, data: T): Promise<boolean> {
   const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
@@ -102,7 +109,20 @@ export async function atomicWriteJson<T>(filePath: string, data: T): Promise<boo
     // Write to temp file first
     await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     
-    // Atomic rename (replaces existing file)
+    // On Windows, rename fails if target exists - delete it first
+    if (process.platform === 'win32') {
+      try {
+        await fsPromises.unlink(filePath);
+      } catch (unlinkError) {
+        const err = unlinkError as { code?: string };
+        // ENOENT is OK (file doesn't exist yet), other errors should fail
+        if (err.code !== 'ENOENT') {
+          throw unlinkError;
+        }
+      }
+    }
+    
+    // Atomic rename (replaces existing file on Unix, now safe on Windows)
     await fsPromises.rename(tempFile, filePath);
     return true;
   } catch (error) {
@@ -110,8 +130,12 @@ export async function atomicWriteJson<T>(filePath: string, data: T): Promise<boo
     // Clean up temp file if it exists
     try {
       await fsPromises.unlink(tempFile);
-    } catch {
-      // Ignore cleanup errors
+    } catch (cleanupError) {
+      const err = cleanupError as { code?: string };
+      // Only ignore ENOENT errors (file already gone)
+      if (err.code !== 'ENOENT') {
+        logger.warn(`Failed to clean up temp file ${tempFile}: ${cleanupError}`);
+      }
     }
     return false;
   }

@@ -21,16 +21,14 @@ const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
 class MonthlyUsageTracker {
   private months: Map<string, MonthRecord> = new Map();
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  private pendingSave = false;
   private isTestEnv = process.env.NODE_ENV === 'test' || process.env.DISABLE_USAGE_TRACKING === 'true';
 
   constructor() {
     this.load();
-    // Ensure we save on process exit
+    // Save on normal process exit (beforeExit allows async operations to complete)
+    // Signal handlers (SIGINT/SIGTERM) are managed by the central gracefulShutdown module
     if (!this.isTestEnv) {
       process.on('beforeExit', () => this.forceSave());
-      process.on('SIGINT', () => this.forceSave());
-      process.on('SIGTERM', () => this.forceSave());
     }
   }
 
@@ -140,6 +138,16 @@ class MonthlyUsageTracker {
       this.saveTimeout = null;
     }
     this.forceSave();
+  }
+
+  /**
+   * Register with the central shutdown manager
+   * Call this to ensure monthly usage is saved on graceful shutdown
+   */
+  public registerShutdownHandler(registerFn: typeof import('./gracefulShutdown').onShutdown): void {
+    if (!this.isTestEnv) {
+      registerFn(() => this.forceSave());
+    }
   }
 }
 

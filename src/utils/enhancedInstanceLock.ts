@@ -8,7 +8,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
-import { execSync } from 'child_process';
+import { execFileSync } from 'child_process';
 import { logger } from './logger';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
@@ -19,11 +19,22 @@ const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - consider lock stale if no hea
  * Check if a process is alive (cross-platform)
  */
 function isProcessAlive(pid: number): boolean {
+  // Validate PID is a finite positive integer
+  if (!Number.isFinite(pid) || pid <= 0 || !Number.isInteger(pid)) {
+    return false;
+  }
+
   try {
     if (process.platform === 'win32') {
-      // Windows: use tasklist to check if process exists
-      const result = execSync(`tasklist /FI "PID eq ${pid}" /NH`, { encoding: 'utf8', stdio: ['pipe', 'pipe', 'ignore'] });
-      return result.includes(pid.toString());
+      // Windows: use tasklist with execFileSync (no shell) to check if process exists
+      const result = execFileSync('tasklist', ['/FI', `PID eq ${pid}`, '/NH'], { 
+        encoding: 'utf8', 
+        stdio: ['pipe', 'pipe', 'ignore'] 
+      });
+      // Match PID in the output using word boundary to avoid false matches
+      // tasklist output format: "Image Name    PID    Session Name    Session#    Mem Usage"
+      const pidPattern = new RegExp(`\\b${pid}\\b`);
+      return pidPattern.test(result);
     } else {
       // Unix: use kill with signal 0
       process.kill(pid, 0);
