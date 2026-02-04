@@ -180,8 +180,8 @@ function isAllCaps(text: string): boolean {
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Minimum delay between posts to avoid rapid-fire posting (15 minutes)
-const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+// Minimum delay between posts to avoid rapid-fire posting (45 minutes)
+const MIN_POST_INTERVAL_MS = 45 * 60 * 1000; // 45 minutes
 let lastPostTime = 0;
 
 // Circuit breaker to temporarily skip languages that are failing repeatedly.
@@ -650,11 +650,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   tweetTracker.prune(90, 50000);
   // Check 24-hour post limit status
   const remainingPosts = postTracker.getRemainingPosts();
-  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/17 posts in last 24h, ${remainingPosts} remaining`);
+  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/12 posts in last 24h, ${remainingPosts} remaining`);
         
   if (!postTracker.canPost()) {
     const waitSeconds = postTracker.getTimeUntilNextSlot();
-    logger.warn(`24-hour post limit reached (17/17). Next slot available in ${waitSeconds} seconds`);
+    logger.warn(`24-hour post limit reached (12/12). Next slot available in ${waitSeconds} seconds`);
     blockedByPostLimit = true;
   }
   

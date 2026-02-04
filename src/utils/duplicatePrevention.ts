@@ -60,7 +60,7 @@ export async function checkForDuplicates(
   if (!postTracker.canPost()) {
     return {
       canProceed: false,
-      reason: `Post rate limit reached (${postTracker.getPostCount24h()}/17 posts in 24h)`,
+      reason: `Post rate limit reached (${postTracker.getPostCount24h()}/12 posts in 24h)`,
       severity: 'block'
     };
   }
@@ -162,7 +162,7 @@ export function getDuplicatePreventionStatus() {
   return {
     instanceLocked: acquireLock(),
     postCount24h: postTracker.getPostCount24h(),
-    postLimit: 17,
+    postLimit: 12,
     remainingPosts: postTracker.getRemainingPosts(),
     queuedTweets: tweetQueue.size(),
     processedTweets: tweetTracker ? 'tracked' : 'not available',
