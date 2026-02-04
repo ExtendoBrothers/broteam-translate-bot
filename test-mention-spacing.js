@@ -4,16 +4,16 @@ const { protectTokens, restoreTokens } = require('./dist/src/translator/tokenize
 const testCases = [
   {
     original: '@oitixion\nit\'s not ready yet',
-    // Simulate translator output where newline is removed and words combine
-    translatedProtected: '__XTOK_MENTION_1_QG9pdGl4aW9u__itNoch Non-ready'
+    // Simulate translator output where newline IS preserved in token (Cg== is \n in base64)
+    translatedProtected: '__XTOK_MENTION_1_QG9pdGl4aW9uCg==__itNoch Non-ready'
   },
   {
     original: '@oitixion\nit\'s a tool I made',
-    translatedProtected: '__XTOK_MENTION_1_QG9pdGl4aW9u__it"We did it."'
+    translatedProtected: '__XTOK_MENTION_1_QG9pdGl4aW9uCg==__it"We did it."'
   },
   {
     original: '@BurnerBurn34353 @oitixion\nthanks!\nyou got me thinking!',
-    translatedProtected: '__XTOK_MENTION_1_QEJ1cm5lckJ1cm4zNDM1Mw==__ __XTOK_MENTION_2_QG9pdGl4aW9u__thanksJa!\nI think!'
+    translatedProtected: '__XTOK_MENTION_1_QEJ1cm5lckJ1cm4zNDM1Mw==__ __XTOK_MENTION_2_QG9pdGl4aW9uCg==__thanksJa!\nI think!'
   },
 ];
 

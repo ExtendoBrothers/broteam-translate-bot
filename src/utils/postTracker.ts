@@ -9,6 +9,7 @@ import { logger } from './logger';
 import { atomicWriteJsonSync } from './safeFileOps';
 
 const POST_TRACKER_FILE = path.join(process.cwd(), '.post-tracker.json');
+// NOTE: If you change MAX_POSTS_PER_24H, update tests/duplicate-prevention.test.ts expectations
 const MAX_POSTS_PER_24H = 12; // Conservative limit to prevent rate limiting
 const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
