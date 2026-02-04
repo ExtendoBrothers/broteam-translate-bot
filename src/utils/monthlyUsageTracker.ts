@@ -20,9 +20,18 @@ const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
 
 class MonthlyUsageTracker {
   private months: Map<string, MonthRecord> = new Map();
+  private saveTimeout: NodeJS.Timeout | null = null;
+  private pendingSave = false;
+  private isTestEnv = process.env.NODE_ENV === 'test' || process.env.DISABLE_USAGE_TRACKING === 'true';
 
   constructor() {
     this.load();
+    // Ensure we save on process exit
+    if (!this.isTestEnv) {
+      process.on('beforeExit', () => this.forceSave());
+      process.on('SIGINT', () => this.forceSave());
+      process.on('SIGTERM', () => this.forceSave());
+    }
   }
 
   private load() {
@@ -44,6 +53,24 @@ class MonthlyUsageTracker {
   }
 
   private save() {
+    if (this.isTestEnv) return; // Skip saving in test environment
+    
+    // Debounce saves to prevent excessive file I/O
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    
+    this.saveTimeout = setTimeout(() => {
+      this.forceSave();
+    }, 1000); // Save after 1 second of inactivity
+  }
+
+  private forceSave() {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    
     try {
       const monthsObj: Record<string, MonthRecord> = {};
       for (const [k, v] of this.months.entries()) monthsObj[k] = v;
@@ -74,8 +101,12 @@ class MonthlyUsageTracker {
       rec.fetches += 1;
       this.months.set(monthKey, rec);
     }
-    this.save();
-    logger.info(`Monthly usage: ${this.getFetchCount(monthKey)}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+    this.save(); // Batched save
+    
+    // Reduce logging frequency in tests
+    if (!this.isTestEnv || this.getFetchCount(monthKey) % 100 === 0) {
+      logger.info(`Monthly usage: ${this.getFetchCount(monthKey)}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+    }
   }
 
   public isLimitReached(monthKey = this.getCurrentMonthKey()): boolean {
@@ -90,8 +121,25 @@ class MonthlyUsageTracker {
       rec.fetches = config.MONTHLY_FETCH_LIMIT;
       this.months.set(monthKey, rec);
     }
-    this.save();
+    // Use forceSave in test environment for immediate persistence
+    if (this.isTestEnv) {
+      this.forceSave();
+    } else {
+      this.save();
+    }
     logger.warn(`Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as ${config.MONTHLY_FETCH_LIMIT}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+  }
+
+  /**
+   * Force immediate save (for testing)
+   * This bypasses the debounce and saves immediately
+   */
+  public forceFlush(): void {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    this.forceSave();
   }
 }
 

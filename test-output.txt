@@ -1,19 +1,2451 @@
 
-> broteam-translate-bot@0.11.2 test
-> jest contentDeduplication.test.ts
+> broteam-translate-bot@0.12.0 test
+> jest --verbose --maxWorkers=1
 
-2026-02-03T10:15:47.666Z [warn]: Duplicate content detected (similarity: 88.9%): "This is some example content with many words also" vs "This is some example content with many words"
-2026-02-03T10:15:48.816Z [warn]: Duplicate content detected (similarity: 88.9%): "Second piece of content with many words here now" vs "Second piece of content with many words here"
-2026-02-03T10:15:49.958Z [warn]: Duplicate content detected (exact match): "HELLO WORLD TEST CONTENT"
-2026-02-03T10:15:50.716Z [warn]: Duplicate content detected (similarity: 88.9%): "This is some example content with many words also" vs "This is some example content with many words"
-2026-02-03T10:15:53.618Z [info]: Pruned posted outputs log from 1000 to 500 entries
-2026-02-03T10:15:57.837Z [warn]: Duplicate content detected (exact match): "hello world this is test content for similarity"
-2026-02-03T10:15:57.839Z [warn]: Duplicate content detected (similarity: 88.9%): "hello world this is test content for similarity check" vs "hello world this is test content for similarity"
-2026-02-03T10:15:58.218Z [warn]: Duplicate content detected (exact match): "hello world"
-2026-02-03T10:15:58.583Z [warn]: Duplicate content detected (exact match): "Hello! How are you? #test @mention"
-2026-02-03T10:15:58.980Z [warn]: Duplicate content detected (exact match): "hi"
-2026-02-03T10:15:59.391Z [warn]: Duplicate content detected (exact match): "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word "
-2026-02-03T10:15:59.765Z [warn]: Duplicate content detected (exact match): "Σ╜áσÑ╜Σ╕ûτòî ≡ƒîì ┘à╪▒╪¡╪¿╪º ╪¿╪º┘ä╪╣╪º┘ä┘à"
-2026-02-03T10:16:00.138Z [warn]: Duplicate content detected (exact match): "Line 1
+2026-02-04T00:18:32.371Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:32.386Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:32.431Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:32.434Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:32.436Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:32.436Z [info]: Skipping tweet tweet1 - already processed
+2026-02-04T00:18:32.469Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:32.472Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:32.475Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:32.477Z [info]: Marked tweet tweet2 as processed
+2026-02-04T00:18:32.477Z [info]: Skipping tweet tweet1 - already processed
+2026-02-04T00:18:32.477Z [info]: Skipping tweet tweet2 - already processed
+2026-02-04T00:18:32.513Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:32.517Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.165Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.168Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.172Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.457Z [info]: Skipping tweet tweet1 - already processed
+2026-02-04T00:18:34.481Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.483Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.485Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.486Z [info]: Skipping tweet tweet1 - already processed
+2026-02-04T00:18:34.510Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.512Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.514Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.539Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.541Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.543Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.544Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.570Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.573Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.575Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.576Z [info]: Unmarked tweet tweet1 as processed
+2026-02-04T00:18:34.606Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.609Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.611Z [info]: Unmarked tweet nonexistent as processed
+2026-02-04T00:18:34.640Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.642Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.646Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.648Z [info]: Marked tweet tweet2 as processed
+2026-02-04T00:18:34.649Z [info]: Unmarked tweet tweet1 as processed
+2026-02-04T00:18:34.683Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.685Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.689Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:34.724Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.727Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.761Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:34.763Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:34.767Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:37.613Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:37.616Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:38.373Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:38.375Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:39.098Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:39.101Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:39.770Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:39.772Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:39.775Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:39.776Z [info]: Marked tweet tweet2 as processed
+2026-02-04T00:18:39.804Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:39.806Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:39.809Z [info]: Marked tweet tweet0 as processed
+2026-02-04T00:18:39.811Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:39.812Z [info]: Marked tweet tweet2 as processed
+2026-02-04T00:18:39.814Z [info]: Marked tweet tweet3 as processed
+2026-02-04T00:18:39.815Z [info]: Marked tweet tweet4 as processed
+2026-02-04T00:18:39.816Z [info]: Marked tweet tweet5 as processed
+2026-02-04T00:18:39.818Z [info]: Marked tweet tweet6 as processed
+2026-02-04T00:18:39.819Z [info]: Marked tweet tweet7 as processed
+2026-02-04T00:18:39.821Z [info]: Marked tweet tweet8 as processed
+2026-02-04T00:18:39.822Z [info]: Marked tweet tweet9 as processed
+2026-02-04T00:18:39.824Z [info]: Marked tweet tweet10 as processed
+2026-02-04T00:18:39.826Z [info]: Marked tweet tweet11 as processed
+2026-02-04T00:18:39.828Z [info]: Marked tweet tweet12 as processed
+2026-02-04T00:18:39.829Z [info]: Marked tweet tweet13 as processed
+2026-02-04T00:18:39.831Z [info]: Marked tweet tweet14 as processed
+2026-02-04T00:18:39.832Z [info]: Marked tweet tweet15 as processed
+2026-02-04T00:18:39.834Z [info]: Marked tweet tweet16 as processed
+2026-02-04T00:18:39.835Z [info]: Marked tweet tweet17 as processed
+2026-02-04T00:18:39.836Z [info]: Marked tweet tweet18 as processed
+2026-02-04T00:18:39.837Z [info]: Marked tweet tweet19 as processed
+2026-02-04T00:18:39.839Z [info]: Marked tweet tweet20 as processed
+2026-02-04T00:18:39.840Z [info]: Marked tweet tweet21 as processed
+2026-02-04T00:18:39.842Z [info]: Marked tweet tweet22 as processed
+2026-02-04T00:18:39.844Z [info]: Marked tweet tweet23 as processed
+2026-02-04T00:18:39.845Z [info]: Marked tweet tweet24 as processed
+2026-02-04T00:18:39.847Z [info]: Marked tweet tweet25 as processed
+2026-02-04T00:18:39.849Z [info]: Marked tweet tweet26 as processed
+2026-02-04T00:18:39.850Z [info]: Marked tweet tweet27 as processed
+2026-02-04T00:18:39.852Z [info]: Marked tweet tweet28 as processed
+2026-02-04T00:18:39.853Z [info]: Marked tweet tweet29 as processed
+2026-02-04T00:18:39.855Z [info]: Marked tweet tweet30 as processed
+2026-02-04T00:18:39.857Z [info]: Marked tweet tweet31 as processed
+2026-02-04T00:18:39.859Z [info]: Marked tweet tweet32 as processed
+2026-02-04T00:18:39.861Z [info]: Marked tweet tweet33 as processed
+2026-02-04T00:18:39.862Z [info]: Marked tweet tweet34 as processed
+2026-02-04T00:18:39.864Z [info]: Marked tweet tweet35 as processed
+2026-02-04T00:18:39.866Z [info]: Marked tweet tweet36 as processed
+2026-02-04T00:18:39.868Z [info]: Marked tweet tweet37 as processed
+2026-02-04T00:18:39.870Z [info]: Marked tweet tweet38 as processed
+2026-02-04T00:18:39.872Z [info]: Marked tweet tweet39 as processed
+2026-02-04T00:18:39.875Z [info]: Marked tweet tweet40 as processed
+2026-02-04T00:18:39.877Z [info]: Marked tweet tweet41 as processed
+2026-02-04T00:18:39.879Z [info]: Marked tweet tweet42 as processed
+2026-02-04T00:18:39.881Z [info]: Marked tweet tweet43 as processed
+2026-02-04T00:18:39.883Z [info]: Marked tweet tweet44 as processed
+2026-02-04T00:18:39.885Z [info]: Marked tweet tweet45 as processed
+2026-02-04T00:18:39.887Z [info]: Marked tweet tweet46 as processed
+2026-02-04T00:18:39.889Z [info]: Marked tweet tweet47 as processed
+2026-02-04T00:18:39.891Z [info]: Marked tweet tweet48 as processed
+2026-02-04T00:18:39.892Z [info]: Marked tweet tweet49 as processed
+2026-02-04T00:18:39.896Z [info]: Marked tweet tweet50 as processed
+2026-02-04T00:18:39.898Z [info]: Marked tweet tweet51 as processed
+2026-02-04T00:18:39.899Z [info]: Marked tweet tweet52 as processed
+2026-02-04T00:18:39.901Z [info]: Marked tweet tweet53 as processed
+2026-02-04T00:18:39.902Z [info]: Marked tweet tweet54 as processed
+2026-02-04T00:18:39.905Z [info]: Marked tweet tweet55 as processed
+2026-02-04T00:18:39.907Z [info]: Marked tweet tweet56 as processed
+2026-02-04T00:18:39.910Z [info]: Marked tweet tweet57 as processed
+2026-02-04T00:18:39.912Z [info]: Marked tweet tweet58 as processed
+2026-02-04T00:18:39.914Z [info]: Marked tweet tweet59 as processed
+2026-02-04T00:18:39.916Z [info]: Marked tweet tweet60 as processed
+2026-02-04T00:18:39.917Z [info]: Marked tweet tweet61 as processed
+2026-02-04T00:18:39.920Z [info]: Marked tweet tweet62 as processed
+2026-02-04T00:18:39.921Z [info]: Marked tweet tweet63 as processed
+2026-02-04T00:18:39.923Z [info]: Marked tweet tweet64 as processed
+2026-02-04T00:18:39.925Z [info]: Marked tweet tweet65 as processed
+2026-02-04T00:18:39.927Z [info]: Marked tweet tweet66 as processed
+2026-02-04T00:18:39.928Z [info]: Marked tweet tweet67 as processed
+2026-02-04T00:18:39.930Z [info]: Marked tweet tweet68 as processed
+2026-02-04T00:18:39.932Z [info]: Marked tweet tweet69 as processed
+2026-02-04T00:18:39.934Z [info]: Marked tweet tweet70 as processed
+2026-02-04T00:18:39.937Z [info]: Marked tweet tweet71 as processed
+2026-02-04T00:18:39.939Z [info]: Marked tweet tweet72 as processed
+2026-02-04T00:18:39.941Z [info]: Marked tweet tweet73 as processed
+2026-02-04T00:18:39.943Z [info]: Marked tweet tweet74 as processed
+2026-02-04T00:18:39.945Z [info]: Marked tweet tweet75 as processed
+2026-02-04T00:18:39.947Z [info]: Marked tweet tweet76 as processed
+2026-02-04T00:18:39.948Z [info]: Marked tweet tweet77 as processed
+2026-02-04T00:18:39.951Z [info]: Marked tweet tweet78 as processed
+2026-02-04T00:18:39.952Z [info]: Marked tweet tweet79 as processed
+2026-02-04T00:18:39.954Z [info]: Marked tweet tweet80 as processed
+2026-02-04T00:18:39.955Z [info]: Marked tweet tweet81 as processed
+2026-02-04T00:18:39.957Z [info]: Marked tweet tweet82 as processed
+2026-02-04T00:18:39.959Z [info]: Marked tweet tweet83 as processed
+2026-02-04T00:18:39.961Z [info]: Marked tweet tweet84 as processed
+2026-02-04T00:18:39.963Z [info]: Marked tweet tweet85 as processed
+2026-02-04T00:18:39.965Z [info]: Marked tweet tweet86 as processed
+2026-02-04T00:18:39.967Z [info]: Marked tweet tweet87 as processed
+2026-02-04T00:18:39.969Z [info]: Marked tweet tweet88 as processed
+2026-02-04T00:18:39.971Z [info]: Marked tweet tweet89 as processed
+2026-02-04T00:18:39.974Z [info]: Marked tweet tweet90 as processed
+2026-02-04T00:18:39.976Z [info]: Marked tweet tweet91 as processed
+2026-02-04T00:18:39.978Z [info]: Marked tweet tweet92 as processed
+2026-02-04T00:18:39.979Z [info]: Marked tweet tweet93 as processed
+2026-02-04T00:18:39.981Z [info]: Marked tweet tweet94 as processed
+2026-02-04T00:18:39.982Z [info]: Marked tweet tweet95 as processed
+2026-02-04T00:18:39.984Z [info]: Marked tweet tweet96 as processed
+2026-02-04T00:18:39.986Z [info]: Marked tweet tweet97 as processed
+2026-02-04T00:18:39.988Z [info]: Marked tweet tweet98 as processed
+2026-02-04T00:18:39.989Z [info]: Marked tweet tweet99 as processed
+2026-02-04T00:18:39.992Z [info]: Marked tweet tweet100 as processed
+2026-02-04T00:18:39.993Z [info]: Marked tweet tweet101 as processed
+2026-02-04T00:18:39.994Z [info]: Marked tweet tweet102 as processed
+2026-02-04T00:18:39.995Z [info]: Marked tweet tweet103 as processed
+2026-02-04T00:18:39.997Z [info]: Marked tweet tweet104 as processed
+2026-02-04T00:18:39.999Z [info]: Marked tweet tweet105 as processed
+2026-02-04T00:18:40.000Z [info]: Marked tweet tweet106 as processed
+2026-02-04T00:18:40.002Z [info]: Marked tweet tweet107 as processed
+2026-02-04T00:18:40.004Z [info]: Marked tweet tweet108 as processed
+2026-02-04T00:18:40.006Z [info]: Marked tweet tweet109 as processed
+2026-02-04T00:18:40.008Z [info]: Marked tweet tweet110 as processed
+2026-02-04T00:18:40.009Z [info]: Marked tweet tweet111 as processed
+2026-02-04T00:18:40.011Z [info]: Marked tweet tweet112 as processed
+2026-02-04T00:18:40.013Z [info]: Marked tweet tweet113 as processed
+2026-02-04T00:18:40.015Z [info]: Marked tweet tweet114 as processed
+2026-02-04T00:18:40.016Z [info]: Marked tweet tweet115 as processed
+2026-02-04T00:18:40.018Z [info]: Marked tweet tweet116 as processed
+2026-02-04T00:18:40.020Z [info]: Marked tweet tweet117 as processed
+2026-02-04T00:18:40.021Z [info]: Marked tweet tweet118 as processed
+2026-02-04T00:18:40.023Z [info]: Marked tweet tweet119 as processed
+2026-02-04T00:18:40.025Z [info]: Marked tweet tweet120 as processed
+2026-02-04T00:18:40.027Z [info]: Marked tweet tweet121 as processed
+2026-02-04T00:18:40.028Z [info]: Marked tweet tweet122 as processed
+2026-02-04T00:18:40.031Z [info]: Marked tweet tweet123 as processed
+2026-02-04T00:18:40.032Z [info]: Marked tweet tweet124 as processed
+2026-02-04T00:18:40.034Z [info]: Marked tweet tweet125 as processed
+2026-02-04T00:18:40.035Z [info]: Marked tweet tweet126 as processed
+2026-02-04T00:18:40.037Z [info]: Marked tweet tweet127 as processed
+2026-02-04T00:18:40.038Z [info]: Marked tweet tweet128 as processed
+2026-02-04T00:18:40.040Z [info]: Marked tweet tweet129 as processed
+2026-02-04T00:18:40.042Z [info]: Marked tweet tweet130 as processed
+2026-02-04T00:18:40.044Z [info]: Marked tweet tweet131 as processed
+2026-02-04T00:18:40.046Z [info]: Marked tweet tweet132 as processed
+2026-02-04T00:18:40.048Z [info]: Marked tweet tweet133 as processed
+2026-02-04T00:18:40.050Z [info]: Marked tweet tweet134 as processed
+2026-02-04T00:18:40.051Z [info]: Marked tweet tweet135 as processed
+2026-02-04T00:18:40.053Z [info]: Marked tweet tweet136 as processed
+2026-02-04T00:18:40.054Z [info]: Marked tweet tweet137 as processed
+2026-02-04T00:18:40.056Z [info]: Marked tweet tweet138 as processed
+2026-02-04T00:18:40.058Z [info]: Marked tweet tweet139 as processed
+2026-02-04T00:18:40.059Z [info]: Marked tweet tweet140 as processed
+2026-02-04T00:18:40.061Z [info]: Marked tweet tweet141 as processed
+2026-02-04T00:18:40.062Z [info]: Marked tweet tweet142 as processed
+2026-02-04T00:18:40.064Z [info]: Marked tweet tweet143 as processed
+2026-02-04T00:18:40.065Z [info]: Marked tweet tweet144 as processed
+2026-02-04T00:18:40.067Z [info]: Marked tweet tweet145 as processed
+2026-02-04T00:18:40.068Z [info]: Marked tweet tweet146 as processed
+2026-02-04T00:18:40.070Z [info]: Marked tweet tweet147 as processed
+2026-02-04T00:18:40.071Z [info]: Marked tweet tweet148 as processed
+2026-02-04T00:18:40.073Z [info]: Marked tweet tweet149 as processed
+2026-02-04T00:18:40.074Z [info]: Pruned 50 processed tweet IDs (retention 90d, max 100)
+2026-02-04T00:18:40.102Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.104Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.130Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.132Z [info]: Loaded 3 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.161Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.163Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.189Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.191Z [info]: Loaded 2 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.218Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.219Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.243Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.245Z [info]: Loaded 2 processed tweet IDs from tracker (v2)
+2026-02-04T00:18:40.269Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.272Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.274Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:40.275Z [info]: Marked tweet tweet2 as processed
+2026-02-04T00:18:40.298Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.300Z [info]: Loaded 2 processed tweet IDs from tracker (v2)
+2026-02-04T00:18:40.326Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.328Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.363Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.365Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.399Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.402Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.437Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.440Z [warn]: Failed to read JSON from C:\Users\Daniel\broteam-translate-bot\.processed-tweets.json: SyntaxError: Unexpected token 'i', "invalid json {" is not valid JSON
+2026-02-04T00:18:40.441Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.475Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.479Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.482Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:40.482Z [info]: Skipping tweet tweet1 - already processed
+2026-02-04T00:18:40.514Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.516Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.520Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:40.552Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:18:40.555Z [info]: Loaded 0 processed tweet IDs from tracker (v1ΓåÆv2)
+2026-02-04T00:18:40.558Z [info]: Marked tweet tweet1 as processed
+2026-02-04T00:18:40.560Z [info]: Unmarked tweet tweet1 as processed
+PASS tests/tweetTracker.test.ts (9.967 s)
+  tweetTracker
+    shouldProcess (sync)
+      ΓêÜ should return true for new tweet (141 ms)
+      ΓêÜ should return false for processed tweet (45 ms)
+      ΓêÜ should handle multiple tweets (40 ms)
+    shouldProcessAsync
+      ΓêÜ should return true for new tweet (1653 ms)
+      ΓêÜ should return false for processed tweet (326 ms)
+    markProcessed
+      ΓêÜ should mark tweet as processed (28 ms)
+      ΓêÜ should persist to file (27 ms)
+      ΓêÜ should handle duplicate marks (29 ms)
+    unmarkProcessed
+      ΓêÜ should remove tweet from processed list (32 ms)
+      ΓêÜ should handle unmarking non-existent tweet (35 ms)
+      ΓêÜ should persist removal (39 ms)
+    isProcessed
+      ΓêÜ should return true for processed tweet (39 ms)
+      ΓêÜ should return false for new tweet (40 ms)
+    isProcessedAsync
+      ΓêÜ should return true for processed tweet (2857 ms)
+      ΓêÜ should return false for new tweet (747 ms)
+    wasPosted
+      ΓêÜ should return false when not posted (732 ms)
+      ΓêÜ should handle missing log file (677 ms)
+    prune
+      ΓêÜ should keep entries within retention period (31 ms)
+      ΓêÜ should handle pruning without errors (299 ms)
+    state migration
+      ΓêÜ should migrate from V1 to V2 (57 ms)
+      ΓêÜ should handle missing version field (59 ms)
+      ΓêÜ should preserve V2 state (53 ms)
+    persistence
+      ΓêÜ should load state from file on initialization (55 ms)
+      ΓêÜ should handle missing state file (66 ms)
+      ΓêÜ should handle malformed state file (76 ms)
+    cache management
+      ΓêÜ should use cache for performance (40 ms)
+      ΓêÜ should update cache on mark (37 ms)
+      ΓêÜ should update cache on unmark (40 ms)
+
+FAIL tests/duplicate-prevention.test.ts
+  Duplicate Prevention
+    checkForDuplicates
+      ├ù should block when post rate limit is reached (4 ms)
+      ΓêÜ should block when tweet was already processed (1 ms)
+      ΓêÜ should block when tweet is already queued
+      ΓêÜ should block when content is duplicate
+      ΓêÜ should block when translation stability has multiple issues (1 ms)
+      ΓêÜ should warn but allow when translation stability has few issues (2 ms)
+      ΓêÜ should allow when all checks pass (1 ms)
+    recordSuccessfulPost
+      ΓêÜ should record successful post and update all trackers (1 ms)
+      ΓêÜ should handle errors gracefully
+    cleanupTrackingData
+      ΓêÜ should clean up all tracking data (2 ms)
+      ΓêÜ should handle errors gracefully (1 ms)
+    getDuplicatePreventionStatus
+      ├ù should return comprehensive status information (5 ms)
+    initializeDuplicatePrevention
+      ΓêÜ should initialize the system and set up periodic cleanup (4 ms)
+
+  ΓùÅ Duplicate Prevention ΓÇ║ checkForDuplicates ΓÇ║ should block when post rate limit is reached
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: "Post rate limit reached (17/17 posts in 24h)"
+    Received: "Post rate limit reached (17/12 posts in 24h)"
+
+       96 |
+       97 |       expect(result.canProceed).toBe(false);
+    >  98 |       expect(result.reason).toBe('Post rate limit reached (17/17 posts in 24h)');
+          |                             ^
+       99 |       expect(result.severity).toBe('block');
+      100 |     });
+      101 |
+
+      at Object.<anonymous> (tests/duplicate-prevention.test.ts:98:29)
+
+  ΓùÅ Duplicate Prevention ΓÇ║ getDuplicatePreventionStatus ΓÇ║ should return comprehensive status information
+
+    expect(received).toEqual(expected) // deep equality
+
+    - Expected  - 1
+    + Received  + 1
+
+      Object {
+        "instanceLocked": true,
+        "lastCleanup": Any<String>,
+        "postCount24h": 5,
+    -   "postLimit": 17,
+    +   "postLimit": 12,
+        "processedTweets": "tracked",
+        "queuedTweets": 3,
+        "remainingPosts": 12,
+      }
+
+      251 |       const status = getDuplicatePreventionStatus();
+      252 |
+    > 253 |       expect(status).toEqual({
+          |                      ^
+      254 |         instanceLocked: true,
+      255 |         postCount24h: 5,
+      256 |         postLimit: 17,
+
+      at Object.<anonymous> (tests/duplicate-prevention.test.ts:253:22)
+
+2026-02-04T00:18:42.263Z [warn]: Duplicate content detected (similarity: 88.9%): "This is some example content with many words also" vs "This is some example content with many words"
+2026-02-04T00:18:43.716Z [warn]: Duplicate content detected (similarity: 88.9%): "Second piece of content with many words here now" vs "Second piece of content with many words here"
+2026-02-04T00:18:44.686Z [warn]: Duplicate content detected (exact match): "HELLO WORLD TEST CONTENT"
+2026-02-04T00:18:45.304Z [warn]: Duplicate content detected (similarity: 88.9%): "This is some example content with many words also" vs "This is some example content with many words"
+2026-02-04T00:18:48.334Z [info]: Pruned posted outputs log from 1000 to 500 entries
+2026-02-04T00:18:52.043Z [warn]: Duplicate content detected (exact match): "hello world this is test content for similarity"
+2026-02-04T00:18:52.060Z [warn]: Duplicate content detected (similarity: 88.9%): "hello world this is test content for similarity check" vs "hello world this is test content for similarity"
+2026-02-04T00:18:52.402Z [warn]: Duplicate content detected (exact match): "hello world"
+2026-02-04T00:18:52.747Z [warn]: Duplicate content detected (exact match): "Hello! How are you? #test @mention"
+2026-02-04T00:18:53.145Z [warn]: Duplicate content detected (exact match): "hi"
+2026-02-04T00:18:53.559Z [warn]: Duplicate content detected (exact match): "word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word word "
+2026-02-04T00:18:53.892Z [warn]: Duplicate content detected (exact match): "Σ╜áσÑ╜Σ╕ûτòî ≡ƒîì ┘à╪▒╪¡╪¿╪º ╪¿╪º┘ä╪╣╪º┘ä┘à"
+2026-02-04T00:18:54.198Z [warn]: Duplicate content detected (exact match): "Line 1
 Line 2
 Line 3"
+PASS tests/contentDeduplication.test.ts (13.478 s)
+  contentDeduplication
+    isContentDuplicate (async)
+      ΓêÜ should return false for unique content (825 ms)
+      ΓêÜ should return true for similar content (>85%) (612 ms)
+      ΓêÜ should return false for empty log file (534 ms)
+      ΓêÜ should return false for missing log file (396 ms)
+      ΓêÜ should check against multiple log entries (520 ms)
+      ΓêÜ should handle very long log files (663 ms)
+      ΓêÜ should detect duplicates case-insensitively (307 ms)
+    isContentDuplicateSync
+      ΓêÜ should return false for unique content (298 ms)
+      ΓêÜ should return true for similar content (>85%) (319 ms)
+      ΓêÜ should return false for missing log file (316 ms)
+    logPostedContent
+      ΓêÜ should append content to log file (382 ms)
+      ΓêÜ should append to existing log (348 ms)
+      ΓêÜ should handle multiple appends (363 ms)
+      ΓêÜ should create log file if missing (508 ms)
+      ΓêÜ should store JSON format with timestamp (361 ms)
+    prunePostedOutputs
+      ΓêÜ should keep only last N lines (752 ms)
+      ΓêÜ should not modify file with fewer lines than limit (420 ms)
+      ΓêÜ should handle missing log file (319 ms)
+      ΓêÜ should handle empty log file (348 ms)
+    isAcceptableWithSemanticCheck
+      ΓêÜ should return true for acceptable content (341 ms)
+      ΓêÜ should reject empty translations (319 ms)
+      ΓêÜ should reject whitespace-only translations (423 ms)
+      ΓêÜ should reject translations identical to source (310 ms)
+      ΓêÜ should reject very short translations (323 ms)
+      ΓêÜ should reject exact duplicates (300 ms)
+      ΓêÜ should accept translations with sufficient change (291 ms)
+    similarity threshold
+      ΓêÜ should use 85% threshold for duplicates (358 ms)
+      ΓêÜ should normalize whitespace before comparison (312 ms)
+      ΓêÜ should handle special characters (346 ms)
+    edge cases
+      ΓêÜ should handle very short content (397 ms)
+      ΓêÜ should handle very long content (414 ms)
+      ΓêÜ should handle unicode content (332 ms)
+      ΓêÜ should handle line breaks in content (306 ms)
+
+2026-02-04T00:20:50.106Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.109Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:50.111Z [info]: Monthly usage: 3/100 fetches for 2026-02
+2026-02-04T00:20:50.149Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:50.151Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:50.181Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.183Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:50.213Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.242Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.271Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:50.272Z [info]: Monthly usage: 2/100 fetches for 2025-01
+2026-02-04T00:20:50.274Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:50.301Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.337Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.339Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:50.341Z [info]: Monthly usage: 3/100 fetches for 2026-02
+2026-02-04T00:20:50.342Z [info]: Monthly usage: 4/100 fetches for 2026-02
+2026-02-04T00:20:50.343Z [info]: Monthly usage: 5/100 fetches for 2026-02
+2026-02-04T00:20:50.345Z [info]: Monthly usage: 6/100 fetches for 2026-02
+2026-02-04T00:20:50.346Z [info]: Monthly usage: 7/100 fetches for 2026-02
+2026-02-04T00:20:50.347Z [info]: Monthly usage: 8/100 fetches for 2026-02
+2026-02-04T00:20:50.348Z [info]: Monthly usage: 9/100 fetches for 2026-02
+2026-02-04T00:20:50.349Z [info]: Monthly usage: 10/100 fetches for 2026-02
+2026-02-04T00:20:50.351Z [info]: Monthly usage: 11/100 fetches for 2026-02
+2026-02-04T00:20:50.352Z [info]: Monthly usage: 12/100 fetches for 2026-02
+2026-02-04T00:20:50.353Z [info]: Monthly usage: 13/100 fetches for 2026-02
+2026-02-04T00:20:50.354Z [info]: Monthly usage: 14/100 fetches for 2026-02
+2026-02-04T00:20:50.356Z [info]: Monthly usage: 15/100 fetches for 2026-02
+2026-02-04T00:20:50.357Z [info]: Monthly usage: 16/100 fetches for 2026-02
+2026-02-04T00:20:50.358Z [info]: Monthly usage: 17/100 fetches for 2026-02
+2026-02-04T00:20:50.360Z [info]: Monthly usage: 18/100 fetches for 2026-02
+2026-02-04T00:20:50.361Z [info]: Monthly usage: 19/100 fetches for 2026-02
+2026-02-04T00:20:50.362Z [info]: Monthly usage: 20/100 fetches for 2026-02
+2026-02-04T00:20:50.364Z [info]: Monthly usage: 21/100 fetches for 2026-02
+2026-02-04T00:20:50.365Z [info]: Monthly usage: 22/100 fetches for 2026-02
+2026-02-04T00:20:50.366Z [info]: Monthly usage: 23/100 fetches for 2026-02
+2026-02-04T00:20:50.368Z [info]: Monthly usage: 24/100 fetches for 2026-02
+2026-02-04T00:20:50.369Z [info]: Monthly usage: 25/100 fetches for 2026-02
+2026-02-04T00:20:50.370Z [info]: Monthly usage: 26/100 fetches for 2026-02
+2026-02-04T00:20:50.372Z [info]: Monthly usage: 27/100 fetches for 2026-02
+2026-02-04T00:20:50.373Z [info]: Monthly usage: 28/100 fetches for 2026-02
+2026-02-04T00:20:50.375Z [info]: Monthly usage: 29/100 fetches for 2026-02
+2026-02-04T00:20:50.376Z [info]: Monthly usage: 30/100 fetches for 2026-02
+2026-02-04T00:20:50.377Z [info]: Monthly usage: 31/100 fetches for 2026-02
+2026-02-04T00:20:50.379Z [info]: Monthly usage: 32/100 fetches for 2026-02
+2026-02-04T00:20:50.380Z [info]: Monthly usage: 33/100 fetches for 2026-02
+2026-02-04T00:20:50.381Z [info]: Monthly usage: 34/100 fetches for 2026-02
+2026-02-04T00:20:50.382Z [info]: Monthly usage: 35/100 fetches for 2026-02
+2026-02-04T00:20:50.384Z [info]: Monthly usage: 36/100 fetches for 2026-02
+2026-02-04T00:20:50.385Z [info]: Monthly usage: 37/100 fetches for 2026-02
+2026-02-04T00:20:50.386Z [info]: Monthly usage: 38/100 fetches for 2026-02
+2026-02-04T00:20:50.388Z [info]: Monthly usage: 39/100 fetches for 2026-02
+2026-02-04T00:20:50.389Z [info]: Monthly usage: 40/100 fetches for 2026-02
+2026-02-04T00:20:50.390Z [info]: Monthly usage: 41/100 fetches for 2026-02
+2026-02-04T00:20:50.392Z [info]: Monthly usage: 42/100 fetches for 2026-02
+2026-02-04T00:20:50.393Z [info]: Monthly usage: 43/100 fetches for 2026-02
+2026-02-04T00:20:50.394Z [info]: Monthly usage: 44/100 fetches for 2026-02
+2026-02-04T00:20:50.395Z [info]: Monthly usage: 45/100 fetches for 2026-02
+2026-02-04T00:20:50.397Z [info]: Monthly usage: 46/100 fetches for 2026-02
+2026-02-04T00:20:50.398Z [info]: Monthly usage: 47/100 fetches for 2026-02
+2026-02-04T00:20:50.399Z [info]: Monthly usage: 48/100 fetches for 2026-02
+2026-02-04T00:20:50.400Z [info]: Monthly usage: 49/100 fetches for 2026-02
+2026-02-04T00:20:50.402Z [info]: Monthly usage: 50/100 fetches for 2026-02
+2026-02-04T00:20:50.403Z [info]: Monthly usage: 51/100 fetches for 2026-02
+2026-02-04T00:20:50.405Z [info]: Monthly usage: 52/100 fetches for 2026-02
+2026-02-04T00:20:50.407Z [info]: Monthly usage: 53/100 fetches for 2026-02
+2026-02-04T00:20:50.408Z [info]: Monthly usage: 54/100 fetches for 2026-02
+2026-02-04T00:20:50.409Z [info]: Monthly usage: 55/100 fetches for 2026-02
+2026-02-04T00:20:50.410Z [info]: Monthly usage: 56/100 fetches for 2026-02
+2026-02-04T00:20:50.412Z [info]: Monthly usage: 57/100 fetches for 2026-02
+2026-02-04T00:20:50.413Z [info]: Monthly usage: 58/100 fetches for 2026-02
+2026-02-04T00:20:50.415Z [info]: Monthly usage: 59/100 fetches for 2026-02
+2026-02-04T00:20:50.416Z [info]: Monthly usage: 60/100 fetches for 2026-02
+2026-02-04T00:20:50.418Z [info]: Monthly usage: 61/100 fetches for 2026-02
+2026-02-04T00:20:50.419Z [info]: Monthly usage: 62/100 fetches for 2026-02
+2026-02-04T00:20:50.421Z [info]: Monthly usage: 63/100 fetches for 2026-02
+2026-02-04T00:20:50.422Z [info]: Monthly usage: 64/100 fetches for 2026-02
+2026-02-04T00:20:50.424Z [info]: Monthly usage: 65/100 fetches for 2026-02
+2026-02-04T00:20:50.425Z [info]: Monthly usage: 66/100 fetches for 2026-02
+2026-02-04T00:20:50.426Z [info]: Monthly usage: 67/100 fetches for 2026-02
+2026-02-04T00:20:50.427Z [info]: Monthly usage: 68/100 fetches for 2026-02
+2026-02-04T00:20:50.428Z [info]: Monthly usage: 69/100 fetches for 2026-02
+2026-02-04T00:20:50.430Z [info]: Monthly usage: 70/100 fetches for 2026-02
+2026-02-04T00:20:50.431Z [info]: Monthly usage: 71/100 fetches for 2026-02
+2026-02-04T00:20:50.432Z [info]: Monthly usage: 72/100 fetches for 2026-02
+2026-02-04T00:20:50.433Z [info]: Monthly usage: 73/100 fetches for 2026-02
+2026-02-04T00:20:50.438Z [info]: Monthly usage: 74/100 fetches for 2026-02
+2026-02-04T00:20:50.440Z [info]: Monthly usage: 75/100 fetches for 2026-02
+2026-02-04T00:20:50.442Z [info]: Monthly usage: 76/100 fetches for 2026-02
+2026-02-04T00:20:50.443Z [info]: Monthly usage: 77/100 fetches for 2026-02
+2026-02-04T00:20:50.444Z [info]: Monthly usage: 78/100 fetches for 2026-02
+2026-02-04T00:20:50.445Z [info]: Monthly usage: 79/100 fetches for 2026-02
+2026-02-04T00:20:50.447Z [info]: Monthly usage: 80/100 fetches for 2026-02
+2026-02-04T00:20:50.448Z [info]: Monthly usage: 81/100 fetches for 2026-02
+2026-02-04T00:20:50.450Z [info]: Monthly usage: 82/100 fetches for 2026-02
+2026-02-04T00:20:50.451Z [info]: Monthly usage: 83/100 fetches for 2026-02
+2026-02-04T00:20:50.452Z [info]: Monthly usage: 84/100 fetches for 2026-02
+2026-02-04T00:20:50.454Z [info]: Monthly usage: 85/100 fetches for 2026-02
+2026-02-04T00:20:50.455Z [info]: Monthly usage: 86/100 fetches for 2026-02
+2026-02-04T00:20:50.456Z [info]: Monthly usage: 87/100 fetches for 2026-02
+2026-02-04T00:20:50.457Z [info]: Monthly usage: 88/100 fetches for 2026-02
+2026-02-04T00:20:50.459Z [info]: Monthly usage: 89/100 fetches for 2026-02
+2026-02-04T00:20:50.460Z [info]: Monthly usage: 90/100 fetches for 2026-02
+2026-02-04T00:20:50.462Z [info]: Monthly usage: 91/100 fetches for 2026-02
+2026-02-04T00:20:50.463Z [info]: Monthly usage: 92/100 fetches for 2026-02
+2026-02-04T00:20:50.465Z [info]: Monthly usage: 93/100 fetches for 2026-02
+2026-02-04T00:20:50.467Z [info]: Monthly usage: 94/100 fetches for 2026-02
+2026-02-04T00:20:50.468Z [info]: Monthly usage: 95/100 fetches for 2026-02
+2026-02-04T00:20:50.470Z [info]: Monthly usage: 96/100 fetches for 2026-02
+2026-02-04T00:20:50.471Z [info]: Monthly usage: 97/100 fetches for 2026-02
+2026-02-04T00:20:50.473Z [info]: Monthly usage: 98/100 fetches for 2026-02
+2026-02-04T00:20:50.474Z [info]: Monthly usage: 99/100 fetches for 2026-02
+2026-02-04T00:20:50.476Z [info]: Monthly usage: 100/100 fetches for 2026-02
+2026-02-04T00:20:50.506Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.507Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:50.508Z [info]: Monthly usage: 3/100 fetches for 2026-02
+2026-02-04T00:20:50.510Z [info]: Monthly usage: 4/100 fetches for 2026-02
+2026-02-04T00:20:50.511Z [info]: Monthly usage: 5/100 fetches for 2026-02
+2026-02-04T00:20:50.512Z [info]: Monthly usage: 6/100 fetches for 2026-02
+2026-02-04T00:20:50.513Z [info]: Monthly usage: 7/100 fetches for 2026-02
+2026-02-04T00:20:50.515Z [info]: Monthly usage: 8/100 fetches for 2026-02
+2026-02-04T00:20:50.516Z [info]: Monthly usage: 9/100 fetches for 2026-02
+2026-02-04T00:20:50.517Z [info]: Monthly usage: 10/100 fetches for 2026-02
+2026-02-04T00:20:50.518Z [info]: Monthly usage: 11/100 fetches for 2026-02
+2026-02-04T00:20:50.520Z [info]: Monthly usage: 12/100 fetches for 2026-02
+2026-02-04T00:20:50.521Z [info]: Monthly usage: 13/100 fetches for 2026-02
+2026-02-04T00:20:50.522Z [info]: Monthly usage: 14/100 fetches for 2026-02
+2026-02-04T00:20:50.523Z [info]: Monthly usage: 15/100 fetches for 2026-02
+2026-02-04T00:20:50.524Z [info]: Monthly usage: 16/100 fetches for 2026-02
+2026-02-04T00:20:50.526Z [info]: Monthly usage: 17/100 fetches for 2026-02
+2026-02-04T00:20:50.528Z [info]: Monthly usage: 18/100 fetches for 2026-02
+2026-02-04T00:20:50.529Z [info]: Monthly usage: 19/100 fetches for 2026-02
+2026-02-04T00:20:50.531Z [info]: Monthly usage: 20/100 fetches for 2026-02
+2026-02-04T00:20:50.532Z [info]: Monthly usage: 21/100 fetches for 2026-02
+2026-02-04T00:20:50.534Z [info]: Monthly usage: 22/100 fetches for 2026-02
+2026-02-04T00:20:50.535Z [info]: Monthly usage: 23/100 fetches for 2026-02
+2026-02-04T00:20:50.536Z [info]: Monthly usage: 24/100 fetches for 2026-02
+2026-02-04T00:20:50.537Z [info]: Monthly usage: 25/100 fetches for 2026-02
+2026-02-04T00:20:50.539Z [info]: Monthly usage: 26/100 fetches for 2026-02
+2026-02-04T00:20:50.540Z [info]: Monthly usage: 27/100 fetches for 2026-02
+2026-02-04T00:20:50.541Z [info]: Monthly usage: 28/100 fetches for 2026-02
+2026-02-04T00:20:50.543Z [info]: Monthly usage: 29/100 fetches for 2026-02
+2026-02-04T00:20:50.544Z [info]: Monthly usage: 30/100 fetches for 2026-02
+2026-02-04T00:20:50.546Z [info]: Monthly usage: 31/100 fetches for 2026-02
+2026-02-04T00:20:50.547Z [info]: Monthly usage: 32/100 fetches for 2026-02
+2026-02-04T00:20:50.548Z [info]: Monthly usage: 33/100 fetches for 2026-02
+2026-02-04T00:20:50.549Z [info]: Monthly usage: 34/100 fetches for 2026-02
+2026-02-04T00:20:50.551Z [info]: Monthly usage: 35/100 fetches for 2026-02
+2026-02-04T00:20:50.552Z [info]: Monthly usage: 36/100 fetches for 2026-02
+2026-02-04T00:20:50.553Z [info]: Monthly usage: 37/100 fetches for 2026-02
+2026-02-04T00:20:50.555Z [info]: Monthly usage: 38/100 fetches for 2026-02
+2026-02-04T00:20:50.556Z [info]: Monthly usage: 39/100 fetches for 2026-02
+2026-02-04T00:20:50.558Z [info]: Monthly usage: 40/100 fetches for 2026-02
+2026-02-04T00:20:50.559Z [info]: Monthly usage: 41/100 fetches for 2026-02
+2026-02-04T00:20:50.560Z [info]: Monthly usage: 42/100 fetches for 2026-02
+2026-02-04T00:20:50.562Z [info]: Monthly usage: 43/100 fetches for 2026-02
+2026-02-04T00:20:50.563Z [info]: Monthly usage: 44/100 fetches for 2026-02
+2026-02-04T00:20:50.564Z [info]: Monthly usage: 45/100 fetches for 2026-02
+2026-02-04T00:20:50.566Z [info]: Monthly usage: 46/100 fetches for 2026-02
+2026-02-04T00:20:50.567Z [info]: Monthly usage: 47/100 fetches for 2026-02
+2026-02-04T00:20:50.568Z [info]: Monthly usage: 48/100 fetches for 2026-02
+2026-02-04T00:20:50.569Z [info]: Monthly usage: 49/100 fetches for 2026-02
+2026-02-04T00:20:50.571Z [info]: Monthly usage: 50/100 fetches for 2026-02
+2026-02-04T00:20:50.572Z [info]: Monthly usage: 51/100 fetches for 2026-02
+2026-02-04T00:20:50.574Z [info]: Monthly usage: 52/100 fetches for 2026-02
+2026-02-04T00:20:50.575Z [info]: Monthly usage: 53/100 fetches for 2026-02
+2026-02-04T00:20:50.577Z [info]: Monthly usage: 54/100 fetches for 2026-02
+2026-02-04T00:20:50.578Z [info]: Monthly usage: 55/100 fetches for 2026-02
+2026-02-04T00:20:50.579Z [info]: Monthly usage: 56/100 fetches for 2026-02
+2026-02-04T00:20:50.580Z [info]: Monthly usage: 57/100 fetches for 2026-02
+2026-02-04T00:20:50.582Z [info]: Monthly usage: 58/100 fetches for 2026-02
+2026-02-04T00:20:50.583Z [info]: Monthly usage: 59/100 fetches for 2026-02
+2026-02-04T00:20:50.584Z [info]: Monthly usage: 60/100 fetches for 2026-02
+2026-02-04T00:20:50.586Z [info]: Monthly usage: 61/100 fetches for 2026-02
+2026-02-04T00:20:50.587Z [info]: Monthly usage: 62/100 fetches for 2026-02
+2026-02-04T00:20:50.589Z [info]: Monthly usage: 63/100 fetches for 2026-02
+2026-02-04T00:20:50.590Z [info]: Monthly usage: 64/100 fetches for 2026-02
+2026-02-04T00:20:50.591Z [info]: Monthly usage: 65/100 fetches for 2026-02
+2026-02-04T00:20:50.593Z [info]: Monthly usage: 66/100 fetches for 2026-02
+2026-02-04T00:20:50.594Z [info]: Monthly usage: 67/100 fetches for 2026-02
+2026-02-04T00:20:50.595Z [info]: Monthly usage: 68/100 fetches for 2026-02
+2026-02-04T00:20:50.597Z [info]: Monthly usage: 69/100 fetches for 2026-02
+2026-02-04T00:20:50.598Z [info]: Monthly usage: 70/100 fetches for 2026-02
+2026-02-04T00:20:50.599Z [info]: Monthly usage: 71/100 fetches for 2026-02
+2026-02-04T00:20:50.600Z [info]: Monthly usage: 72/100 fetches for 2026-02
+2026-02-04T00:20:50.601Z [info]: Monthly usage: 73/100 fetches for 2026-02
+2026-02-04T00:20:50.602Z [info]: Monthly usage: 74/100 fetches for 2026-02
+2026-02-04T00:20:50.603Z [info]: Monthly usage: 75/100 fetches for 2026-02
+2026-02-04T00:20:50.605Z [info]: Monthly usage: 76/100 fetches for 2026-02
+2026-02-04T00:20:50.607Z [info]: Monthly usage: 77/100 fetches for 2026-02
+2026-02-04T00:20:50.608Z [info]: Monthly usage: 78/100 fetches for 2026-02
+2026-02-04T00:20:50.609Z [info]: Monthly usage: 79/100 fetches for 2026-02
+2026-02-04T00:20:50.611Z [info]: Monthly usage: 80/100 fetches for 2026-02
+2026-02-04T00:20:50.612Z [info]: Monthly usage: 81/100 fetches for 2026-02
+2026-02-04T00:20:50.613Z [info]: Monthly usage: 82/100 fetches for 2026-02
+2026-02-04T00:20:50.615Z [info]: Monthly usage: 83/100 fetches for 2026-02
+2026-02-04T00:20:50.616Z [info]: Monthly usage: 84/100 fetches for 2026-02
+2026-02-04T00:20:50.618Z [info]: Monthly usage: 85/100 fetches for 2026-02
+2026-02-04T00:20:50.619Z [info]: Monthly usage: 86/100 fetches for 2026-02
+2026-02-04T00:20:50.620Z [info]: Monthly usage: 87/100 fetches for 2026-02
+2026-02-04T00:20:50.622Z [info]: Monthly usage: 88/100 fetches for 2026-02
+2026-02-04T00:20:50.623Z [info]: Monthly usage: 89/100 fetches for 2026-02
+2026-02-04T00:20:50.624Z [info]: Monthly usage: 90/100 fetches for 2026-02
+2026-02-04T00:20:50.626Z [info]: Monthly usage: 91/100 fetches for 2026-02
+2026-02-04T00:20:50.627Z [info]: Monthly usage: 92/100 fetches for 2026-02
+2026-02-04T00:20:50.629Z [info]: Monthly usage: 93/100 fetches for 2026-02
+2026-02-04T00:20:50.631Z [info]: Monthly usage: 94/100 fetches for 2026-02
+2026-02-04T00:20:50.633Z [info]: Monthly usage: 95/100 fetches for 2026-02
+2026-02-04T00:20:50.634Z [info]: Monthly usage: 96/100 fetches for 2026-02
+2026-02-04T00:20:50.636Z [info]: Monthly usage: 97/100 fetches for 2026-02
+2026-02-04T00:20:50.638Z [info]: Monthly usage: 98/100 fetches for 2026-02
+2026-02-04T00:20:50.639Z [info]: Monthly usage: 99/100 fetches for 2026-02
+2026-02-04T00:20:50.641Z [info]: Monthly usage: 100/100 fetches for 2026-02
+2026-02-04T00:20:50.642Z [info]: Monthly usage: 101/100 fetches for 2026-02
+2026-02-04T00:20:50.644Z [info]: Monthly usage: 102/100 fetches for 2026-02
+2026-02-04T00:20:50.645Z [info]: Monthly usage: 103/100 fetches for 2026-02
+2026-02-04T00:20:50.646Z [info]: Monthly usage: 104/100 fetches for 2026-02
+2026-02-04T00:20:50.647Z [info]: Monthly usage: 105/100 fetches for 2026-02
+2026-02-04T00:20:50.677Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:50.679Z [info]: Monthly usage: 2/100 fetches for 2025-01
+2026-02-04T00:20:50.680Z [info]: Monthly usage: 3/100 fetches for 2025-01
+2026-02-04T00:20:50.681Z [info]: Monthly usage: 4/100 fetches for 2025-01
+2026-02-04T00:20:50.682Z [info]: Monthly usage: 5/100 fetches for 2025-01
+2026-02-04T00:20:50.684Z [info]: Monthly usage: 6/100 fetches for 2025-01
+2026-02-04T00:20:50.685Z [info]: Monthly usage: 7/100 fetches for 2025-01
+2026-02-04T00:20:50.687Z [info]: Monthly usage: 8/100 fetches for 2025-01
+2026-02-04T00:20:50.688Z [info]: Monthly usage: 9/100 fetches for 2025-01
+2026-02-04T00:20:50.689Z [info]: Monthly usage: 10/100 fetches for 2025-01
+2026-02-04T00:20:50.691Z [info]: Monthly usage: 11/100 fetches for 2025-01
+2026-02-04T00:20:50.692Z [info]: Monthly usage: 12/100 fetches for 2025-01
+2026-02-04T00:20:50.693Z [info]: Monthly usage: 13/100 fetches for 2025-01
+2026-02-04T00:20:50.694Z [info]: Monthly usage: 14/100 fetches for 2025-01
+2026-02-04T00:20:50.696Z [info]: Monthly usage: 15/100 fetches for 2025-01
+2026-02-04T00:20:50.697Z [info]: Monthly usage: 16/100 fetches for 2025-01
+2026-02-04T00:20:50.698Z [info]: Monthly usage: 17/100 fetches for 2025-01
+2026-02-04T00:20:50.700Z [info]: Monthly usage: 18/100 fetches for 2025-01
+2026-02-04T00:20:50.702Z [info]: Monthly usage: 19/100 fetches for 2025-01
+2026-02-04T00:20:50.703Z [info]: Monthly usage: 20/100 fetches for 2025-01
+2026-02-04T00:20:50.705Z [info]: Monthly usage: 21/100 fetches for 2025-01
+2026-02-04T00:20:50.706Z [info]: Monthly usage: 22/100 fetches for 2025-01
+2026-02-04T00:20:50.707Z [info]: Monthly usage: 23/100 fetches for 2025-01
+2026-02-04T00:20:50.708Z [info]: Monthly usage: 24/100 fetches for 2025-01
+2026-02-04T00:20:50.710Z [info]: Monthly usage: 25/100 fetches for 2025-01
+2026-02-04T00:20:50.711Z [info]: Monthly usage: 26/100 fetches for 2025-01
+2026-02-04T00:20:50.713Z [info]: Monthly usage: 27/100 fetches for 2025-01
+2026-02-04T00:20:50.714Z [info]: Monthly usage: 28/100 fetches for 2025-01
+2026-02-04T00:20:50.716Z [info]: Monthly usage: 29/100 fetches for 2025-01
+2026-02-04T00:20:50.718Z [info]: Monthly usage: 30/100 fetches for 2025-01
+2026-02-04T00:20:50.719Z [info]: Monthly usage: 31/100 fetches for 2025-01
+2026-02-04T00:20:50.720Z [info]: Monthly usage: 32/100 fetches for 2025-01
+2026-02-04T00:20:50.721Z [info]: Monthly usage: 33/100 fetches for 2025-01
+2026-02-04T00:20:50.723Z [info]: Monthly usage: 34/100 fetches for 2025-01
+2026-02-04T00:20:50.724Z [info]: Monthly usage: 35/100 fetches for 2025-01
+2026-02-04T00:20:50.725Z [info]: Monthly usage: 36/100 fetches for 2025-01
+2026-02-04T00:20:50.726Z [info]: Monthly usage: 37/100 fetches for 2025-01
+2026-02-04T00:20:50.727Z [info]: Monthly usage: 38/100 fetches for 2025-01
+2026-02-04T00:20:50.729Z [info]: Monthly usage: 39/100 fetches for 2025-01
+2026-02-04T00:20:50.730Z [info]: Monthly usage: 40/100 fetches for 2025-01
+2026-02-04T00:20:50.731Z [info]: Monthly usage: 41/100 fetches for 2025-01
+2026-02-04T00:20:50.733Z [info]: Monthly usage: 42/100 fetches for 2025-01
+2026-02-04T00:20:50.734Z [info]: Monthly usage: 43/100 fetches for 2025-01
+2026-02-04T00:20:50.736Z [info]: Monthly usage: 44/100 fetches for 2025-01
+2026-02-04T00:20:50.737Z [info]: Monthly usage: 45/100 fetches for 2025-01
+2026-02-04T00:20:50.738Z [info]: Monthly usage: 46/100 fetches for 2025-01
+2026-02-04T00:20:50.740Z [info]: Monthly usage: 47/100 fetches for 2025-01
+2026-02-04T00:20:50.741Z [info]: Monthly usage: 48/100 fetches for 2025-01
+2026-02-04T00:20:50.742Z [info]: Monthly usage: 49/100 fetches for 2025-01
+2026-02-04T00:20:50.744Z [info]: Monthly usage: 50/100 fetches for 2025-01
+2026-02-04T00:20:50.745Z [info]: Monthly usage: 51/100 fetches for 2025-01
+2026-02-04T00:20:50.747Z [info]: Monthly usage: 52/100 fetches for 2025-01
+2026-02-04T00:20:50.748Z [info]: Monthly usage: 53/100 fetches for 2025-01
+2026-02-04T00:20:50.749Z [info]: Monthly usage: 54/100 fetches for 2025-01
+2026-02-04T00:20:50.751Z [info]: Monthly usage: 55/100 fetches for 2025-01
+2026-02-04T00:20:50.752Z [info]: Monthly usage: 56/100 fetches for 2025-01
+2026-02-04T00:20:50.753Z [info]: Monthly usage: 57/100 fetches for 2025-01
+2026-02-04T00:20:50.754Z [info]: Monthly usage: 58/100 fetches for 2025-01
+2026-02-04T00:20:50.755Z [info]: Monthly usage: 59/100 fetches for 2025-01
+2026-02-04T00:20:50.756Z [info]: Monthly usage: 60/100 fetches for 2025-01
+2026-02-04T00:20:50.758Z [info]: Monthly usage: 61/100 fetches for 2025-01
+2026-02-04T00:20:50.759Z [info]: Monthly usage: 62/100 fetches for 2025-01
+2026-02-04T00:20:50.760Z [info]: Monthly usage: 63/100 fetches for 2025-01
+2026-02-04T00:20:50.762Z [info]: Monthly usage: 64/100 fetches for 2025-01
+2026-02-04T00:20:50.764Z [info]: Monthly usage: 65/100 fetches for 2025-01
+2026-02-04T00:20:50.765Z [info]: Monthly usage: 66/100 fetches for 2025-01
+2026-02-04T00:20:50.766Z [info]: Monthly usage: 67/100 fetches for 2025-01
+2026-02-04T00:20:50.767Z [info]: Monthly usage: 68/100 fetches for 2025-01
+2026-02-04T00:20:50.769Z [info]: Monthly usage: 69/100 fetches for 2025-01
+2026-02-04T00:20:50.770Z [info]: Monthly usage: 70/100 fetches for 2025-01
+2026-02-04T00:20:50.772Z [info]: Monthly usage: 71/100 fetches for 2025-01
+2026-02-04T00:20:50.773Z [info]: Monthly usage: 72/100 fetches for 2025-01
+2026-02-04T00:20:50.774Z [info]: Monthly usage: 73/100 fetches for 2025-01
+2026-02-04T00:20:50.777Z [info]: Monthly usage: 74/100 fetches for 2025-01
+2026-02-04T00:20:50.779Z [info]: Monthly usage: 75/100 fetches for 2025-01
+2026-02-04T00:20:50.780Z [info]: Monthly usage: 76/100 fetches for 2025-01
+2026-02-04T00:20:50.781Z [info]: Monthly usage: 77/100 fetches for 2025-01
+2026-02-04T00:20:50.783Z [info]: Monthly usage: 78/100 fetches for 2025-01
+2026-02-04T00:20:50.784Z [info]: Monthly usage: 79/100 fetches for 2025-01
+2026-02-04T00:20:50.786Z [info]: Monthly usage: 80/100 fetches for 2025-01
+2026-02-04T00:20:50.788Z [info]: Monthly usage: 81/100 fetches for 2025-01
+2026-02-04T00:20:50.789Z [info]: Monthly usage: 82/100 fetches for 2025-01
+2026-02-04T00:20:50.790Z [info]: Monthly usage: 83/100 fetches for 2025-01
+2026-02-04T00:20:50.791Z [info]: Monthly usage: 84/100 fetches for 2025-01
+2026-02-04T00:20:50.793Z [info]: Monthly usage: 85/100 fetches for 2025-01
+2026-02-04T00:20:50.795Z [info]: Monthly usage: 86/100 fetches for 2025-01
+2026-02-04T00:20:50.797Z [info]: Monthly usage: 87/100 fetches for 2025-01
+2026-02-04T00:20:50.798Z [info]: Monthly usage: 88/100 fetches for 2025-01
+2026-02-04T00:20:50.800Z [info]: Monthly usage: 89/100 fetches for 2025-01
+2026-02-04T00:20:50.801Z [info]: Monthly usage: 90/100 fetches for 2025-01
+2026-02-04T00:20:50.802Z [info]: Monthly usage: 91/100 fetches for 2025-01
+2026-02-04T00:20:50.803Z [info]: Monthly usage: 92/100 fetches for 2025-01
+2026-02-04T00:20:50.805Z [info]: Monthly usage: 93/100 fetches for 2025-01
+2026-02-04T00:20:50.807Z [info]: Monthly usage: 94/100 fetches for 2025-01
+2026-02-04T00:20:50.808Z [info]: Monthly usage: 95/100 fetches for 2025-01
+2026-02-04T00:20:50.810Z [info]: Monthly usage: 96/100 fetches for 2025-01
+2026-02-04T00:20:50.811Z [info]: Monthly usage: 97/100 fetches for 2025-01
+2026-02-04T00:20:50.813Z [info]: Monthly usage: 98/100 fetches for 2025-01
+2026-02-04T00:20:50.814Z [info]: Monthly usage: 99/100 fetches for 2025-01
+2026-02-04T00:20:50.815Z [info]: Monthly usage: 100/100 fetches for 2025-01
+2026-02-04T00:20:50.816Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:50.852Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.854Z [warn]: Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as 100/100 fetches for 2026-02
+2026-02-04T00:20:50.888Z [warn]: Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as 100/100 fetches for 2026-02
+2026-02-04T00:20:50.916Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:50.918Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:50.919Z [warn]: Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as 100/100 fetches for 2026-02
+2026-02-04T00:20:50.949Z [warn]: Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as 100/100 fetches for 2025-01
+2026-02-04T00:20:50.979Z [warn]: Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as 100/100 fetches for 2026-02
+2026-02-04T00:20:51.008Z [info]: Loaded monthly fetch usage for 1 month(s)
+2026-02-04T00:20:51.044Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:51.046Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:51.047Z [info]: Monthly usage: 1/100 fetches for 2025-03
+2026-02-04T00:20:51.078Z [error]: Failed to load monthly usage tracker: SyntaxError: Unexpected token 'i', "invalid json {" is not valid JSON
+2026-02-04T00:20:51.116Z [error]: Failed to load monthly usage tracker: SyntaxError: Unexpected end of JSON input
+2026-02-04T00:20:51.157Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:51.159Z [info]: Monthly usage: 2/100 fetches for 2025-01
+2026-02-04T00:20:51.161Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:51.213Z [info]: Loaded monthly fetch usage for 2 month(s)
+2026-02-04T00:20:51.258Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:51.293Z [info]: Monthly usage: 1/100 fetches for 2026-02
+2026-02-04T00:20:51.294Z [info]: Monthly usage: 2/100 fetches for 2026-02
+2026-02-04T00:20:51.296Z [info]: Monthly usage: 3/100 fetches for 2026-02
+2026-02-04T00:20:51.298Z [info]: Monthly usage: 4/100 fetches for 2026-02
+2026-02-04T00:20:51.299Z [info]: Monthly usage: 5/100 fetches for 2026-02
+2026-02-04T00:20:51.300Z [info]: Monthly usage: 6/100 fetches for 2026-02
+2026-02-04T00:20:51.302Z [info]: Monthly usage: 7/100 fetches for 2026-02
+2026-02-04T00:20:51.304Z [info]: Monthly usage: 8/100 fetches for 2026-02
+2026-02-04T00:20:51.305Z [info]: Monthly usage: 9/100 fetches for 2026-02
+2026-02-04T00:20:51.306Z [info]: Monthly usage: 10/100 fetches for 2026-02
+2026-02-04T00:20:51.308Z [info]: Monthly usage: 11/100 fetches for 2026-02
+2026-02-04T00:20:51.310Z [info]: Monthly usage: 12/100 fetches for 2026-02
+2026-02-04T00:20:51.311Z [info]: Monthly usage: 13/100 fetches for 2026-02
+2026-02-04T00:20:51.314Z [info]: Monthly usage: 14/100 fetches for 2026-02
+2026-02-04T00:20:51.315Z [info]: Monthly usage: 15/100 fetches for 2026-02
+2026-02-04T00:20:51.317Z [info]: Monthly usage: 16/100 fetches for 2026-02
+2026-02-04T00:20:51.318Z [info]: Monthly usage: 17/100 fetches for 2026-02
+2026-02-04T00:20:51.320Z [info]: Monthly usage: 18/100 fetches for 2026-02
+2026-02-04T00:20:51.322Z [info]: Monthly usage: 19/100 fetches for 2026-02
+2026-02-04T00:20:51.323Z [info]: Monthly usage: 20/100 fetches for 2026-02
+2026-02-04T00:20:51.324Z [info]: Monthly usage: 21/100 fetches for 2026-02
+2026-02-04T00:20:51.326Z [info]: Monthly usage: 22/100 fetches for 2026-02
+2026-02-04T00:20:51.328Z [info]: Monthly usage: 23/100 fetches for 2026-02
+2026-02-04T00:20:51.330Z [info]: Monthly usage: 24/100 fetches for 2026-02
+2026-02-04T00:20:51.332Z [info]: Monthly usage: 25/100 fetches for 2026-02
+2026-02-04T00:20:51.334Z [info]: Monthly usage: 26/100 fetches for 2026-02
+2026-02-04T00:20:51.335Z [info]: Monthly usage: 27/100 fetches for 2026-02
+2026-02-04T00:20:51.336Z [info]: Monthly usage: 28/100 fetches for 2026-02
+2026-02-04T00:20:51.338Z [info]: Monthly usage: 29/100 fetches for 2026-02
+2026-02-04T00:20:51.339Z [info]: Monthly usage: 30/100 fetches for 2026-02
+2026-02-04T00:20:51.341Z [info]: Monthly usage: 31/100 fetches for 2026-02
+2026-02-04T00:20:51.342Z [info]: Monthly usage: 32/100 fetches for 2026-02
+2026-02-04T00:20:51.343Z [info]: Monthly usage: 33/100 fetches for 2026-02
+2026-02-04T00:20:51.346Z [info]: Monthly usage: 34/100 fetches for 2026-02
+2026-02-04T00:20:51.347Z [info]: Monthly usage: 35/100 fetches for 2026-02
+2026-02-04T00:20:51.349Z [info]: Monthly usage: 36/100 fetches for 2026-02
+2026-02-04T00:20:51.350Z [info]: Monthly usage: 37/100 fetches for 2026-02
+2026-02-04T00:20:51.352Z [info]: Monthly usage: 38/100 fetches for 2026-02
+2026-02-04T00:20:51.354Z [info]: Monthly usage: 39/100 fetches for 2026-02
+2026-02-04T00:20:51.355Z [info]: Monthly usage: 40/100 fetches for 2026-02
+2026-02-04T00:20:51.357Z [info]: Monthly usage: 41/100 fetches for 2026-02
+2026-02-04T00:20:51.359Z [info]: Monthly usage: 42/100 fetches for 2026-02
+2026-02-04T00:20:51.360Z [info]: Monthly usage: 43/100 fetches for 2026-02
+2026-02-04T00:20:51.361Z [info]: Monthly usage: 44/100 fetches for 2026-02
+2026-02-04T00:20:51.363Z [info]: Monthly usage: 45/100 fetches for 2026-02
+2026-02-04T00:20:51.364Z [info]: Monthly usage: 46/100 fetches for 2026-02
+2026-02-04T00:20:51.366Z [info]: Monthly usage: 47/100 fetches for 2026-02
+2026-02-04T00:20:51.367Z [info]: Monthly usage: 48/100 fetches for 2026-02
+2026-02-04T00:20:51.369Z [info]: Monthly usage: 49/100 fetches for 2026-02
+2026-02-04T00:20:51.371Z [info]: Monthly usage: 50/100 fetches for 2026-02
+2026-02-04T00:20:51.372Z [info]: Monthly usage: 51/100 fetches for 2026-02
+2026-02-04T00:20:51.374Z [info]: Monthly usage: 52/100 fetches for 2026-02
+2026-02-04T00:20:51.376Z [info]: Monthly usage: 53/100 fetches for 2026-02
+2026-02-04T00:20:51.377Z [info]: Monthly usage: 54/100 fetches for 2026-02
+2026-02-04T00:20:51.378Z [info]: Monthly usage: 55/100 fetches for 2026-02
+2026-02-04T00:20:51.379Z [info]: Monthly usage: 56/100 fetches for 2026-02
+2026-02-04T00:20:51.381Z [info]: Monthly usage: 57/100 fetches for 2026-02
+2026-02-04T00:20:51.382Z [info]: Monthly usage: 58/100 fetches for 2026-02
+2026-02-04T00:20:51.384Z [info]: Monthly usage: 59/100 fetches for 2026-02
+2026-02-04T00:20:51.385Z [info]: Monthly usage: 60/100 fetches for 2026-02
+2026-02-04T00:20:51.387Z [info]: Monthly usage: 61/100 fetches for 2026-02
+2026-02-04T00:20:51.389Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164451387.pqltpgaf0n' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:51.390Z [info]: Monthly usage: 62/100 fetches for 2026-02
+2026-02-04T00:20:51.391Z [info]: Monthly usage: 63/100 fetches for 2026-02
+2026-02-04T00:20:51.393Z [info]: Monthly usage: 64/100 fetches for 2026-02
+2026-02-04T00:20:51.394Z [info]: Monthly usage: 65/100 fetches for 2026-02
+2026-02-04T00:20:51.396Z [info]: Monthly usage: 66/100 fetches for 2026-02
+2026-02-04T00:20:51.397Z [info]: Monthly usage: 67/100 fetches for 2026-02
+2026-02-04T00:20:51.399Z [info]: Monthly usage: 68/100 fetches for 2026-02
+2026-02-04T00:20:51.400Z [info]: Monthly usage: 69/100 fetches for 2026-02
+2026-02-04T00:20:51.401Z [info]: Monthly usage: 70/100 fetches for 2026-02
+2026-02-04T00:20:51.403Z [info]: Monthly usage: 71/100 fetches for 2026-02
+2026-02-04T00:20:51.405Z [info]: Monthly usage: 72/100 fetches for 2026-02
+2026-02-04T00:20:51.407Z [info]: Monthly usage: 73/100 fetches for 2026-02
+2026-02-04T00:20:51.408Z [info]: Monthly usage: 74/100 fetches for 2026-02
+2026-02-04T00:20:51.409Z [info]: Monthly usage: 75/100 fetches for 2026-02
+2026-02-04T00:20:51.411Z [info]: Monthly usage: 76/100 fetches for 2026-02
+2026-02-04T00:20:51.412Z [info]: Monthly usage: 77/100 fetches for 2026-02
+2026-02-04T00:20:51.413Z [info]: Monthly usage: 78/100 fetches for 2026-02
+2026-02-04T00:20:51.415Z [info]: Monthly usage: 79/100 fetches for 2026-02
+2026-02-04T00:20:51.416Z [info]: Monthly usage: 80/100 fetches for 2026-02
+2026-02-04T00:20:51.417Z [info]: Monthly usage: 81/100 fetches for 2026-02
+2026-02-04T00:20:51.419Z [info]: Monthly usage: 82/100 fetches for 2026-02
+2026-02-04T00:20:51.421Z [info]: Monthly usage: 83/100 fetches for 2026-02
+2026-02-04T00:20:51.422Z [info]: Monthly usage: 84/100 fetches for 2026-02
+2026-02-04T00:20:51.424Z [info]: Monthly usage: 85/100 fetches for 2026-02
+2026-02-04T00:20:51.425Z [info]: Monthly usage: 86/100 fetches for 2026-02
+2026-02-04T00:20:51.426Z [info]: Monthly usage: 87/100 fetches for 2026-02
+2026-02-04T00:20:51.427Z [info]: Monthly usage: 88/100 fetches for 2026-02
+2026-02-04T00:20:51.429Z [info]: Monthly usage: 89/100 fetches for 2026-02
+2026-02-04T00:20:51.430Z [info]: Monthly usage: 90/100 fetches for 2026-02
+2026-02-04T00:20:51.432Z [info]: Monthly usage: 91/100 fetches for 2026-02
+2026-02-04T00:20:51.433Z [info]: Monthly usage: 92/100 fetches for 2026-02
+2026-02-04T00:20:51.435Z [info]: Monthly usage: 93/100 fetches for 2026-02
+2026-02-04T00:20:51.437Z [info]: Monthly usage: 94/100 fetches for 2026-02
+2026-02-04T00:20:51.439Z [info]: Monthly usage: 95/100 fetches for 2026-02
+2026-02-04T00:20:51.441Z [info]: Monthly usage: 96/100 fetches for 2026-02
+2026-02-04T00:20:51.443Z [info]: Monthly usage: 97/100 fetches for 2026-02
+2026-02-04T00:20:51.444Z [info]: Monthly usage: 98/100 fetches for 2026-02
+2026-02-04T00:20:51.447Z [info]: Monthly usage: 99/100 fetches for 2026-02
+2026-02-04T00:20:51.449Z [info]: Monthly usage: 100/100 fetches for 2026-02
+2026-02-04T00:20:51.451Z [info]: Monthly usage: 101/100 fetches for 2026-02
+2026-02-04T00:20:51.452Z [info]: Monthly usage: 102/100 fetches for 2026-02
+2026-02-04T00:20:51.454Z [info]: Monthly usage: 103/100 fetches for 2026-02
+2026-02-04T00:20:51.456Z [info]: Monthly usage: 104/100 fetches for 2026-02
+2026-02-04T00:20:51.457Z [info]: Monthly usage: 105/100 fetches for 2026-02
+2026-02-04T00:20:51.458Z [info]: Monthly usage: 106/100 fetches for 2026-02
+2026-02-04T00:20:51.459Z [info]: Monthly usage: 107/100 fetches for 2026-02
+2026-02-04T00:20:51.461Z [info]: Monthly usage: 108/100 fetches for 2026-02
+2026-02-04T00:20:51.462Z [info]: Monthly usage: 109/100 fetches for 2026-02
+2026-02-04T00:20:51.464Z [info]: Monthly usage: 110/100 fetches for 2026-02
+2026-02-04T00:20:51.466Z [info]: Monthly usage: 111/100 fetches for 2026-02
+2026-02-04T00:20:51.467Z [info]: Monthly usage: 112/100 fetches for 2026-02
+2026-02-04T00:20:51.468Z [info]: Monthly usage: 113/100 fetches for 2026-02
+2026-02-04T00:20:51.469Z [info]: Monthly usage: 114/100 fetches for 2026-02
+2026-02-04T00:20:51.470Z [info]: Monthly usage: 115/100 fetches for 2026-02
+2026-02-04T00:20:51.472Z [info]: Monthly usage: 116/100 fetches for 2026-02
+2026-02-04T00:20:51.474Z [info]: Monthly usage: 117/100 fetches for 2026-02
+2026-02-04T00:20:51.476Z [info]: Monthly usage: 118/100 fetches for 2026-02
+2026-02-04T00:20:51.478Z [info]: Monthly usage: 119/100 fetches for 2026-02
+2026-02-04T00:20:51.480Z [info]: Monthly usage: 120/100 fetches for 2026-02
+2026-02-04T00:20:51.482Z [info]: Monthly usage: 121/100 fetches for 2026-02
+2026-02-04T00:20:51.484Z [info]: Monthly usage: 122/100 fetches for 2026-02
+2026-02-04T00:20:51.486Z [info]: Monthly usage: 123/100 fetches for 2026-02
+2026-02-04T00:20:51.488Z [info]: Monthly usage: 124/100 fetches for 2026-02
+2026-02-04T00:20:51.490Z [info]: Monthly usage: 125/100 fetches for 2026-02
+2026-02-04T00:20:51.491Z [info]: Monthly usage: 126/100 fetches for 2026-02
+2026-02-04T00:20:51.493Z [info]: Monthly usage: 127/100 fetches for 2026-02
+2026-02-04T00:20:51.494Z [info]: Monthly usage: 128/100 fetches for 2026-02
+2026-02-04T00:20:51.496Z [info]: Monthly usage: 129/100 fetches for 2026-02
+2026-02-04T00:20:51.498Z [info]: Monthly usage: 130/100 fetches for 2026-02
+2026-02-04T00:20:51.499Z [info]: Monthly usage: 131/100 fetches for 2026-02
+2026-02-04T00:20:51.501Z [info]: Monthly usage: 132/100 fetches for 2026-02
+2026-02-04T00:20:51.503Z [info]: Monthly usage: 133/100 fetches for 2026-02
+2026-02-04T00:20:51.505Z [info]: Monthly usage: 134/100 fetches for 2026-02
+2026-02-04T00:20:51.507Z [info]: Monthly usage: 135/100 fetches for 2026-02
+2026-02-04T00:20:51.508Z [info]: Monthly usage: 136/100 fetches for 2026-02
+2026-02-04T00:20:51.511Z [info]: Monthly usage: 137/100 fetches for 2026-02
+2026-02-04T00:20:51.513Z [info]: Monthly usage: 138/100 fetches for 2026-02
+2026-02-04T00:20:51.515Z [info]: Monthly usage: 139/100 fetches for 2026-02
+2026-02-04T00:20:51.516Z [info]: Monthly usage: 140/100 fetches for 2026-02
+2026-02-04T00:20:51.518Z [info]: Monthly usage: 141/100 fetches for 2026-02
+2026-02-04T00:20:51.519Z [info]: Monthly usage: 142/100 fetches for 2026-02
+2026-02-04T00:20:51.521Z [info]: Monthly usage: 143/100 fetches for 2026-02
+2026-02-04T00:20:51.522Z [info]: Monthly usage: 144/100 fetches for 2026-02
+2026-02-04T00:20:51.524Z [info]: Monthly usage: 145/100 fetches for 2026-02
+2026-02-04T00:20:51.526Z [info]: Monthly usage: 146/100 fetches for 2026-02
+2026-02-04T00:20:51.528Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164451527.e7xd7rffi8j' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:51.528Z [info]: Monthly usage: 147/100 fetches for 2026-02
+2026-02-04T00:20:51.530Z [info]: Monthly usage: 148/100 fetches for 2026-02
+2026-02-04T00:20:51.531Z [info]: Monthly usage: 149/100 fetches for 2026-02
+2026-02-04T00:20:51.533Z [info]: Monthly usage: 150/100 fetches for 2026-02
+2026-02-04T00:20:51.534Z [info]: Monthly usage: 151/100 fetches for 2026-02
+2026-02-04T00:20:51.536Z [info]: Monthly usage: 152/100 fetches for 2026-02
+2026-02-04T00:20:51.538Z [info]: Monthly usage: 153/100 fetches for 2026-02
+2026-02-04T00:20:51.541Z [info]: Monthly usage: 154/100 fetches for 2026-02
+2026-02-04T00:20:51.543Z [info]: Monthly usage: 155/100 fetches for 2026-02
+2026-02-04T00:20:51.545Z [info]: Monthly usage: 156/100 fetches for 2026-02
+2026-02-04T00:20:51.547Z [info]: Monthly usage: 157/100 fetches for 2026-02
+2026-02-04T00:20:51.548Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164451547.5x1bpkz1nrd' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:51.548Z [info]: Monthly usage: 158/100 fetches for 2026-02
+2026-02-04T00:20:51.550Z [info]: Monthly usage: 159/100 fetches for 2026-02
+2026-02-04T00:20:51.551Z [info]: Monthly usage: 160/100 fetches for 2026-02
+2026-02-04T00:20:51.552Z [info]: Monthly usage: 161/100 fetches for 2026-02
+2026-02-04T00:20:51.554Z [info]: Monthly usage: 162/100 fetches for 2026-02
+2026-02-04T00:20:51.555Z [info]: Monthly usage: 163/100 fetches for 2026-02
+2026-02-04T00:20:51.557Z [info]: Monthly usage: 164/100 fetches for 2026-02
+2026-02-04T00:20:51.559Z [info]: Monthly usage: 165/100 fetches for 2026-02
+2026-02-04T00:20:51.560Z [info]: Monthly usage: 166/100 fetches for 2026-02
+2026-02-04T00:20:51.561Z [info]: Monthly usage: 167/100 fetches for 2026-02
+2026-02-04T00:20:51.563Z [info]: Monthly usage: 168/100 fetches for 2026-02
+2026-02-04T00:20:51.565Z [info]: Monthly usage: 169/100 fetches for 2026-02
+2026-02-04T00:20:51.566Z [info]: Monthly usage: 170/100 fetches for 2026-02
+2026-02-04T00:20:51.567Z [info]: Monthly usage: 171/100 fetches for 2026-02
+2026-02-04T00:20:51.568Z [info]: Monthly usage: 172/100 fetches for 2026-02
+2026-02-04T00:20:51.570Z [info]: Monthly usage: 173/100 fetches for 2026-02
+2026-02-04T00:20:51.572Z [info]: Monthly usage: 174/100 fetches for 2026-02
+2026-02-04T00:20:51.574Z [info]: Monthly usage: 175/100 fetches for 2026-02
+2026-02-04T00:20:51.576Z [info]: Monthly usage: 176/100 fetches for 2026-02
+2026-02-04T00:20:51.578Z [info]: Monthly usage: 177/100 fetches for 2026-02
+2026-02-04T00:20:51.579Z [info]: Monthly usage: 178/100 fetches for 2026-02
+2026-02-04T00:20:51.581Z [info]: Monthly usage: 179/100 fetches for 2026-02
+2026-02-04T00:20:51.583Z [info]: Monthly usage: 180/100 fetches for 2026-02
+2026-02-04T00:20:51.584Z [info]: Monthly usage: 181/100 fetches for 2026-02
+2026-02-04T00:20:51.586Z [info]: Monthly usage: 182/100 fetches for 2026-02
+2026-02-04T00:20:51.588Z [info]: Monthly usage: 183/100 fetches for 2026-02
+2026-02-04T00:20:51.590Z [info]: Monthly usage: 184/100 fetches for 2026-02
+2026-02-04T00:20:51.592Z [info]: Monthly usage: 185/100 fetches for 2026-02
+2026-02-04T00:20:51.594Z [info]: Monthly usage: 186/100 fetches for 2026-02
+2026-02-04T00:20:51.596Z [info]: Monthly usage: 187/100 fetches for 2026-02
+2026-02-04T00:20:51.598Z [info]: Monthly usage: 188/100 fetches for 2026-02
+2026-02-04T00:20:51.600Z [info]: Monthly usage: 189/100 fetches for 2026-02
+2026-02-04T00:20:51.602Z [info]: Monthly usage: 190/100 fetches for 2026-02
+2026-02-04T00:20:51.605Z [info]: Monthly usage: 191/100 fetches for 2026-02
+2026-02-04T00:20:51.608Z [info]: Monthly usage: 192/100 fetches for 2026-02
+2026-02-04T00:20:51.610Z [info]: Monthly usage: 193/100 fetches for 2026-02
+2026-02-04T00:20:51.612Z [info]: Monthly usage: 194/100 fetches for 2026-02
+2026-02-04T00:20:51.614Z [info]: Monthly usage: 195/100 fetches for 2026-02
+2026-02-04T00:20:51.616Z [info]: Monthly usage: 196/100 fetches for 2026-02
+2026-02-04T00:20:51.618Z [info]: Monthly usage: 197/100 fetches for 2026-02
+2026-02-04T00:20:51.621Z [info]: Monthly usage: 198/100 fetches for 2026-02
+2026-02-04T00:20:51.623Z [info]: Monthly usage: 199/100 fetches for 2026-02
+2026-02-04T00:20:51.625Z [info]: Monthly usage: 200/100 fetches for 2026-02
+2026-02-04T00:20:51.628Z [info]: Monthly usage: 201/100 fetches for 2026-02
+2026-02-04T00:20:51.630Z [info]: Monthly usage: 202/100 fetches for 2026-02
+2026-02-04T00:20:51.632Z [info]: Monthly usage: 203/100 fetches for 2026-02
+2026-02-04T00:20:51.635Z [info]: Monthly usage: 204/100 fetches for 2026-02
+2026-02-04T00:20:51.638Z [info]: Monthly usage: 205/100 fetches for 2026-02
+2026-02-04T00:20:51.640Z [info]: Monthly usage: 206/100 fetches for 2026-02
+2026-02-04T00:20:51.641Z [info]: Monthly usage: 207/100 fetches for 2026-02
+2026-02-04T00:20:51.643Z [info]: Monthly usage: 208/100 fetches for 2026-02
+2026-02-04T00:20:51.645Z [info]: Monthly usage: 209/100 fetches for 2026-02
+2026-02-04T00:20:51.647Z [info]: Monthly usage: 210/100 fetches for 2026-02
+2026-02-04T00:20:51.649Z [info]: Monthly usage: 211/100 fetches for 2026-02
+2026-02-04T00:20:51.652Z [info]: Monthly usage: 212/100 fetches for 2026-02
+2026-02-04T00:20:51.654Z [info]: Monthly usage: 213/100 fetches for 2026-02
+2026-02-04T00:20:51.656Z [info]: Monthly usage: 214/100 fetches for 2026-02
+2026-02-04T00:20:51.659Z [info]: Monthly usage: 215/100 fetches for 2026-02
+2026-02-04T00:20:51.661Z [info]: Monthly usage: 216/100 fetches for 2026-02
+2026-02-04T00:20:51.663Z [info]: Monthly usage: 217/100 fetches for 2026-02
+2026-02-04T00:20:51.664Z [info]: Monthly usage: 218/100 fetches for 2026-02
+2026-02-04T00:20:51.667Z [info]: Monthly usage: 219/100 fetches for 2026-02
+2026-02-04T00:20:51.669Z [info]: Monthly usage: 220/100 fetches for 2026-02
+2026-02-04T00:20:51.671Z [info]: Monthly usage: 221/100 fetches for 2026-02
+2026-02-04T00:20:51.673Z [info]: Monthly usage: 222/100 fetches for 2026-02
+2026-02-04T00:20:51.675Z [info]: Monthly usage: 223/100 fetches for 2026-02
+2026-02-04T00:20:51.676Z [info]: Monthly usage: 224/100 fetches for 2026-02
+2026-02-04T00:20:51.678Z [info]: Monthly usage: 225/100 fetches for 2026-02
+2026-02-04T00:20:51.680Z [info]: Monthly usage: 226/100 fetches for 2026-02
+2026-02-04T00:20:51.683Z [info]: Monthly usage: 227/100 fetches for 2026-02
+2026-02-04T00:20:51.685Z [info]: Monthly usage: 228/100 fetches for 2026-02
+2026-02-04T00:20:51.687Z [info]: Monthly usage: 229/100 fetches for 2026-02
+2026-02-04T00:20:51.689Z [info]: Monthly usage: 230/100 fetches for 2026-02
+2026-02-04T00:20:51.691Z [info]: Monthly usage: 231/100 fetches for 2026-02
+2026-02-04T00:20:51.693Z [info]: Monthly usage: 232/100 fetches for 2026-02
+2026-02-04T00:20:51.695Z [info]: Monthly usage: 233/100 fetches for 2026-02
+2026-02-04T00:20:51.697Z [info]: Monthly usage: 234/100 fetches for 2026-02
+2026-02-04T00:20:51.699Z [info]: Monthly usage: 235/100 fetches for 2026-02
+2026-02-04T00:20:51.701Z [info]: Monthly usage: 236/100 fetches for 2026-02
+2026-02-04T00:20:51.704Z [info]: Monthly usage: 237/100 fetches for 2026-02
+2026-02-04T00:20:51.706Z [info]: Monthly usage: 238/100 fetches for 2026-02
+2026-02-04T00:20:51.708Z [info]: Monthly usage: 239/100 fetches for 2026-02
+2026-02-04T00:20:51.710Z [info]: Monthly usage: 240/100 fetches for 2026-02
+2026-02-04T00:20:51.712Z [info]: Monthly usage: 241/100 fetches for 2026-02
+2026-02-04T00:20:51.714Z [info]: Monthly usage: 242/100 fetches for 2026-02
+2026-02-04T00:20:51.716Z [info]: Monthly usage: 243/100 fetches for 2026-02
+2026-02-04T00:20:51.717Z [info]: Monthly usage: 244/100 fetches for 2026-02
+2026-02-04T00:20:51.719Z [info]: Monthly usage: 245/100 fetches for 2026-02
+2026-02-04T00:20:51.720Z [info]: Monthly usage: 246/100 fetches for 2026-02
+2026-02-04T00:20:51.722Z [info]: Monthly usage: 247/100 fetches for 2026-02
+2026-02-04T00:20:51.723Z [info]: Monthly usage: 248/100 fetches for 2026-02
+2026-02-04T00:20:51.725Z [info]: Monthly usage: 249/100 fetches for 2026-02
+2026-02-04T00:20:51.727Z [info]: Monthly usage: 250/100 fetches for 2026-02
+2026-02-04T00:20:51.729Z [info]: Monthly usage: 251/100 fetches for 2026-02
+2026-02-04T00:20:51.730Z [info]: Monthly usage: 252/100 fetches for 2026-02
+2026-02-04T00:20:51.731Z [info]: Monthly usage: 253/100 fetches for 2026-02
+2026-02-04T00:20:51.733Z [info]: Monthly usage: 254/100 fetches for 2026-02
+2026-02-04T00:20:51.734Z [info]: Monthly usage: 255/100 fetches for 2026-02
+2026-02-04T00:20:51.735Z [info]: Monthly usage: 256/100 fetches for 2026-02
+2026-02-04T00:20:51.737Z [info]: Monthly usage: 257/100 fetches for 2026-02
+2026-02-04T00:20:51.738Z [info]: Monthly usage: 258/100 fetches for 2026-02
+2026-02-04T00:20:51.740Z [info]: Monthly usage: 259/100 fetches for 2026-02
+2026-02-04T00:20:51.741Z [info]: Monthly usage: 260/100 fetches for 2026-02
+2026-02-04T00:20:51.743Z [info]: Monthly usage: 261/100 fetches for 2026-02
+2026-02-04T00:20:51.744Z [info]: Monthly usage: 262/100 fetches for 2026-02
+2026-02-04T00:20:51.746Z [info]: Monthly usage: 263/100 fetches for 2026-02
+2026-02-04T00:20:51.747Z [info]: Monthly usage: 264/100 fetches for 2026-02
+2026-02-04T00:20:51.748Z [info]: Monthly usage: 265/100 fetches for 2026-02
+2026-02-04T00:20:51.750Z [info]: Monthly usage: 266/100 fetches for 2026-02
+2026-02-04T00:20:51.751Z [info]: Monthly usage: 267/100 fetches for 2026-02
+2026-02-04T00:20:51.752Z [info]: Monthly usage: 268/100 fetches for 2026-02
+2026-02-04T00:20:51.753Z [info]: Monthly usage: 269/100 fetches for 2026-02
+2026-02-04T00:20:51.755Z [info]: Monthly usage: 270/100 fetches for 2026-02
+2026-02-04T00:20:51.756Z [info]: Monthly usage: 271/100 fetches for 2026-02
+2026-02-04T00:20:51.758Z [info]: Monthly usage: 272/100 fetches for 2026-02
+2026-02-04T00:20:51.759Z [info]: Monthly usage: 273/100 fetches for 2026-02
+2026-02-04T00:20:51.761Z [info]: Monthly usage: 274/100 fetches for 2026-02
+2026-02-04T00:20:51.762Z [info]: Monthly usage: 275/100 fetches for 2026-02
+2026-02-04T00:20:51.764Z [info]: Monthly usage: 276/100 fetches for 2026-02
+2026-02-04T00:20:51.765Z [info]: Monthly usage: 277/100 fetches for 2026-02
+2026-02-04T00:20:51.766Z [info]: Monthly usage: 278/100 fetches for 2026-02
+2026-02-04T00:20:51.767Z [info]: Monthly usage: 279/100 fetches for 2026-02
+2026-02-04T00:20:51.769Z [info]: Monthly usage: 280/100 fetches for 2026-02
+2026-02-04T00:20:51.770Z [info]: Monthly usage: 281/100 fetches for 2026-02
+2026-02-04T00:20:51.772Z [info]: Monthly usage: 282/100 fetches for 2026-02
+2026-02-04T00:20:51.773Z [info]: Monthly usage: 283/100 fetches for 2026-02
+2026-02-04T00:20:51.775Z [info]: Monthly usage: 284/100 fetches for 2026-02
+2026-02-04T00:20:51.776Z [info]: Monthly usage: 285/100 fetches for 2026-02
+2026-02-04T00:20:51.777Z [info]: Monthly usage: 286/100 fetches for 2026-02
+2026-02-04T00:20:51.779Z [info]: Monthly usage: 287/100 fetches for 2026-02
+2026-02-04T00:20:51.780Z [info]: Monthly usage: 288/100 fetches for 2026-02
+2026-02-04T00:20:51.781Z [info]: Monthly usage: 289/100 fetches for 2026-02
+2026-02-04T00:20:51.783Z [info]: Monthly usage: 290/100 fetches for 2026-02
+2026-02-04T00:20:51.784Z [info]: Monthly usage: 291/100 fetches for 2026-02
+2026-02-04T00:20:51.785Z [info]: Monthly usage: 292/100 fetches for 2026-02
+2026-02-04T00:20:51.787Z [info]: Monthly usage: 293/100 fetches for 2026-02
+2026-02-04T00:20:51.788Z [info]: Monthly usage: 294/100 fetches for 2026-02
+2026-02-04T00:20:51.789Z [info]: Monthly usage: 295/100 fetches for 2026-02
+2026-02-04T00:20:51.791Z [info]: Monthly usage: 296/100 fetches for 2026-02
+2026-02-04T00:20:51.792Z [info]: Monthly usage: 297/100 fetches for 2026-02
+2026-02-04T00:20:51.793Z [info]: Monthly usage: 298/100 fetches for 2026-02
+2026-02-04T00:20:51.795Z [info]: Monthly usage: 299/100 fetches for 2026-02
+2026-02-04T00:20:51.796Z [info]: Monthly usage: 300/100 fetches for 2026-02
+2026-02-04T00:20:51.797Z [info]: Monthly usage: 301/100 fetches for 2026-02
+2026-02-04T00:20:51.799Z [info]: Monthly usage: 302/100 fetches for 2026-02
+2026-02-04T00:20:51.800Z [info]: Monthly usage: 303/100 fetches for 2026-02
+2026-02-04T00:20:51.801Z [info]: Monthly usage: 304/100 fetches for 2026-02
+2026-02-04T00:20:51.802Z [info]: Monthly usage: 305/100 fetches for 2026-02
+2026-02-04T00:20:51.807Z [info]: Monthly usage: 306/100 fetches for 2026-02
+2026-02-04T00:20:51.808Z [info]: Monthly usage: 307/100 fetches for 2026-02
+2026-02-04T00:20:51.810Z [info]: Monthly usage: 308/100 fetches for 2026-02
+2026-02-04T00:20:51.811Z [info]: Monthly usage: 309/100 fetches for 2026-02
+2026-02-04T00:20:51.812Z [info]: Monthly usage: 310/100 fetches for 2026-02
+2026-02-04T00:20:51.814Z [info]: Monthly usage: 311/100 fetches for 2026-02
+2026-02-04T00:20:51.815Z [info]: Monthly usage: 312/100 fetches for 2026-02
+2026-02-04T00:20:51.816Z [info]: Monthly usage: 313/100 fetches for 2026-02
+2026-02-04T00:20:51.818Z [info]: Monthly usage: 314/100 fetches for 2026-02
+2026-02-04T00:20:51.820Z [info]: Monthly usage: 315/100 fetches for 2026-02
+2026-02-04T00:20:51.821Z [info]: Monthly usage: 316/100 fetches for 2026-02
+2026-02-04T00:20:51.822Z [info]: Monthly usage: 317/100 fetches for 2026-02
+2026-02-04T00:20:51.823Z [info]: Monthly usage: 318/100 fetches for 2026-02
+2026-02-04T00:20:51.824Z [info]: Monthly usage: 319/100 fetches for 2026-02
+2026-02-04T00:20:51.826Z [info]: Monthly usage: 320/100 fetches for 2026-02
+2026-02-04T00:20:51.827Z [info]: Monthly usage: 321/100 fetches for 2026-02
+2026-02-04T00:20:51.828Z [info]: Monthly usage: 322/100 fetches for 2026-02
+2026-02-04T00:20:51.829Z [info]: Monthly usage: 323/100 fetches for 2026-02
+2026-02-04T00:20:51.830Z [info]: Monthly usage: 324/100 fetches for 2026-02
+2026-02-04T00:20:51.831Z [info]: Monthly usage: 325/100 fetches for 2026-02
+2026-02-04T00:20:51.833Z [info]: Monthly usage: 326/100 fetches for 2026-02
+2026-02-04T00:20:51.834Z [info]: Monthly usage: 327/100 fetches for 2026-02
+2026-02-04T00:20:51.836Z [info]: Monthly usage: 328/100 fetches for 2026-02
+2026-02-04T00:20:51.838Z [info]: Monthly usage: 329/100 fetches for 2026-02
+2026-02-04T00:20:51.839Z [info]: Monthly usage: 330/100 fetches for 2026-02
+2026-02-04T00:20:51.840Z [info]: Monthly usage: 331/100 fetches for 2026-02
+2026-02-04T00:20:51.841Z [info]: Monthly usage: 332/100 fetches for 2026-02
+2026-02-04T00:20:51.843Z [info]: Monthly usage: 333/100 fetches for 2026-02
+2026-02-04T00:20:51.844Z [info]: Monthly usage: 334/100 fetches for 2026-02
+2026-02-04T00:20:51.845Z [info]: Monthly usage: 335/100 fetches for 2026-02
+2026-02-04T00:20:51.846Z [info]: Monthly usage: 336/100 fetches for 2026-02
+2026-02-04T00:20:51.847Z [info]: Monthly usage: 337/100 fetches for 2026-02
+2026-02-04T00:20:51.849Z [info]: Monthly usage: 338/100 fetches for 2026-02
+2026-02-04T00:20:51.850Z [info]: Monthly usage: 339/100 fetches for 2026-02
+2026-02-04T00:20:51.851Z [info]: Monthly usage: 340/100 fetches for 2026-02
+2026-02-04T00:20:51.852Z [info]: Monthly usage: 341/100 fetches for 2026-02
+2026-02-04T00:20:51.854Z [info]: Monthly usage: 342/100 fetches for 2026-02
+2026-02-04T00:20:51.855Z [info]: Monthly usage: 343/100 fetches for 2026-02
+2026-02-04T00:20:51.856Z [info]: Monthly usage: 344/100 fetches for 2026-02
+2026-02-04T00:20:51.857Z [info]: Monthly usage: 345/100 fetches for 2026-02
+2026-02-04T00:20:51.859Z [info]: Monthly usage: 346/100 fetches for 2026-02
+2026-02-04T00:20:51.860Z [info]: Monthly usage: 347/100 fetches for 2026-02
+2026-02-04T00:20:51.861Z [info]: Monthly usage: 348/100 fetches for 2026-02
+2026-02-04T00:20:51.863Z [info]: Monthly usage: 349/100 fetches for 2026-02
+2026-02-04T00:20:51.864Z [info]: Monthly usage: 350/100 fetches for 2026-02
+2026-02-04T00:20:51.865Z [info]: Monthly usage: 351/100 fetches for 2026-02
+2026-02-04T00:20:51.867Z [info]: Monthly usage: 352/100 fetches for 2026-02
+2026-02-04T00:20:51.868Z [info]: Monthly usage: 353/100 fetches for 2026-02
+2026-02-04T00:20:51.869Z [info]: Monthly usage: 354/100 fetches for 2026-02
+2026-02-04T00:20:51.870Z [info]: Monthly usage: 355/100 fetches for 2026-02
+2026-02-04T00:20:51.872Z [info]: Monthly usage: 356/100 fetches for 2026-02
+2026-02-04T00:20:51.873Z [info]: Monthly usage: 357/100 fetches for 2026-02
+2026-02-04T00:20:51.874Z [info]: Monthly usage: 358/100 fetches for 2026-02
+2026-02-04T00:20:51.876Z [info]: Monthly usage: 359/100 fetches for 2026-02
+2026-02-04T00:20:51.877Z [info]: Monthly usage: 360/100 fetches for 2026-02
+2026-02-04T00:20:51.878Z [info]: Monthly usage: 361/100 fetches for 2026-02
+2026-02-04T00:20:51.880Z [info]: Monthly usage: 362/100 fetches for 2026-02
+2026-02-04T00:20:51.881Z [info]: Monthly usage: 363/100 fetches for 2026-02
+2026-02-04T00:20:51.882Z [info]: Monthly usage: 364/100 fetches for 2026-02
+2026-02-04T00:20:51.884Z [info]: Monthly usage: 365/100 fetches for 2026-02
+2026-02-04T00:20:51.886Z [info]: Monthly usage: 366/100 fetches for 2026-02
+2026-02-04T00:20:51.887Z [info]: Monthly usage: 367/100 fetches for 2026-02
+2026-02-04T00:20:51.888Z [info]: Monthly usage: 368/100 fetches for 2026-02
+2026-02-04T00:20:51.889Z [info]: Monthly usage: 369/100 fetches for 2026-02
+2026-02-04T00:20:51.891Z [info]: Monthly usage: 370/100 fetches for 2026-02
+2026-02-04T00:20:51.892Z [info]: Monthly usage: 371/100 fetches for 2026-02
+2026-02-04T00:20:51.893Z [info]: Monthly usage: 372/100 fetches for 2026-02
+2026-02-04T00:20:51.894Z [info]: Monthly usage: 373/100 fetches for 2026-02
+2026-02-04T00:20:51.896Z [info]: Monthly usage: 374/100 fetches for 2026-02
+2026-02-04T00:20:51.897Z [info]: Monthly usage: 375/100 fetches for 2026-02
+2026-02-04T00:20:51.899Z [info]: Monthly usage: 376/100 fetches for 2026-02
+2026-02-04T00:20:51.900Z [info]: Monthly usage: 377/100 fetches for 2026-02
+2026-02-04T00:20:51.901Z [info]: Monthly usage: 378/100 fetches for 2026-02
+2026-02-04T00:20:51.903Z [info]: Monthly usage: 379/100 fetches for 2026-02
+2026-02-04T00:20:51.904Z [info]: Monthly usage: 380/100 fetches for 2026-02
+2026-02-04T00:20:51.905Z [info]: Monthly usage: 381/100 fetches for 2026-02
+2026-02-04T00:20:51.907Z [info]: Monthly usage: 382/100 fetches for 2026-02
+2026-02-04T00:20:51.908Z [info]: Monthly usage: 383/100 fetches for 2026-02
+2026-02-04T00:20:51.909Z [info]: Monthly usage: 384/100 fetches for 2026-02
+2026-02-04T00:20:51.910Z [info]: Monthly usage: 385/100 fetches for 2026-02
+2026-02-04T00:20:51.912Z [info]: Monthly usage: 386/100 fetches for 2026-02
+2026-02-04T00:20:51.914Z [info]: Monthly usage: 387/100 fetches for 2026-02
+2026-02-04T00:20:51.915Z [info]: Monthly usage: 388/100 fetches for 2026-02
+2026-02-04T00:20:51.917Z [info]: Monthly usage: 389/100 fetches for 2026-02
+2026-02-04T00:20:51.918Z [info]: Monthly usage: 390/100 fetches for 2026-02
+2026-02-04T00:20:51.920Z [info]: Monthly usage: 391/100 fetches for 2026-02
+2026-02-04T00:20:51.922Z [info]: Monthly usage: 392/100 fetches for 2026-02
+2026-02-04T00:20:51.923Z [info]: Monthly usage: 393/100 fetches for 2026-02
+2026-02-04T00:20:51.924Z [info]: Monthly usage: 394/100 fetches for 2026-02
+2026-02-04T00:20:51.926Z [info]: Monthly usage: 395/100 fetches for 2026-02
+2026-02-04T00:20:51.928Z [info]: Monthly usage: 396/100 fetches for 2026-02
+2026-02-04T00:20:51.929Z [info]: Monthly usage: 397/100 fetches for 2026-02
+2026-02-04T00:20:51.930Z [info]: Monthly usage: 398/100 fetches for 2026-02
+2026-02-04T00:20:51.932Z [info]: Monthly usage: 399/100 fetches for 2026-02
+2026-02-04T00:20:51.933Z [info]: Monthly usage: 400/100 fetches for 2026-02
+2026-02-04T00:20:51.935Z [info]: Monthly usage: 401/100 fetches for 2026-02
+2026-02-04T00:20:51.936Z [info]: Monthly usage: 402/100 fetches for 2026-02
+2026-02-04T00:20:51.937Z [info]: Monthly usage: 403/100 fetches for 2026-02
+2026-02-04T00:20:51.939Z [info]: Monthly usage: 404/100 fetches for 2026-02
+2026-02-04T00:20:51.940Z [info]: Monthly usage: 405/100 fetches for 2026-02
+2026-02-04T00:20:51.942Z [info]: Monthly usage: 406/100 fetches for 2026-02
+2026-02-04T00:20:51.943Z [info]: Monthly usage: 407/100 fetches for 2026-02
+2026-02-04T00:20:51.945Z [info]: Monthly usage: 408/100 fetches for 2026-02
+2026-02-04T00:20:51.947Z [info]: Monthly usage: 409/100 fetches for 2026-02
+2026-02-04T00:20:51.948Z [info]: Monthly usage: 410/100 fetches for 2026-02
+2026-02-04T00:20:51.949Z [info]: Monthly usage: 411/100 fetches for 2026-02
+2026-02-04T00:20:51.951Z [info]: Monthly usage: 412/100 fetches for 2026-02
+2026-02-04T00:20:51.953Z [info]: Monthly usage: 413/100 fetches for 2026-02
+2026-02-04T00:20:51.954Z [info]: Monthly usage: 414/100 fetches for 2026-02
+2026-02-04T00:20:51.956Z [info]: Monthly usage: 415/100 fetches for 2026-02
+2026-02-04T00:20:51.957Z [info]: Monthly usage: 416/100 fetches for 2026-02
+2026-02-04T00:20:51.958Z [info]: Monthly usage: 417/100 fetches for 2026-02
+2026-02-04T00:20:51.960Z [info]: Monthly usage: 418/100 fetches for 2026-02
+2026-02-04T00:20:51.962Z [info]: Monthly usage: 419/100 fetches for 2026-02
+2026-02-04T00:20:51.964Z [info]: Monthly usage: 420/100 fetches for 2026-02
+2026-02-04T00:20:51.965Z [info]: Monthly usage: 421/100 fetches for 2026-02
+2026-02-04T00:20:51.966Z [info]: Monthly usage: 422/100 fetches for 2026-02
+2026-02-04T00:20:51.968Z [info]: Monthly usage: 423/100 fetches for 2026-02
+2026-02-04T00:20:51.969Z [info]: Monthly usage: 424/100 fetches for 2026-02
+2026-02-04T00:20:51.971Z [info]: Monthly usage: 425/100 fetches for 2026-02
+2026-02-04T00:20:51.973Z [info]: Monthly usage: 426/100 fetches for 2026-02
+2026-02-04T00:20:51.974Z [info]: Monthly usage: 427/100 fetches for 2026-02
+2026-02-04T00:20:51.976Z [info]: Monthly usage: 428/100 fetches for 2026-02
+2026-02-04T00:20:51.977Z [info]: Monthly usage: 429/100 fetches for 2026-02
+2026-02-04T00:20:52.863Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:52.865Z [info]: Monthly usage: 1/100 fetches for 2025-02
+2026-02-04T00:20:52.899Z [info]: Monthly usage: 1/100 fetches for 2024-12
+2026-02-04T00:20:52.901Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:52.945Z [info]: Monthly usage: 1/100 fetches for 2025-01
+2026-02-04T00:20:52.948Z [info]: Monthly usage: 1/100 fetches for 2025-09
+PASS tests/monthlyUsageTracker.test.ts
+  monthlyUsageTracker
+    getCurrentMonthKey
+      ΓêÜ should return current month in YYYY-MM format (40 ms)
+    getFetchCount
+      ΓêÜ should return 0 for new month (28 ms)
+      ΓêÜ should return current count for month (42 ms)
+      ΓêÜ should accept custom month key (40 ms)
+    incrementFetch
+      ΓêÜ should increment fetch count (31 ms)
+      ΓêÜ should persist to file (30 ms)
+      ΓêÜ should set firstFetchAt timestamp on first increment (29 ms)
+      ΓêÜ should increment for specific month (31 ms)
+    isLimitReached
+      ΓêÜ should return false when under limit (28 ms)
+      ΓêÜ should return true when at limit (173 ms)
+      ΓêÜ should return true when over limit (171 ms)
+      ΓêÜ should check specific month (169 ms)
+    markLimitReached
+      ΓêÜ should set count to limit (38 ms)
+      ΓêÜ should work for month with no previous fetches (34 ms)
+      ΓêÜ should update existing month record (31 ms)
+      ΓêÜ should work for specific month (31 ms)
+      ΓêÜ should persist to file (29 ms)
+    persistence
+      ΓêÜ should load existing usage data on creation (29 ms)
+      ΓêÜ should handle multiple months (40 ms)
+      ΓêÜ should handle malformed usage file gracefully (30 ms)
+      ΓêÜ should handle empty usage file (39 ms)
+      ΓêÜ should maintain data across multiple operations (97 ms)
+      ΓêÜ should create valid JSON format (45 ms)
+    edge cases
+      ΓêÜ should handle rapid increments (1564 ms)
+      ΓêÜ should handle month boundary correctly (42 ms)
+      ΓêÜ should handle year boundary (36 ms)
+      ΓêÜ should pad month numbers with zero (47 ms)
+
+2026-02-04T00:20:51.979Z [info]: Monthly usage: 430/100 fetches for 2026-02
+2026-02-04T00:20:51.980Z [info]: Monthly usage: 431/100 fetches for 2026-02
+2026-02-04T00:20:51.982Z [info]: Monthly usage: 432/100 fetches for 2026-02
+2026-02-04T00:20:51.983Z [info]: Monthly usage: 433/100 fetches for 2026-02
+2026-02-04T00:20:51.984Z [info]: Monthly usage: 434/100 fetches for 2026-02
+2026-02-04T00:20:51.985Z [info]: Monthly usage: 435/100 fetches for 2026-02
+2026-02-04T00:20:51.987Z [info]: Monthly usage: 436/100 fetches for 2026-02
+2026-02-04T00:20:51.988Z [info]: Monthly usage: 437/100 fetches for 2026-02
+2026-02-04T00:20:51.990Z [info]: Monthly usage: 438/100 fetches for 2026-02
+2026-02-04T00:20:51.991Z [info]: Monthly usage: 439/100 fetches for 2026-02
+2026-02-04T00:20:51.994Z [info]: Monthly usage: 440/100 fetches for 2026-02
+2026-02-04T00:20:51.996Z [info]: Monthly usage: 441/100 fetches for 2026-02
+2026-02-04T00:20:51.997Z [info]: Monthly usage: 442/100 fetches for 2026-02
+2026-02-04T00:20:51.998Z [info]: Monthly usage: 443/100 fetches for 2026-02
+2026-02-04T00:20:52.000Z [info]: Monthly usage: 444/100 fetches for 2026-02
+2026-02-04T00:20:52.001Z [info]: Monthly usage: 445/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 446/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 447/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 448/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 449/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 450/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 451/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 452/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 453/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 454/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 455/100 fetches for 2026-02
+2026-02-04T00:20:53.652Z [info]: Monthly usage: 456/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 457/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 458/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 459/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 460/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 461/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 462/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 463/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 464/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 465/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 466/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 467/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 468/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 469/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 470/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 471/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 472/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 473/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 474/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 475/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 476/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 477/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 478/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 479/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 480/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 481/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 482/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 483/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 484/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 485/100 fetches for 2026-02
+2026-02-04T00:20:53.653Z [info]: Monthly usage: 486/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 487/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 488/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 489/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 490/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 491/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 492/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 493/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 494/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 495/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 496/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 497/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 498/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 499/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 500/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 501/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 502/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 503/100 fetches for 2026-02
+2026-02-04T00:20:53.654Z [info]: Monthly usage: 504/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 505/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 506/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 507/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 508/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 509/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 510/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 511/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 512/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 513/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 514/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 515/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 516/100 fetches for 2026-02
+2026-02-04T00:20:53.655Z [info]: Monthly usage: 517/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 518/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 519/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 520/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 521/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 522/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 523/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 524/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 525/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 526/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 527/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 528/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 529/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 530/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 531/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 532/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 533/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 534/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 535/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 536/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 537/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 538/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 539/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 540/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 541/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 542/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 543/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 544/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 545/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 546/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 547/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 548/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 549/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 550/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 551/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 552/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 553/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 554/100 fetches for 2026-02
+2026-02-04T00:20:53.656Z [info]: Monthly usage: 555/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 556/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 557/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 558/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 559/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 560/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 561/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 562/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 563/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 564/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 565/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 566/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 567/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 568/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 569/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 570/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 571/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 572/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 573/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 574/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 575/100 fetches for 2026-02
+2026-02-04T00:20:53.657Z [info]: Monthly usage: 576/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 577/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 578/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 579/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 580/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 581/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 582/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 583/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 584/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 585/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 586/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 587/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 588/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 589/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 590/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 591/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 592/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 593/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 594/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 595/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 596/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 597/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 598/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 599/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 600/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 601/100 fetches for 2026-02
+2026-02-04T00:20:53.658Z [info]: Monthly usage: 602/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 603/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 604/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 605/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 606/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 607/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 608/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 609/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 610/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 611/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 612/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 613/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 614/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 615/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 616/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 617/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 618/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 619/100 fetches for 2026-02
+2026-02-04T00:20:53.659Z [info]: Monthly usage: 620/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 621/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 622/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 623/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 624/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 625/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 626/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 627/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 628/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 629/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 630/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 631/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 632/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 633/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 634/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 635/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 636/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 637/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 638/100 fetches for 2026-02
+2026-02-04T00:20:53.660Z [info]: Monthly usage: 639/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 640/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 641/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 642/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 643/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 644/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 645/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 646/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 647/100 fetches for 2026-02
+2026-02-04T00:20:53.661Z [info]: Monthly usage: 648/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 649/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 650/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 651/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 652/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 653/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 654/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 655/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 656/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 657/100 fetches for 2026-02
+2026-02-04T00:20:53.662Z [info]: Monthly usage: 658/100 fetches for 2026-02
+2026-02-04T00:20:53.746Z [info]: Monthly usage: 659/100 fetches for 2026-02
+2026-02-04T00:20:53.746Z [info]: Monthly usage: 660/100 fetches for 2026-02
+2026-02-04T00:20:53.746Z [info]: Monthly usage: 661/100 fetches for 2026-02
+2026-02-04T00:20:53.746Z [info]: Monthly usage: 662/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 663/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 664/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 665/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 666/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 667/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 668/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 669/100 fetches for 2026-02
+2026-02-04T00:20:53.747Z [info]: Monthly usage: 670/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 671/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 672/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 673/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 674/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 675/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 676/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 677/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 678/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 679/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 680/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 681/100 fetches for 2026-02
+2026-02-04T00:20:53.748Z [info]: Monthly usage: 682/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 683/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 684/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 685/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 686/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 687/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 688/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 689/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 690/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452372.a0d7pwrmipr' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 691/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452374.wqpa3p3fzh' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 692/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452376.znu9hnya3qs' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 693/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 694/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 695/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 696/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 697/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452384.d3omj5i5r2w' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 698/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 699/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452387.g7e5o055gb' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 700/100 fetches for 2026-02
+2026-02-04T00:20:53.749Z [info]: Monthly usage: 701/100 fetches for 2026-02
+2026-02-04T00:20:53.750Z [info]: Monthly usage: 702/100 fetches for 2026-02
+2026-02-04T00:20:53.750Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452391.x8bhscfuvi' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.750Z [info]: Monthly usage: 703/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 704/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 705/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 706/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 707/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 708/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 709/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 710/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 711/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452406.wuatiko8q8h' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 712/100 fetches for 2026-02
+2026-02-04T00:20:53.751Z [info]: Monthly usage: 713/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [error]: Failed to atomically write JSON to C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json: Error: EPERM: operation not permitted, rename 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json.tmp.1770164452410.2px5qahb7dg' -> 'C:\Users\Daniel\broteam-translate-bot\.monthly-fetch-usage.json'
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 714/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 715/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 716/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 717/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 718/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 719/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 720/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 721/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 722/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 723/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 724/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 725/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 726/100 fetches for 2026-02
+2026-02-04T00:20:53.752Z [info]: Monthly usage: 727/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 728/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 729/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 730/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 731/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 732/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 733/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 734/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 735/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 736/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 737/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 738/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 739/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 740/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 741/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 742/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 743/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 744/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 745/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 746/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 747/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 748/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 749/100 fetches for 2026-02
+2026-02-04T00:20:53.753Z [info]: Monthly usage: 750/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 751/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 752/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 753/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 754/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 755/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 756/100 fetches for 2026-02
+2026-02-04T00:20:53.754Z [info]: Monthly usage: 757/100 fetches for 2026-02
+2026-02-04T00:20:53.755Z [info]: Monthly usage: 758/100 fetches for 2026-02
+2026-02-04T00:20:53.755Z [info]: Monthly usage: 759/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 760/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 761/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 762/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 763/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 764/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 765/100 fetches for 2026-02
+2026-02-04T00:20:53.756Z [info]: Monthly usage: 766/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 767/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 768/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 769/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 770/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 771/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 772/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 773/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 774/100 fetches for 2026-02
+2026-02-04T00:20:53.757Z [info]: Monthly usage: 775/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 776/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 777/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 778/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 779/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 780/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 781/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 782/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 783/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 784/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 785/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 786/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 787/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 788/100 fetches for 2026-02
+2026-02-04T00:20:53.758Z [info]: Monthly usage: 789/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 790/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 791/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 792/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 793/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 794/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 795/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 796/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 797/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 798/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 799/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 800/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 801/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 802/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 803/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 804/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 805/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 806/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 807/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 808/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 809/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 810/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 811/100 fetches for 2026-02
+2026-02-04T00:20:53.759Z [info]: Monthly usage: 812/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 813/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 814/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 815/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 816/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 817/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 818/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 819/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 820/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 821/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 822/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 823/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 824/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 825/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 826/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 827/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 828/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 829/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 830/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 831/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 832/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 833/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 834/100 fetches for 2026-02
+2026-02-04T00:20:53.760Z [info]: Monthly usage: 835/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 836/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 837/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 838/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 839/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 840/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 841/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 842/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 843/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 844/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 845/100 fetches for 2026-02
+2026-02-04T00:20:53.838Z [info]: Monthly usage: 846/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 847/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 848/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 849/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 850/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 851/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 852/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 853/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 854/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 855/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 856/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 857/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 858/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 859/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 860/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 861/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 862/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 863/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 864/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 865/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 866/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 867/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 868/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 869/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 870/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 871/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 872/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 873/100 fetches for 2026-02
+2026-02-04T00:20:53.839Z [info]: Monthly usage: 874/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 875/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 876/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 877/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 878/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 879/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 880/100 fetches for 2026-02
+2026-02-04T00:20:53.840Z [info]: Monthly usage: 881/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 882/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 883/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 884/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 885/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 886/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 887/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 888/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 889/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 890/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 891/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 892/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 893/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 894/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 895/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 896/100 fetches for 2026-02
+2026-02-04T00:20:53.841Z [info]: Monthly usage: 897/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 898/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 899/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 900/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 901/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 902/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 903/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 904/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 905/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 906/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 907/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 908/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 909/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 910/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 911/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 912/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 913/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 914/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 915/100 fetches for 2026-02
+2026-02-04T00:20:53.842Z [info]: Monthly usage: 916/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 917/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 918/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 919/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 920/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 921/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 922/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 923/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 924/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 925/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 926/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 927/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 928/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 929/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 930/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 931/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 932/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 933/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 934/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 935/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 936/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 937/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 938/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 939/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 940/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 941/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 942/100 fetches for 2026-02
+2026-02-04T00:20:53.843Z [info]: Monthly usage: 943/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 944/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 945/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 946/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 947/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 948/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 949/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 950/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 951/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 952/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 953/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 954/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 955/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 956/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 957/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 958/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 959/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 960/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 961/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 962/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 963/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 964/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 965/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 966/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 967/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 968/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 969/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 970/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 971/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 972/100 fetches for 2026-02
+2026-02-04T00:20:53.844Z [info]: Monthly usage: 973/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 974/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 975/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 976/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 977/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 978/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 979/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 980/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 981/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 982/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 983/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 984/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 985/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 986/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 987/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 988/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 989/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 990/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 991/100 fetches for 2026-02
+2026-02-04T00:20:53.845Z [info]: Monthly usage: 992/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 993/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 994/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 995/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 996/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 997/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 998/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 999/100 fetches for 2026-02
+2026-02-04T00:20:53.846Z [info]: Monthly usage: 1000/100 fetches for 2026-02
+PASS tests/oauth2-refresh.test.ts
+  OAuth2 Token Refresh Integration Tests
+    Token Refresh Success Scenarios
+      ΓêÜ should successfully refresh OAuth2 token when expired (6 ms)
+      ΓêÜ should handle token rotation correctly (3 ms)
+      ΓêÜ should preserve existing token when not expired (2 ms)
+    Retry Logic
+      ΓêÜ should retry on 500 errors with exponential backoff (3312 ms)
+      ΓêÜ should not retry on 400 errors (3 ms)
+      ΓêÜ should not retry on 401 errors (1 ms)
+    Expiration Handling
+      ΓêÜ should detect and refresh expired tokens (1 ms)
+      ΓêÜ should calculate expiration time correctly from expiresIn (4 ms)
+    OAuth1 Fallback
+      ΓêÜ should fallback to OAuth1 on 400 error if configured (2 ms)
+    Token Persistence
+      ΓêÜ should atomically write token file (3 ms)
+      ΓêÜ should handle write errors gracefully (3 ms)
+    Edge Cases
+      ΓêÜ should handle missing refresh token gracefully (1 ms)
+      ΓêÜ should handle missing CLIENT_ID gracefully (1 ms)
+      ΓêÜ should handle malformed token file (18 ms)
+
+2026-02-04T00:20:57.080Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.081Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.083Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.120Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.121Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.122Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.164Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.165Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.166Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.214Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.215Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.216Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.216Z [info]: Tweet tweet1 already in queue, skipping
+2026-02-04T00:20:57.251Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.251Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.253Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.295Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.296Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.296Z [info]: Tweet tweet1 already processed, not adding to queue
+2026-02-04T00:20:57.334Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.335Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.337Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.337Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.338Z [info]: Queued tweet tweet3 for later posting. Queue size: 3
+2026-02-04T00:20:57.380Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.381Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.383Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.384Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.420Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.421Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.463Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.464Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.465Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.508Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.509Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.510Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.511Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.512Z [info]: Dequeued tweet tweet1. Queue size: 1
+2026-02-04T00:20:57.553Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.554Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.597Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.598Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.598Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.599Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.599Z [info]: Dequeued tweet tweet1. Queue size: 1
+2026-02-04T00:20:57.644Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.645Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.646Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.647Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.647Z [info]: Queued tweet tweet3 for later posting. Queue size: 3
+2026-02-04T00:20:57.648Z [info]: Dequeued tweet tweet1. Queue size: 2
+2026-02-04T00:20:57.649Z [info]: Dequeued tweet tweet2. Queue size: 1
+2026-02-04T00:20:57.649Z [info]: Dequeued tweet tweet3. Queue size: 0
+2026-02-04T00:20:57.682Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.682Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.683Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.720Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.721Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.722Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.770Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.772Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.820Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.821Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.822Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.869Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.871Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.912Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.913Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.914Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:57.914Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:57.952Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.953Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.993Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:57.993Z [info]: Tweet queue cleared
+2026-02-04T00:20:57.995Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.037Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.038Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.039Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.083Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.084Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.126Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.127Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.129Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.129Z [info]: Dequeued tweet tweet1. Queue size: 0
+2026-02-04T00:20:58.171Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.172Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.173Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.174Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:58.174Z [info]: Queued tweet tweet3 for later posting. Queue size: 3
+2026-02-04T00:20:58.175Z [info]: Removed tweet tweet2 from queue. Queue size: 2
+2026-02-04T00:20:58.214Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.215Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.247Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.248Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.249Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.250Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:58.250Z [info]: Removed tweet tweet1 from queue. Queue size: 1
+2026-02-04T00:20:58.280Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.281Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.281Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.282Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:58.311Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.312Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.313Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.344Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.345Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.374Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.375Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.376Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.377Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:58.377Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.412Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.413Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.414Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.414Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.446Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.446Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.447Z [info]: Queued tweet tweet1 for later posting. Queue size: 1
+2026-02-04T00:20:58.448Z [info]: Queued tweet tweet2 for later posting. Queue size: 2
+2026-02-04T00:20:58.482Z [info]: Loaded 2 queued tweets from persistent storage
+2026-02-04T00:20:58.513Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.514Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.543Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.583Z [info]: Loaded 0 queued tweets from persistent storage
+2026-02-04T00:20:58.584Z [info]: Tweet queue cleared
+2026-02-04T00:20:58.613Z [warn]: Failed to read JSON from C:\Users\Daniel\broteam-translate-bot\.tweet-queue.json: SyntaxError: Unexpected token 'i', "invalid json {" is not valid JSON
+2026-02-04T00:20:58.613Z [info]: Loaded 0 queued tweets from persistent storage
+PASS tests/tweetQueue.test.ts
+  tweetQueue
+    enqueue
+      ΓêÜ should add tweet to queue (38 ms)
+      ΓêÜ should set queuedAt timestamp (38 ms)
+      ΓêÜ should initialize attemptCount to 0 (44 ms)
+      ΓêÜ should not add duplicate tweets (49 ms)
+      ΓêÜ should persist to file (38 ms)
+      ΓêÜ should not enqueue already processed tweets (42 ms)
+      ΓêÜ should handle multiple tweets (41 ms)
+    peek
+      ΓêÜ should return first tweet without removing it (46 ms)
+      ΓêÜ should return null for empty queue (37 ms)
+      ΓêÜ should return same tweet on multiple peeks (44 ms)
+    dequeue
+      ΓêÜ should remove and return first tweet (47 ms)
+      ΓêÜ should return null for empty queue (42 ms)
+      ΓêÜ should update file after dequeue (46 ms)
+      ΓêÜ should process queue in FIFO order (49 ms)
+    incrementAttempt
+      ΓêÜ should increment attempt count for first tweet (35 ms)
+      ΓêÜ should increment multiple times (39 ms)
+      ΓêÜ should not fail on empty queue (49 ms)
+      ΓêÜ should persist attempt count (50 ms)
+    size
+      ΓêÜ should return 0 for empty queue (46 ms)
+      ΓêÜ should return correct size (43 ms)
+    isEmpty
+      ΓêÜ should return true for empty queue (40 ms)
+      ΓêÜ should return false for non-empty queue (41 ms)
+    isQueued
+      ΓêÜ should return true for queued tweet (44 ms)
+      ΓêÜ should return false for non-queued tweet (46 ms)
+      ΓêÜ should return false after dequeue (44 ms)
+    removeById
+      ΓêÜ should remove specific tweet from queue (46 ms)
+      ΓêÜ should return false for non-existent tweet (39 ms)
+      ΓêÜ should persist after removal (35 ms)
+    getQueue
+      ΓêÜ should return copy of queue (32 ms)
+      ΓêÜ should not allow modification of original queue (31 ms)
+      ΓêÜ should return empty array for empty queue (32 ms)
+    clear
+      ΓêÜ should remove all tweets (32 ms)
+      ΓêÜ should persist cleared state (37 ms)
+    persistence
+      ΓêÜ should load queue from file on initialization (68 ms)
+      ΓêÜ should handle missing queue file (59 ms)
+      ΓêÜ should handle malformed queue file (71 ms)
+
+PASS tests/crash-scenarios.test.ts
+  Crash Scenario Tests
+    fetchTweets failure
+      ΓêÜ should handle fetchTweets throwing an error gracefully (3 ms)
+      ΓêÜ should handle fetchTweets throwing a non-Error object
+    critical errors
+      ΓêÜ should handle critical errors in main worker gracefully
+
+2026-02-04T00:20:59.963Z [warn]: No active timer found for metric: non-existent
+PASS tests/profiler.test.ts
+  Performance Profiler
+    Basic Timing
+      ΓêÜ should measure async function execution (106 ms)
+      ΓêÜ should measure sync function execution (1 ms)
+      ΓêÜ should handle start/end timing manually (11 ms)
+    Statistics Calculation
+      ΓêÜ should calculate accurate statistics (203 ms)
+      ΓêÜ should handle percentile calculation correctly (598 ms)
+    Multiple Metrics
+      ΓêÜ should track multiple different metrics (141 ms)
+      ΓêÜ should aggregate metrics with same name (60 ms)
+    Metadata Support
+      ΓêÜ should store metadata with metrics (13 ms)
+    Error Handling
+      ΓêÜ should measure duration even when function throws (20 ms)
+      ΓêÜ should handle missing metrics gracefully (1 ms)
+    Export and Reset
+      ΓêÜ should export metrics to JSON (14 ms)
+      ΓêÜ should reset all metrics (17 ms)
+    Disabled Mode
+      ΓêÜ should not collect metrics when disabled (12 ms)
+
+2026-02-04T00:21:00.701Z [info]: Pruned C:\Users\Daniel\broteam-translate-bot\tests\test-data\stream-test.log to 10 lines
+2026-02-04T00:21:00.787Z [info]: Pruned C:\Users\Daniel\broteam-translate-bot\tests\test-data\stream-test.log to 3 lines
+2026-02-04T00:21:00.840Z [info]: Pruned C:\Users\Daniel\broteam-translate-bot\tests\test-data\stream-test.log to 0 lines
+PASS tests/streamLogReader.test.ts
+  streamLogReader
+    processLogFileLines
+      ΓêÜ should process all lines (48 ms)
+      ΓêÜ should stop processing when callback returns false (32 ms)
+      ΓêÜ should handle async processor (83 ms)
+      ΓêÜ should return 0 for non-existent file (1 ms)
+      ΓêÜ should skip empty lines (34 ms)
+    getUniqueLogEntries
+      ΓêÜ should extract unique entries (36 ms)
+      ΓêÜ should respect maxEntries limit (24 ms)
+      ΓêÜ should return empty set for non-existent file (1 ms)
+    searchLogFile
+      ΓêÜ should find matching lines with string pattern (41 ms)
+      ΓêÜ should find matching lines with regex pattern (46 ms)
+      ΓêÜ should respect maxMatches limit (36 ms)
+      ΓêÜ should return empty array when no matches found (84 ms)
+    pruneLogFileLines
+      ΓêÜ should keep only last N lines (118 ms)
+      ΓêÜ should handle file with fewer lines than limit (84 ms)
+      ΓêÜ should return true for non-existent file (1 ms)
+      ΓêÜ should handle empty file (52 ms)
+
+2026-02-04T00:21:01.186Z [info]: Pruned stability log from 50 to 10 entries
+2026-02-04T00:21:01.212Z [info]: Pruned stability log from 20 to 5 entries
+2026-02-04T00:21:01.261Z [info]: Pruned stability log from 50 to 10 entries
+2026-02-04T00:21:01.284Z [info]: Pruned stability log from 30 to 15 entries
+PASS tests/translationStability.test.ts
+  translationStability
+    checkTranslationStability
+      ΓêÜ should return stable for first translation (6 ms)
+      ΓêÜ should log translation to file (3 ms)
+      ΓêÜ should detect repetitive outputs (7 ms)
+      ΓêÜ should detect chain getting stuck (5 ms)
+      ΓêÜ should detect high attempt counts (2 ms)
+      ΓêÜ should detect input text repetition (4 ms)
+      ΓêÜ should consider different outputs as stable (5 ms)
+      ΓêÜ should handle empty input/output (2 ms)
+      ΓêÜ should handle very long text (2 ms)
+      ΓêÜ should only check recent translations (window size) (21 ms)
+      ΓêÜ should handle different chains independently (6 ms)
+    getStabilityMetrics
+      ΓêÜ should return zero metrics when no log exists (1 ms)
+      ΓêÜ should count total translations (6 ms)
+      ΓêÜ should calculate average attempts (8 ms)
+      ΓêÜ should limit to last 50 translations (95 ms)
+      ΓêÜ should handle malformed log entries (4 ms)
+    pruneStabilityLog
+      ΓêÜ should not fail when log does not exist
+      ΓêÜ should not modify log when entries are under limit (4 ms)
+      ΓêÜ should keep only last N entries when over limit (41 ms)
+      ΓêÜ should keep most recent entries (25 ms)
+      ΓêÜ should maintain valid JSON format after pruning (50 ms)
+      ΓêÜ should handle empty log file (1 ms)
+      ΓêÜ should handle custom maxEntries parameter (21 ms)
+
+2026-02-04T00:21:01.390Z [error]: Failed to load user cache: SyntaxError: Unexpected token 'i', "invalid json {" is not valid JSON
+2026-02-04T00:21:01.392Z [error]: Failed to load user cache: SyntaxError: Unexpected end of JSON input
+PASS tests/userCache.test.ts
+  userCache
+    getCachedUserId
+      ΓêÜ should return null when cache is empty (1 ms)
+      ΓêÜ should return null for non-existent user (2 ms)
+      ΓêÜ should return cached userId for existing user (2 ms)
+      ΓêÜ should be case-insensitive for usernames (3 ms)
+      ΓêÜ should handle cache file not existing
+      ΓêÜ should handle malformed cache file gracefully (3 ms)
+      ΓêÜ should handle empty cache file (2 ms)
+    setCachedUserId
+      ΓêÜ should create cache file if it does not exist (2 ms)
+      ΓêÜ should store userId in cache (2 ms)
+      ΓêÜ should store username in lowercase (2 ms)
+      ΓêÜ should update existing user (4 ms)
+      ΓêÜ should handle multiple users (6 ms)
+      ΓêÜ should preserve existing cache entries (3 ms)
+      ΓêÜ should handle special characters in username (3 ms)
+      ΓêÜ should handle empty username (2 ms)
+      ΓêÜ should persist cache across multiple operations (4 ms)
+      ΓêÜ should create valid JSON format (3 ms)
+      ΓêÜ should handle very long userId (2 ms)
+      ΓêÜ should handle very long username (2 ms)
+      ΓêÜ should handle numeric userId (2 ms)
+      ΓêÜ should overwrite when setting same user twice with different case (4 ms)
+    cache persistence
+      ΓêÜ should load cache from existing file (1 ms)
+      ΓêÜ should maintain cache format with pretty printing (2 ms)
+
+2026-02-04T00:21:01.656Z [info]: Starting health monitoring (interval: 0.1s)
+2026-02-04T00:21:01.657Z [info]: Health monitoring stopped
+2026-02-04T00:21:01.657Z [info]: Starting health monitoring (interval: 0.1s)
+2026-02-04T00:21:01.657Z [info]: Health monitoring stopped
+2026-02-04T00:21:01.658Z [info]: Starting health monitoring (interval: 0.1s)
+2026-02-04T00:21:01.658Z [info]: Health monitoring stopped
+2026-02-04T00:21:01.662Z [info]: === Health Report ===
+2026-02-04T00:21:01.663Z [info]: Status: DEGRADED
+2026-02-04T00:21:01.663Z [info]: Uptime: 0h 0m
+2026-02-04T00:21:01.663Z [info]: Memory: 24.54GB / 31.81GB (77.1%)
+2026-02-04T00:21:01.663Z [info]: Heap: 462.2MB / 558.9MB
+2026-02-04T00:21:01.664Z [info]: CPU: 12 cores, load: 0.00, 0.00, 0.00
+2026-02-04T00:21:01.664Z [info]: Log Dir Size: 12.5MB
+2026-02-04T00:21:01.664Z [warn]: Issues: Elevated memory usage: 77.1%
+2026-02-04T00:21:01.664Z [info]: ===================
+PASS tests/healthCheck.test.ts
+  healthCheck
+    getHealthMetrics
+      ΓêÜ should return health metrics (3 ms)
+      ΓêÜ should have valid memory metrics (2 ms)
+      ΓêÜ should have valid CPU metrics (2 ms)
+      ΓêÜ should have valid disk metrics (1 ms)
+      ΓêÜ should have valid status (1 ms)
+      ΓêÜ should track uptime (112 ms)
+    health status determination
+      ΓêÜ should report issues for high memory usage (1 ms)
+      ΓêÜ should include timestamp in ISO format (2 ms)
+    startHealthMonitoring
+      ΓêÜ should start monitoring without errors (1 ms)
+      ΓêÜ should not throw when started multiple times (1 ms)
+    stopHealthMonitoring
+      ΓêÜ should stop monitoring without errors
+      ΓêÜ should not throw when stopped without starting (1 ms)
+    getLastHealthCheck
+      ΓêÜ should return health check result
+      ΓêÜ should return last metrics after check (1 ms)
+    logHealthReport
+      ΓêÜ should not throw when logging health report (4 ms)
+    memory calculations
+      ΓêÜ should calculate memory percentage correctly (3 ms)
+      ΓêÜ should have consistent memory values (2 ms)
+    issue detection
+      ΓêÜ should have issues array (1 ms)
+      ΓêÜ should report status degraded or unhealthy when issues exist (1 ms)
+      ΓêÜ should report healthy when no issues (1 ms)
+
+PASS tests/translation-worker.test.ts
+  Translation Worker Utilities
+    isAcceptable
+      ΓêÜ should be tested through integration with the main worker (1 ms)
+    isAllCaps
+      ΓêÜ should return true for all caps text (1 ms)
+      ΓêÜ should return false for mixed case text
+      ΓêÜ should return false for empty or whitespace text (1 ms)
+      ΓêÜ should return false for text without letters
+      ΓêÜ should handle text with numbers and symbols
+    Circuit Breaker Logic
+      isCircuitOpen
+        ΓêÜ should return false for languages with no failures (1 ms)
+        ΓêÜ should return false for languages with failures below threshold
+        ΓêÜ should return true for languages at failure threshold
+        ΓêÜ should return false after cooldown period (1 ms)
+        ΓêÜ should reset circuit after cooldown (1 ms)
+      recordFailure
+        ΓêÜ should not record failures for English
+        ΓêÜ should increment failure count for other languages
+        ΓêÜ should set openedAt when reaching threshold
+      recordSuccess
+        ΓêÜ should reset failure count for languages with failures (1 ms)
+        ΓêÜ should do nothing for languages with no failures
+    jitteredTranslationDelay
+      ΓêÜ should return base delay plus jitter
+      ΓêÜ should add maximum jitter (1 ms)
+      ΓêÜ should use default base delay of 5000ms
+    shuffleArray
+      ΓêÜ should return a new array (1 ms)
+      ΓêÜ should contain all original elements
+      ΓêÜ should handle empty arrays (1 ms)
+      ΓêÜ should handle single element arrays
+      ΓêÜ should handle arrays with duplicate elements (1 ms)
+    getTranslationLanguages
+      ΓêÜ should return oldschool languages when useOldschool is true (3 ms)
+      ΓêÜ should return random languages when useOldschool is false (1 ms)
+      ΓêÜ should return random languages when oldschool languages are empty (1 ms)
+    translateAndPostWorker
+      ΓêÜ should be tested through integration testing
+
+PASS tests/rate-limit-tracker.test.ts
+  RateLimitTracker
+    isRateLimited
+      ΓêÜ should return false when no rate limit is set (1 ms)
+      ΓêÜ should return true when rate limit is active (1 ms)
+      ΓêÜ should return true when global rate limit is active
+      ΓêÜ should return true when cooldown is active
+      ΓêÜ should clear expired rate limit and return false
+    setRateLimit
+      ΓêÜ should set rate limit with reset timestamp (1 ms)
+      ΓêÜ should set rate limit with fallback when no reset timestamp (1 ms)
+    setCooldown
+      ΓêÜ should set cooldown with reason (1 ms)
+      ΓêÜ should set cooldown without reason
+    clearRateLimit
+      ΓêÜ should clear specific rate limit (1 ms)
+      ΓêÜ should clear all rate limits when no key specified (1 ms)
+    getSecondsUntilReset
+      ΓêÜ should return 0 when no rate limit is set
+      ΓêÜ should return remaining seconds for active rate limit (1 ms)
+      ΓêÜ should return remaining seconds for global rate limit
+      ΓêÜ should return 0 for expired rate limit
+    state persistence
+      ΓêÜ should handle file write errors gracefully (1 ms)
+    backward compatibility
+      ΓêÜ should handle V1, V2, and V3 state formats during loadState
+
+2026-02-04T00:21:01.947Z [warn]: Failed to read JSON from C:\Users\Daniel\broteam-translate-bot\tests\test-data-safeFileOps\test.json: SyntaxError: Unexpected token 'i', "invalid json {" is not valid JSON
+2026-02-04T00:21:01.949Z [warn]: Failed to read JSON from C:\Users\Daniel\broteam-translate-bot\tests\test-data-safeFileOps\test.json: SyntaxError: Unexpected end of JSON input
+2026-02-04T00:21:01.952Z [error]: Failed to write JSON to /invalid/path/file.json: Error: ENOENT: no such file or directory, open 'C:\invalid\path\file.json'
+2026-02-04T00:21:02.088Z [error]: Failed to append to /invalid/path/log.txt: Error: ENOENT: no such file or directory, open 'C:\invalid\path\log.txt'
+PASS tests/safeFileOps.test.ts
+  safeFileOps
+    safeReadJsonSync
+      ΓêÜ should read valid JSON file (2 ms)
+      ΓêÜ should return default value for non-existent file
+      ΓêÜ should return default value for invalid JSON (2 ms)
+      ΓêÜ should handle empty file (2 ms)
+    safeWriteJsonSync
+      ΓêÜ should write JSON successfully (1 ms)
+      ΓêÜ should handle write errors gracefully (1 ms)
+    safeReadJson (async)
+      ΓêÜ should read valid JSON file (69 ms)
+      ΓêÜ should return default value for non-existent file (15 ms)
+    safeWriteJson (async)
+      ΓêÜ should write JSON successfully (46 ms)
+    safeAppendFileSync
+      ΓêÜ should append to file (3 ms)
+      ΓêÜ should handle append errors gracefully (1 ms)
+    safeAppendFile (async)
+      ΓêÜ should append to file (85 ms)
+    readLastLines
+      ΓêÜ should read last N lines from file (55 ms)
+      ΓêÜ should handle file with fewer lines than requested (41 ms)
+      ΓêÜ should return empty array for non-existent file (15 ms)
+      ΓêÜ should handle empty file (15 ms)
+    countLines
+      ΓêÜ should count lines in file (39 ms)
+      ΓêÜ should return 0 for non-existent file (1 ms)
+      ΓêÜ should handle empty file (29 ms)
+      ΓêÜ should count file with trailing newline correctly (43 ms)
+
+2026-02-04T00:21:02.513Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.514Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.514Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.514Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.515Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.515Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.516Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.517Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.518Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.518Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.519Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.519Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.520Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.520Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.521Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.521Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.522Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.522Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.523Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.523Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.524Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.524Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.525Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.525Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.525Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.526Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.526Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.526Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.526Z [info]: Duplicate check caches cleared
+2026-02-04T00:21:02.527Z [info]: Duplicate check caches cleared
+PASS tests/optimizedDuplicateCheck.test.ts
+  optimizedDuplicateCheck
+    normalizeText
+      ΓêÜ should normalize text consistently (1 ms)
+      ΓêÜ should remove punctuation
+      ΓêÜ should handle multiple spaces
+      ΓêÜ should use cache for repeated calls (1 ms)
+    calculateSimilarity
+      ΓêÜ should return 1.0 for identical texts
+      ΓêÜ should return 0 for completely different texts (1 ms)
+      ΓêÜ should calculate partial similarity (1 ms)
+      ΓêÜ should use cache for repeated calculations
+      ΓêÜ should handle case insensitivity
+      ΓêÜ should return 0 for very different length texts
+    containsSubstring
+      ΓêÜ should find substring in text
+      ΓêÜ should be case insensitive
+      ΓêÜ should return false when substring not found
+      ΓêÜ should return false for substring longer than text
+      ΓêÜ should return false for very short substrings (1 ms)
+    hashText
+      ΓêÜ should generate consistent hash for same text
+      ΓêÜ should generate different hashes for different texts (1 ms)
+      ΓêÜ should normalize before hashing
+      ΓêÜ should return base36 string (1 ms)
+    findMostSimilar
+      ΓêÜ should find most similar candidate (1 ms)
+      ΓêÜ should return null when no candidate meets threshold
+      ΓêÜ should exit early on perfect match (1 ms)
+      ΓêÜ should handle empty candidates array
+      ΓêÜ should handle candidates with limited common words
+    cache management
+      ΓêÜ should track cache usage (1 ms)
+      ΓêÜ should clear caches
+    performance
+      ΓêÜ should be faster with caching (1 ms)
+      ΓêÜ should handle large number of comparisons efficiently (6 ms)
+
+PASS tests/gracefulShutdown.test.ts
+  gracefulShutdown
+    onShutdown
+      ΓêÜ should register cleanup handler without error (1 ms)
+      ΓêÜ should register async cleanup handler (1 ms)
+      ΓêÜ should allow multiple handlers
+    isShuttingDown
+      ΓêÜ should initially return false (1 ms)
+      ΓêÜ should return boolean value
+    handler registration
+      ΓêÜ should handle sync handlers
+      ΓêÜ should handle async handlers
+      ΓêÜ should accept handlers with side effects (1 ms)
+    error handling
+      ΓêÜ should accept handler that might throw
+      ΓêÜ should accept async handler that might reject
+    cleanup handler types
+      ΓêÜ should accept void return handler
+      ΓêÜ should accept Promise return handler
+      ΓêÜ should accept handler with cleanup logic
+
+PASS tests/spam-filter.test.ts
+  Spam Filtering
+    isSpammyResult
+      ΓêÜ should return false for normal text (1 ms)
+      ΓêÜ should return true for text with excessive word repetition
+      ΓêÜ should return true for very long text (1 ms)
+      ΓêÜ should return false for text with some repetition but not excessive
+      ΓêÜ should handle empty strings (1 ms)
+      ΓêÜ should handle single words
+      ΓêÜ should handle punctuation correctly
+      ΓêÜ should return true for text containing suspicious domains
+      ΓêÜ should return true for text containing other suspicious domains
+
+PASS tests/tweetSplitter.test.ts
+  tweetSplitter
+    splitTweet
+      ΓêÜ should return single tweet when text is under limit
+      ΓêÜ should not add thread markers for single tweet
+      ΓêÜ should split by sentences when needed (1 ms)
+      ΓêÜ should add thread markers (n/total) to multiple chunks (2 ms)
+      ΓêÜ should handle text with exclamation marks (1 ms)
+      ΓêÜ should handle text with question marks
+      ΓêÜ should split by words when sentence is too long
+      ΓêÜ should handle mixed punctuation (1 ms)
+      ΓêÜ should preserve sentence boundaries when possible
+      ΓêÜ should handle empty string
+      ΓêÜ should handle text with only whitespace
+      ΓêÜ should handle text at exactly 275 characters
+      ΓêÜ should handle text at 276 characters (just over limit)
+      ΓêÜ should handle very long single word
+      ΓêÜ should handle multiple very long words
+      ΓêÜ should handle Unicode characters (emojis) (1 ms)
+      ΓêÜ should handle newlines in text
+      ΓêÜ should trim whitespace from chunks
+      ΓêÜ should handle consecutive sentence delimiters (1 ms)
+      ΓêÜ should produce correct thread numbering
+      ΓêÜ should handle real-world tweet example (1 ms)
+      ΓêÜ should handle text with URLs
+      ΓêÜ should handle text with multiple spaces between words
+      ΓêÜ should not lose any words during splitting (3 ms)
+
+PASS tests/tokenizer.test.ts
+  Tokenizer
+    normalizeNFC
+      ΓêÜ should normalize Unicode text to NFC form
+      ΓêÜ should handle empty strings (1 ms)
+      ΓêÜ should handle normal ASCII text unchanged
+      ΓêÜ should handle errors gracefully
+    protectTokens
+      ΓêÜ should protect code blocks (2 ms)
+      ΓêÜ should protect inline code
+      ΓêÜ should protect emails
+      ΓêÜ should protect URLs (1 ms)
+      ΓêÜ should protect mentions
+      ΓêÜ should protect hashtags
+      ΓêÜ should protect cashtags (1 ms)
+      ΓêÜ should protect question marks
+      ΓêÜ should handle multiple tokens of different types
+      ΓêÜ should handle empty strings
+      ΓêÜ should preserve text without tokens
+    restoreTokens
+      ΓêÜ should restore protected tokens back to original (1 ms)
+      ΓêÜ should handle multiple token types
+      ΓêÜ should handle backward compatibility with old XURL format
+      ΓêÜ should handle backward compatibility with old XTOK format (1 ms)
+      ΓêÜ should clean up wrapper characters around tokens
+      ΓêÜ should attempt to restore mangled tokens
+      ΓêÜ should handle invalid base64 gracefully
+      ΓêÜ should handle empty strings (1 ms)
+      ΓêÜ should handle text without tokens
+      ΓêÜ should round-trip protect and restore correctly
+    protectTokens + restoreTokens round-trip
+      ΓêÜ should perfectly round-trip complex content (1 ms)
+
+Test Suites: 1 failed, 19 passed, 20 total
+Tests:       2 failed, 412 passed, 414 total
+Snapshots:   0 total
+Time:        152.539 s, estimated 163 s
+Ran all test suites.

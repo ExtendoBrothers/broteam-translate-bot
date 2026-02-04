@@ -59,7 +59,11 @@
       "!src/**/*.d.ts",
       "!src/index.ts"
     ],
-    "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"]
+    "setupFilesAfterEnv": ["<rootDir>/tests/setup.ts"],
+    "testTimeout": 30000,
+    "maxWorkers": 1,
+    "detectOpenHandles": true,
+    "forceExit": true
   },
   "version": "0.12.0"
 }

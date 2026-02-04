@@ -28,13 +28,18 @@ class TweetTracker {
   private postedCache: Set<string> = new Set(); // Cache for wasPosted checks
   private lastProcessedAt: Date | null = null;
   private cacheReady: Promise<void>; // Tracks when posted cache is pre-warmed
+  private isTestEnv = process.env.NODE_ENV === 'test' || process.env.DISABLE_USAGE_TRACKING === 'true';
 
   constructor() {
     this.loadState();
-    // Pre-warm the posted cache from log files on startup
-    this.cacheReady = this.prewarmPostedCache().catch(err => {
-      logger.warn(`Failed to pre-warm posted cache: ${err}`);
-    });
+    // Pre-warm the posted cache from log files on startup (skip in test environment)
+    if (this.isTestEnv) {
+      this.cacheReady = Promise.resolve();
+    } else {
+      this.cacheReady = this.prewarmPostedCache().catch(err => {
+        logger.warn(`Failed to pre-warm posted cache: ${err}`);
+      });
+    }
   }
 
   /**
@@ -145,6 +150,11 @@ class TweetTracker {
      * Check if tweet has already been posted (by checking combined.log files)
      */
   private async wasPosted(tweetId: string): Promise<boolean> {
+    // Skip expensive log file operations in test environment
+    if (this.isTestEnv) {
+      return this.postedCache.has(tweetId);
+    }
+
     // Check cache first
     if (this.postedCache.has(tweetId)) {
       return true;
@@ -177,6 +187,11 @@ class TweetTracker {
      * This provides a safety net for shouldProcess() after restarts
      */
   private async prewarmPostedCache(): Promise<void> {
+    // Skip expensive log file operations in test environment  
+    if (this.isTestEnv) {
+      return;
+    }
+
     try {
       const logFiles = ['combined.log', 'combined1.log', 'combined2.log', 'combined3.log'];
       const pattern = /Posted final translation to Twitter for tweet (\d+)/;

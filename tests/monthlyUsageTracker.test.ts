@@ -99,6 +99,7 @@ describe('monthlyUsageTracker', () => {
       const { monthlyUsageTracker } = require('../src/utils/monthlyUsageTracker');
       
       monthlyUsageTracker.incrementFetch();
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
 
       expect(fs.existsSync(USAGE_FILE)).toBe(true);
       
@@ -111,6 +112,7 @@ describe('monthlyUsageTracker', () => {
       
       const beforeTime = Date.now();
       monthlyUsageTracker.incrementFetch();
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
       const afterTime = Date.now();
 
       const content = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf-8'));
@@ -260,6 +262,7 @@ describe('monthlyUsageTracker', () => {
       monthlyUsageTracker.incrementFetch('2025-01');
       monthlyUsageTracker.incrementFetch('2025-02');
       monthlyUsageTracker.incrementFetch('2025-03');
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
 
       const content = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf-8'));
       
@@ -291,6 +294,7 @@ describe('monthlyUsageTracker', () => {
       monthlyUsageTracker.incrementFetch('2025-01');
       monthlyUsageTracker.incrementFetch('2025-01');
       monthlyUsageTracker.incrementFetch('2025-02');
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
       
       // Simulate restart by creating new instance
       jest.resetModules();
@@ -304,6 +308,7 @@ describe('monthlyUsageTracker', () => {
       const { monthlyUsageTracker } = require('../src/utils/monthlyUsageTracker');
       
       monthlyUsageTracker.incrementFetch();
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
 
       const content = fs.readFileSync(USAGE_FILE, 'utf-8');
       expect(() => JSON.parse(content)).not.toThrow();
@@ -350,6 +355,7 @@ describe('monthlyUsageTracker', () => {
       
       monthlyUsageTracker.incrementFetch('2025-01');
       monthlyUsageTracker.incrementFetch('2025-09');
+      monthlyUsageTracker.forceFlush(); // Force immediate save for test
 
       const content = JSON.parse(fs.readFileSync(USAGE_FILE, 'utf-8'));
       
