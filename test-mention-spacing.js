@@ -1,4 +1,11 @@
-const { protectTokens, restoreTokens } = require('./dist/src/translator/tokenizer');
+let protectTokens;
+let restoreTokens;
+try {
+  ({ protectTokens, restoreTokens } = require('./dist/src/translator/tokenizer'));
+} catch (e) {
+  // Fallback to source files (e.g., when running tests via ts-node without a build step)
+  ({ protectTokens, restoreTokens } = require('./src/translator/tokenizer'));
+}
 
 // Test cases simulating actual translation behavior
 const testCases = [
