@@ -60,7 +60,7 @@ class MonthlyUsageTracker {
     
     this.saveTimeout = setTimeout(() => {
       this.forceSave();
-    }, 1000); // Save after 1 second of inactivity
+    }, 200); // Save after 200ms of inactivity
   }
 
   private forceSave() {
