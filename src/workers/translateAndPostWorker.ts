@@ -29,6 +29,7 @@ import { scoreHumor } from '../utils/humorScorer';
 import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
+import { atomicWriteTextSync } from '../utils/safeFileOps';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
@@ -1168,7 +1169,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         return JSON.stringify(sanitizedEntry);
       }).filter(Boolean).join('\n') + '\n';
       
-      fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
+      // Use atomic write to prevent file corruption if process is interrupted
+      atomicWriteTextSync(feedbackPath, jsonlContent);
         
       // Check if feedback threshold reached for analysis (every 5 feedbacks)
       try {
