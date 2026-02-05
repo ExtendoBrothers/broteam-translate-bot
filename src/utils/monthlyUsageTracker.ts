@@ -30,8 +30,10 @@ class MonthlyUsageTracker {
 
   constructor() {
     this.load();
-    // Save on normal process exit (beforeExit allows async operations to complete)
-    // Signal handlers (SIGINT/SIGTERM) are managed by the central gracefulShutdown module
+    // Save on normal process exit (beforeExit fires on clean exits without signals)
+    // For signal-based shutdowns (SIGINT/SIGTERM/SIGHUP), the gracefulShutdown module
+    // calls our registered handler via registerShutdownHandler()
+    // Both handlers call forceSave() which is idempotent, so duplicate calls are safe
     if (!this.isTestEnv) {
       process.on('beforeExit', () => this.forceSave());
     }
