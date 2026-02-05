@@ -41,5 +41,5 @@ export const config = {
   // Blocked tweet contents - tweets with these exact texts will be skipped
   BLOCKED_TWEET_CONTENTS: process.env.BLOCKED_TWEET_CONTENTS ? process.env.BLOCKED_TWEET_CONTENTS.split(',').map(s => s.trim().replace(/\\n/g, '\n')) : [],
   // Start date - ignore tweets before this timestamp (ISO 8601 format)
-  START_DATE: process.env.START_DATE || '2026-02-03T09:52:27.000Z',
+  START_DATE: process.env.START_DATE || '2026-02-03T09:52:27.000Z'
 };

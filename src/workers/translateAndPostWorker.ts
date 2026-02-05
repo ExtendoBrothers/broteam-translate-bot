@@ -1164,15 +1164,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           return value;
         }));
-        // Validate the JSON can be parsed before writing
-        const jsonStr = JSON.stringify(sanitizedEntry);
-        try {
-          JSON.parse(jsonStr); // Validate it's valid JSON
-          return jsonStr;
-        } catch {
-          logger.error('[FEEDBACK] Failed to serialize entry, skipping:', entry.tweetId);
-          return null;
-        }
+        // Serialize the sanitized entry as single-line JSON
+        return JSON.stringify(sanitizedEntry);
       }).filter(Boolean).join('\n') + '\n';
       
       fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
