@@ -241,17 +241,22 @@ process.on('exit', () => {
 });
 
 // Handle uncaught exceptions - clean up lock before crash
-process.on('uncaughtException', (error) => {
-  logger.error(`Uncaught exception, releasing lock: ${error}`);
-  instanceLock.release();
-  process.exit(1);
-});
+// Only register if no other handlers exist to avoid conflicts
+if (process.listenerCount('uncaughtException') === 0) {
+  process.on('uncaughtException', (error) => {
+    logger.error(`Uncaught exception, releasing lock: ${error}`);
+    instanceLock.release();
+    process.exit(1);
+  });
+}
 
-process.on('unhandledRejection', (reason) => {
-  logger.error(`Unhandled rejection, releasing lock: ${reason}`);
-  instanceLock.release();
-  process.exit(1);
-});
+if (process.listenerCount('unhandledRejection') === 0) {
+  process.on('unhandledRejection', (reason) => {
+    logger.error(`Unhandled rejection, releasing lock: ${reason}`);
+    instanceLock.release();
+    process.exit(1);
+  });
+}
 
 export { instanceLock };
 export function acquireLock(): boolean {
