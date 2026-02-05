@@ -8,11 +8,48 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import * as os from 'os';
+import { execFileSync } from 'child_process';
 import { logger } from './logger';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
 const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - consider lock stale if no heartbeat
+
+/**
+ * Check if a process is alive (cross-platform)
+ */
+function isProcessAlive(pid: number): boolean {
+  // Validate PID is a finite positive integer
+  if (!Number.isFinite(pid) || pid <= 0 || !Number.isInteger(pid)) {
+    return false;
+  }
+
+  // Convert to string and ensure it is strictly numeric to defensively guard interpolation
+  const pidStr = String(pid);
+  if (!/^\d+$/.test(pidStr)) {
+    return false;
+  }
+
+  try {
+    if (process.platform === 'win32') {
+      // Windows: use tasklist with execFileSync (no shell) to check if process exists
+      const result = execFileSync('tasklist', ['/FI', 'PID eq ' + pidStr, '/NH'], { 
+        encoding: 'utf8', 
+        stdio: ['pipe', 'pipe', 'ignore'] 
+      });
+      // Match PID in the output using word boundary to avoid false matches
+      // tasklist output format: "Image Name    PID    Session Name    Session#    Mem Usage"
+      const pidPattern = new RegExp('\\b' + pidStr + '\\b');
+      return pidPattern.test(result);
+    } else {
+      // Unix: use kill with signal 0
+      process.kill(pid, 0);
+      return true;
+    }
+  } catch {
+    return false;
+  }
+}
 
 interface LockData {
   pid: number;
@@ -59,16 +96,16 @@ class InstanceLock {
       }
 
       // Check if process is still running
-      try {
-        process.kill(existingLock.pid, 0); // Signal 0 just checks if process exists
-        logger.error(`Another instance is already running (PID: ${existingLock.pid}, started: ${existingLock.startTime})`);
-        logger.error('If this is incorrect, delete the .bot-instance.lock file manually');
-        process.exit(1);
-      } catch {
-        // Process doesn't exist, lock is stale
+      if (!isProcessAlive(existingLock.pid)) {
         logger.warn(`Lock file exists but process ${existingLock.pid} is not running. Removing stale lock.`);
         this.forceUnlock();
+        return;
       }
+
+      // Process is alive - another instance is running
+      logger.error(`Another instance is already running (PID: ${existingLock.pid}, started: ${existingLock.startTime})`);
+      logger.error('If this is incorrect, delete the .bot-instance.lock file manually');
+      process.exit(1);
 
     } catch (error) {
       logger.error(`Error checking existing lock: ${error}`);
@@ -196,9 +233,36 @@ process.on('SIGTERM', () => {
   process.exit(0);
 });
 
+// PM2 shutdown message
+process.on('message', (msg: any) => {
+  if (msg === 'shutdown') {
+    logger.info('Received PM2 shutdown message, releasing instance lock...');
+    instanceLock.release();
+    process.exit(0);
+  }
+});
+
 process.on('exit', () => {
   instanceLock.release();
 });
+
+// Handle uncaught exceptions - clean up lock before crash
+// Only register if no other handlers exist to avoid conflicts
+if (process.listenerCount('uncaughtException') === 0) {
+  process.on('uncaughtException', (error) => {
+    logger.error(`Uncaught exception, releasing lock: ${error}`);
+    instanceLock.release();
+    process.exit(1);
+  });
+}
+
+if (process.listenerCount('unhandledRejection') === 0) {
+  process.on('unhandledRejection', (reason) => {
+    logger.error(`Unhandled rejection, releasing lock: ${reason}`);
+    instanceLock.release();
+    process.exit(1);
+  });
+}
 
 export { instanceLock };
 export function acquireLock(): boolean {

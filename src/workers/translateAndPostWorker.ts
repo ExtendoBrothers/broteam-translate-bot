@@ -29,6 +29,7 @@ import { scoreHumor } from '../utils/humorScorer';
 import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
+import { atomicWriteTextSync } from '../utils/safeFileOps';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon } from '../translator/lexicon';
@@ -180,8 +181,9 @@ function isAllCaps(text: string): boolean {
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Minimum delay between posts to avoid rapid-fire posting (15 minutes)
-const MIN_POST_INTERVAL_MS = 15 * 60 * 1000; // 15 minutes
+// Minimum delay between posts to avoid rapid-fire posting (45 minutes)
+// NOTE: If you change MIN_POST_INTERVAL_MS, ensure consistency with postTweets.ts and update tests
+const MIN_POST_INTERVAL_MS = 45 * 60 * 1000; // 45 minutes
 let lastPostTime = 0;
 
 // Circuit breaker to temporarily skip languages that are failing repeatedly.
@@ -650,11 +652,11 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
   tweetTracker.prune(90, 50000);
   // Check 24-hour post limit status
   const remainingPosts = postTracker.getRemainingPosts();
-  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/17 posts in last 24h, ${remainingPosts} remaining`);
+  logger.info(`Post limit status: ${postTracker.getPostCount24h()}/${postTracker.getMaxPosts24h()} posts in last 24h, ${remainingPosts} remaining`);
         
   if (!postTracker.canPost()) {
     const waitSeconds = postTracker.getTimeUntilNextSlot();
-    logger.warn(`24-hour post limit reached (17/17). Next slot available in ${waitSeconds} seconds`);
+    logger.warn(`24-hour post limit reached (12/12). Next slot available in ${waitSeconds} seconds`);
     blockedByPostLimit = true;
   }
   
@@ -1140,8 +1142,22 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       } else {
         logger.warn('[FEEDBACK] Blocked spammy/huge repeated word entry from feedback log.');
       }
+      
+      // Deduplicate by tweetId before writing, keeping the most recent entry
+      const seenIds = new Set<string>();
+      const uniqueEntriesReversed: typeof existingEntries = [];
+      for (let i = existingEntries.length - 1; i >= 0; i--) {
+        const entry = existingEntries[i];
+        if (seenIds.has(entry.tweetId)) {
+          continue;
+        }
+        seenIds.add(entry.tweetId);
+        uniqueEntriesReversed.push(entry);
+      }
+      const uniqueEntries = uniqueEntriesReversed.reverse();
+      
       // Write back all entries (ensure single-line JSON)
-      const jsonlContent = existingEntries.map(entry => {
+      const jsonlContent = uniqueEntries.map(entry => {
         // Create a copy and escape newlines in string values to prevent multiline JSON
         const sanitizedEntry = JSON.parse(JSON.stringify(entry, (key, value) => {
           if (typeof value === 'string') {
@@ -1149,9 +1165,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
           return value;
         }));
+        // Serialize the sanitized entry as single-line JSON
         return JSON.stringify(sanitizedEntry);
-      }).join('\n') + '\n';
-      fs.writeFileSync(feedbackPath, jsonlContent, 'utf8');
+      }).filter(Boolean).join('\n') + '\n';
+      
+      // Use atomic write to prevent file corruption if process is interrupted
+      atomicWriteTextSync(feedbackPath, jsonlContent);
         
       // Check if feedback threshold reached for analysis (every 5 feedbacks)
       try {

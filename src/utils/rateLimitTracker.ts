@@ -7,9 +7,10 @@
 import { logger } from './logger';
 import * as fs from 'fs';
 import * as path from 'path';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 const RATE_LIMIT_FILE = path.join(process.cwd(), '.rate-limit-state.json');
-const MIN_COOLDOWN_AFTER_429_SECONDS = 90 * 60; // 90 minutes minimum cooldown after 429 (guarantees max 17 posts/24h)
+const MIN_COOLDOWN_AFTER_429_SECONDS = 180 * 60; // 180 minutes (3 hours) minimum cooldown after 429 to ensure we never hit limits again
 
 type RateLimitStateV1 = { resetTime: string | null };
 interface RateLimitStateV2 {
@@ -106,8 +107,8 @@ class RateLimitTracker {
         state.last429Time![key] = val;
       }
       
-      // Write directly to file - more reliable on Windows
-      fs.writeFileSync(RATE_LIMIT_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      // Use atomic write to prevent corruption
+      atomicWriteJsonSync(RATE_LIMIT_FILE, state);
       logger.info(`[DEBUG] Saved rate limit state with ${Object.keys(state.entries).length} entries`);
     } catch (error) {
       logger.error(`Failed to save rate limit state: ${error}`);
@@ -167,7 +168,7 @@ class RateLimitTracker {
      * If an existing cooldown is later, keeps that instead (use whichever is later)
      */
   public setRateLimit(key: string, resetTimestamp?: number) {
-    const FIXED_COOLDOWN_MS = 90 * 60 * 1000; // 90 minutes fixed cooldown after 429 (guarantees max 17 posts/24h)
+    const FIXED_COOLDOWN_MS = 180 * 60 * 1000; // 180 minutes (3 hours) fixed cooldown after 429 to prevent any future rate limits
     
     let dt: Date;
     let reason: string;
@@ -201,9 +202,6 @@ class RateLimitTracker {
      * Only sets the cooldown if the new time is LONGER than existing limit.
      */
   public setCooldown(key: string, seconds: number, reason?: string) {
-    // Reload state first to get current limits
-    this.loadState();
-    
     const dt = new Date(Date.now() + seconds * 1000);
     const why = reason ? ` (${reason})` : '';
     

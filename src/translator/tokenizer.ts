@@ -13,7 +13,7 @@ export function protectTokens(text: string): string {
     { type: 'CODE', regex: /`[^`]+`/g },
     { type: 'EMAIL', regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
     { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]}]*)?)/gi },
-    { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?=\W|$)/g },
+    { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?:\n|(?=\W)|$)/g },
     { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
     { type: 'CASHTAG', regex: /\B\$[A-Za-z]{1,6}\b/g },
     { type: 'QMARK', regex: /\?/g },
@@ -40,10 +40,25 @@ export function restoreTokens(text: string): string {
   });
 
   // Restore all XTOK placeholders in new format
+  // Add space after token if followed immediately by a word character (no space)
+  // BUT: Don't add space if the restored token ends with whitespace (newline, space, etc.)
+  // Use Unicode-aware character class to match letters/numbers in any language
+  restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+([\p{L}\p{N}])/gu, (_m, type, _idx, b64, nextChar) => {
+    try { 
+      const original = Buffer.from(b64, 'base64').toString('utf8');
+      // Don't add space if original already ends with whitespace
+      if (/\s$/.test(original)) {
+        return original + nextChar;
+      }
+      // Add space between restored token and next word character
+      return original + ' ' + nextChar;
+    } catch { return _m; }
+  });
+  
+  // Restore remaining tokens without the word character lookahead
   restored = restored.replace(/__XTOK_([A-Z]+)_(\d+)_([A-Za-z0-9+/=]+)__+/g, (_m, type, _idx, b64) => {
     try { 
       const original = Buffer.from(b64, 'base64').toString('utf8');
-
       return original;
     } catch { return _m; }
   });

@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { TEST_TEMP_DIR } from './setup';
 
 // Mock tweetTracker before importing tweetQueue
 jest.mock('../src/utils/tweetTracker', () => ({
@@ -12,7 +13,7 @@ jest.mock('../src/utils/tweetTracker', () => ({
   }
 }));
 
-const QUEUE_FILE = path.join(process.cwd(), '.tweet-queue.json');
+const QUEUE_FILE = path.join(TEST_TEMP_DIR, '.tweet-queue.json');
 
 describe('tweetQueue', () => {
   let tweetQueue: any;

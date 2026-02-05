@@ -4,8 +4,9 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { TEST_TEMP_DIR } from './setup';
 
-const TEST_LOG = path.join(process.cwd(), 'posted-outputs.log');
+const TEST_LOG = path.join(TEST_TEMP_DIR, 'posted-outputs.log');
 
 describe('contentDeduplication', () => {
   let contentDeduplication: any;

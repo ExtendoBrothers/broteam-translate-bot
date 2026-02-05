@@ -77,11 +77,12 @@ jest.mock('../src/utils/monthlyUsageTracker', () => ({
 
 jest.mock('../src/utils/postTracker', () => ({
   postTracker: {
-    canPost: jest.fn(),
+    canPost: jest.fn().mockReturnValue(true),
     recordPost: jest.fn(),
-    getPostCount24h: jest.fn(),
-    getRemainingPosts: jest.fn(),
-    getTimeUntilNextSlot: jest.fn()
+    getPostCount24h: jest.fn().mockReturnValue(0),
+    getMaxPosts24h: jest.fn().mockReturnValue(12),
+    getRemainingPosts: jest.fn().mockReturnValue(12),
+    getTimeUntilNextSlot: jest.fn().mockReturnValue(0)
   }
 }));
 
@@ -157,42 +158,6 @@ describe('Crash Scenario Tests', () => {
       expect(result.didWork).toBe(false);
       expect(logger.error).toHaveBeenCalledWith('Failed to fetch tweets: String error');
     });
-  });
-
-  describe('tweet processing errors', () => {
-    it.skip('should continue processing other tweets when one fails', async () => {
-      // Set dry run mode to avoid actual posting
-      process.env.DRY_RUN_MODE = 'true';
-
-      // Mock successful fetch with two tweets
-      (fetchTweets as jest.Mock).mockResolvedValue([
-        { id: '1', text: 'Test tweet 1' },
-        { id: '2', text: 'Test tweet 2' }
-      ]);
-
-      // Mock translateText to return a string quickly
-      (translateText as jest.Mock).mockResolvedValue('translated text');
-
-      // Mock other dependencies
-      const { scoreHumor } = require('../src/utils/humorScorer');
-      (scoreHumor as jest.Mock).mockResolvedValue(0.8);
-
-      const { evaluateHeuristics } = require('../src/utils/heuristicEvaluator');
-      (evaluateHeuristics as jest.Mock).mockReturnValue({ score: 0.5 });
-
-      const { detectLanguageByLexicon } = require('../src/translator/lexicon');
-      (detectLanguageByLexicon as jest.Mock).mockReturnValue('en');
-
-      // Mock the first tweet processing to fail, second to succeed
-      // This is tricky to mock since the worker has complex internal logic
-      // For now, we'll test that the worker doesn't crash completely
-      const result = await translateAndPostWorker();
-
-      // The worker should complete without throwing
-      expect(result).toHaveProperty('didWork');
-      expect(result).toHaveProperty('blockedByCooldown');
-      expect(result).toHaveProperty('blockedByPostLimit');
-    }, 10000);
   });
 
   describe('critical errors', () => {

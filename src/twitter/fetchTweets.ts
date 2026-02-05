@@ -8,6 +8,7 @@ import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { getCachedUserId, setCachedUserId } from '../utils/userCache';
 import { config } from '../config';
 import { setEnvVar } from '../utils/envWriter';
+import { snowflakeToDateSafe } from '../utils/snowflakeId';
 import { tweetTracker } from '../utils/tweetTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import * as fs from 'fs';
@@ -135,13 +136,17 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const [, , idStr, text] = match;
         const id = idStr;
         const trimmedText = text.trim();
-        const shouldProc = isDryRun || tweetTracker.shouldProcess(id, new Date().toISOString());
+        
+        // Extract timestamp from Twitter snowflake ID since manual inputs might be old
+        const createdAt = snowflakeToDateSafe(id);
+        
+        const shouldProc = isDryRun || tweetTracker.shouldProcess(id, createdAt.toISOString());
         // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
         if (shouldProc) {
           tweets.push({
             id,
             text: trimmedText,
-            createdAt: new Date(),
+            createdAt: createdAt,
             user: {
               id: targetUsername, // placeholder
               username: targetUsername,

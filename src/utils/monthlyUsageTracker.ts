@@ -2,6 +2,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { config } from '../config';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 // Persist monthly fetch usage counts to survive restarts
 // Structure: { "2025-11": { fetches: 12, firstFetchAt: "ISO" } }
@@ -15,13 +16,27 @@ interface UsageState {
   months: Record<string, MonthRecord>;
 }
 
-const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const USAGE_FILE = path.join(BASE_DIR, '.monthly-fetch-usage.json');
 
 class MonthlyUsageTracker {
   private months: Map<string, MonthRecord> = new Map();
+  private saveTimeout: ReturnType<typeof setTimeout> | null = null;
+  private isTestEnv = process.env.NODE_ENV === 'test';
 
   constructor() {
     this.load();
+    // Save on normal process exit (beforeExit fires on clean exits without signals)
+    // For signal-based shutdowns (SIGINT/SIGTERM/SIGHUP), the gracefulShutdown module
+    // calls our registered handler via registerShutdownHandler()
+    // Both handlers call forceSave() which is idempotent, so duplicate calls are safe
+    if (!this.isTestEnv) {
+      process.on('beforeExit', () => this.forceSave());
+    }
   }
 
   private load() {
@@ -43,11 +58,29 @@ class MonthlyUsageTracker {
   }
 
   private save() {
+    if (this.isTestEnv) return; // Skip saving in test environment
+    
+    // Debounce saves to prevent excessive file I/O
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+    }
+    
+    this.saveTimeout = setTimeout(() => {
+      this.forceSave();
+    }, 200); // Save after 200ms of inactivity
+  }
+
+  private forceSave() {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    
     try {
       const monthsObj: Record<string, MonthRecord> = {};
       for (const [k, v] of this.months.entries()) monthsObj[k] = v;
       const state: UsageState = { months: monthsObj };
-      fs.writeFileSync(USAGE_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      atomicWriteJsonSync(USAGE_FILE, state);
     } catch (err) {
       logger.error(`Failed to save monthly usage tracker: ${err}`);
     }
@@ -73,8 +106,12 @@ class MonthlyUsageTracker {
       rec.fetches += 1;
       this.months.set(monthKey, rec);
     }
-    this.save();
-    logger.info(`Monthly usage: ${this.getFetchCount(monthKey)}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+    this.save(); // Batched save
+    
+    // Reduce logging frequency in tests
+    if (!this.isTestEnv || this.getFetchCount(monthKey) % 100 === 0) {
+      logger.info(`Monthly usage: ${this.getFetchCount(monthKey)}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+    }
   }
 
   public isLimitReached(monthKey = this.getCurrentMonthKey()): boolean {
@@ -89,8 +126,35 @@ class MonthlyUsageTracker {
       rec.fetches = config.MONTHLY_FETCH_LIMIT;
       this.months.set(monthKey, rec);
     }
-    this.save();
+    // Use forceSave in test environment for immediate persistence
+    if (this.isTestEnv) {
+      this.forceSave();
+    } else {
+      this.save();
+    }
     logger.warn(`Monthly usage cap reached externally (Twitter API reported UsageCapExceeded). Marked as ${config.MONTHLY_FETCH_LIMIT}/${config.MONTHLY_FETCH_LIMIT} fetches for ${monthKey}`);
+  }
+
+  /**
+   * Force immediate save (for testing)
+   * This bypasses the debounce and saves immediately
+   */
+  public forceFlush(): void {
+    if (this.saveTimeout) {
+      clearTimeout(this.saveTimeout);
+      this.saveTimeout = null;
+    }
+    this.forceSave();
+  }
+
+  /**
+   * Register with the central shutdown manager
+   * Call this to ensure monthly usage is saved on graceful shutdown
+   */
+  public registerShutdownHandler(registerFn: typeof import('./gracefulShutdown').onShutdown): void {
+    if (!this.isTestEnv) {
+      registerFn(() => this.forceSave());
+    }
   }
 }
 

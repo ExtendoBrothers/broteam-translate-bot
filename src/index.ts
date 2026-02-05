@@ -6,6 +6,7 @@ import { acquireLock } from './utils/instanceLock';
 import { getVersion } from './utils/version';
 import { initializeGracefulShutdown, onShutdown } from './utils/gracefulShutdown';
 import { startHealthMonitoring, logHealthReport } from './utils/healthCheck';
+import { monthlyUsageTracker } from './utils/monthlyUsageTracker';
 
 function validateEnv(): boolean {
   const missing: string[] = [];
@@ -40,6 +41,9 @@ async function main() {
       logger.info('Cleaning up resources...');
       await logHealthReport();
     });
+    
+    // Register monthly usage tracker for shutdown save
+    monthlyUsageTracker.registerShutdownHandler(onShutdown);
     
     // Global safety net for unhandled errors
     process.on('unhandledRejection', (reason: unknown) => {

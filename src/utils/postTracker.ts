@@ -1,14 +1,16 @@
 /**
- * Post tracker to enforce Twitter's 17 posts per 24 hours limit
+ * Post tracker to enforce conservative 12 posts per 24 hours limit to prevent rate limiting
  * Tracks timestamps of posts and ensures we never exceed the limit
  */
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
+import { atomicWriteJsonSync } from './safeFileOps';
 
 const POST_TRACKER_FILE = path.join(process.cwd(), '.post-tracker.json');
-const MAX_POSTS_PER_24H = 17;
+// NOTE: If you change MAX_POSTS_PER_24H, update tests/duplicate-prevention.test.ts expectations
+const MAX_POSTS_PER_24H = 12; // Conservative limit to prevent rate limiting
 const WINDOW_MS = 24 * 60 * 60 * 1000; // 24 hours in milliseconds
 
 interface PostTrackerState {
@@ -51,7 +53,7 @@ class PostTracker {
       const state: PostTrackerState = {
         postTimestamps: this.postTimestamps.map(date => date.toISOString())
       };
-      fs.writeFileSync(POST_TRACKER_FILE, JSON.stringify(state, null, 2), 'utf-8');
+      atomicWriteJsonSync(POST_TRACKER_FILE, state);
     } catch (error) {
       logger.error(`Failed to save post tracker state: ${error}`);
     }
@@ -91,6 +93,13 @@ class PostTracker {
      */
   public getRemainingPosts(): number {
     return Math.max(0, MAX_POSTS_PER_24H - this.getPostCount24h());
+  }
+
+  /**
+     * Get the maximum number of posts allowed per 24 hours
+     */
+  public getMaxPosts24h(): number {
+    return MAX_POSTS_PER_24H;
   }
 
   /**

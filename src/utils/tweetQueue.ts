@@ -7,7 +7,12 @@ import * as path from 'path';
 import { logger } from './logger';
 import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
 
-const QUEUE_FILE = path.join(process.cwd(), '.tweet-queue.json');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const QUEUE_FILE = path.join(BASE_DIR, '.tweet-queue.json');
 
 export interface QueuedTweet {
     sourceTweetId: string;

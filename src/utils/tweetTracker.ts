@@ -7,11 +7,17 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { tweetQueue } from './tweetQueue';
-import { safeReadJsonSync, safeWriteJsonSync } from './safeFileOps';
+import { safeReadJsonSync, atomicWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
+import { config } from '../config';
 
-const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
-const START_DATE = new Date('2026-02-01T00:00:00.000Z'); // Ignore tweets before this date
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const TWEET_TRACKER_FILE = path.join(BASE_DIR, '.processed-tweets.json');
+const START_DATE = new Date(config.START_DATE); // Ignore tweets before this date
 
 interface TweetTrackerStateV1 {
     processedTweetIds: string[];
@@ -27,13 +33,18 @@ class TweetTracker {
   private postedCache: Set<string> = new Set(); // Cache for wasPosted checks
   private lastProcessedAt: Date | null = null;
   private cacheReady: Promise<void>; // Tracks when posted cache is pre-warmed
+  private isTestEnv = process.env.NODE_ENV === 'test';
 
   constructor() {
     this.loadState();
-    // Pre-warm the posted cache from log files on startup
-    this.cacheReady = this.prewarmPostedCache().catch(err => {
-      logger.warn(`Failed to pre-warm posted cache: ${err}`);
-    });
+    // Pre-warm the posted cache from log files on startup (skip in test environment)
+    if (this.isTestEnv) {
+      this.cacheReady = Promise.resolve();
+    } else {
+      this.cacheReady = this.prewarmPostedCache().catch(err => {
+        logger.warn(`Failed to pre-warm posted cache: ${err}`);
+      });
+    }
   }
 
   /**
@@ -74,7 +85,7 @@ class TweetTracker {
       processed: processedObj,
       lastProcessedAt: this.lastProcessedAt ? this.lastProcessedAt.toISOString() : null
     };
-    safeWriteJsonSync(TWEET_TRACKER_FILE, state);
+    atomicWriteJsonSync(TWEET_TRACKER_FILE, state);
   }
 
   /**
@@ -134,7 +145,7 @@ class TweetTracker {
     }
     const tweetDate = new Date(createdAt);
     if (tweetDate < START_DATE) {
-      logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()}`);
+      logger.info(`Skipping tweet ${tweetId} - created before ${START_DATE.toISOString()} (tweet date: ${tweetDate.toISOString()})`);
       return false;
     }
     return true;
@@ -144,6 +155,11 @@ class TweetTracker {
      * Check if tweet has already been posted (by checking combined.log files)
      */
   private async wasPosted(tweetId: string): Promise<boolean> {
+    // Skip expensive log file operations in test environment
+    if (this.isTestEnv) {
+      return this.postedCache.has(tweetId);
+    }
+
     // Check cache first
     if (this.postedCache.has(tweetId)) {
       return true;
@@ -176,6 +192,11 @@ class TweetTracker {
      * This provides a safety net for shouldProcess() after restarts
      */
   private async prewarmPostedCache(): Promise<void> {
+    // Skip expensive log file operations in test environment  
+    if (this.isTestEnv) {
+      return;
+    }
+
     try {
       const logFiles = ['combined.log', 'combined1.log', 'combined2.log', 'combined3.log'];
       const pattern = /Posted final translation to Twitter for tweet (\d+)/;

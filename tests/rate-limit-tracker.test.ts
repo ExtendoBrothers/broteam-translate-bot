@@ -258,7 +258,13 @@ describe('RateLimitTracker', () => {
 
       rateLimitTracker.setRateLimit('test-key');
 
-      expect(logger.error).toHaveBeenCalledWith('Failed to save rate limit state: Error: File write error');
+      // Atomic writes log their own error, so just check that an error was logged
+      expect(logger.error).toHaveBeenCalled();
+      const errorCalls = (logger.error as jest.Mock).mock.calls;
+      const hasFileWriteError = errorCalls.some((call: string[]) => 
+        call[0].includes('File write error')
+      );
+      expect(hasFileWriteError).toBe(true);
     });
   });
 

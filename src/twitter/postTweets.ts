@@ -4,9 +4,10 @@ import { splitTweet } from '../utils/tweetSplitter';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 
 // Minimum seconds between posts to avoid hitting rate limits (proactive throttling)
-// Twitter allows 17 posts per 24 hours, so ~85 minutes between posts would be safe
-// Using 17 minutes as a balance between throughput and safety
-const MIN_POST_INTERVAL_SECONDS = 17 * 60; // 17 minutes between posts
+// Twitter allows up to 50 posts per 24 hours, but we use 12 posts with 45-minute intervals
+// This ultra-conservative approach ensures we never hit any rate limits
+// NOTE: If you change MIN_POST_INTERVAL_SECONDS, update related test expectations if they exist
+const MIN_POST_INTERVAL_SECONDS = 45 * 60; // 45 minutes between posts
 
 export async function postTweet(client: TwitterClient, content: string, sourceTweetId?: string) {
   const isDryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';
@@ -55,7 +56,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     // Note: Caller is responsible for marking as processed to prevent race conditions
     // (postTweet may be called from multiple contexts - queue, retry, main flow)
     
-    // ALWAYS set 17-minute cooldown after ANY successful post
+    // ALWAYS set 45-minute cooldown after ANY successful post
     rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'proactive post spacing');
     logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s (${MIN_POST_INTERVAL_SECONDS / 60}min) cooldown after successful post`);
         
@@ -99,12 +100,12 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
         resetTime = err.data.rateLimit.reset;
       }
       
-      // Set rate limit to Twitter's reset time + 2 minutes (or 17min fallback if no reset time)
+      // Set rate limit to Twitter's reset time + 2 minutes (or 45min fallback if no reset time)
       rateLimitTracker.setRateLimit('post', resetTime);
       const resetInfo = resetTime ? `Twitter reset: ${new Date(resetTime * 1000).toISOString()}` : 'No reset time available';
       logger.warn(`Post rate limit hit (429). ${resetInfo}`);
     } else {
-      // Non-rate-limit error - still set 17-minute cooldown
+      // Non-rate-limit error - still set 45-minute cooldown
       rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'cooldown after non-rate-limit error');
       logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown after post error`);
       
