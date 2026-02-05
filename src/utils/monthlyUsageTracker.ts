@@ -21,7 +21,7 @@ const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
 class MonthlyUsageTracker {
   private months: Map<string, MonthRecord> = new Map();
   private saveTimeout: ReturnType<typeof setTimeout> | null = null;
-  private isTestEnv = process.env.NODE_ENV === 'test' || process.env.DISABLE_USAGE_TRACKING === 'true';
+  private isTestEnv = process.env.NODE_ENV === 'test';
 
   constructor() {
     this.load();
