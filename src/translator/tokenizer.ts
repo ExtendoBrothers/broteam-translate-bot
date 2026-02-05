@@ -13,7 +13,7 @@ export function protectTokens(text: string): string {
     { type: 'CODE', regex: /`[^`]+`/g },
     { type: 'EMAIL', regex: /\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b/gi },
     { type: 'URL', regex: /(https?:\/\/[^\s)\]}]+)|(www\.[^\s)\]}]+)|([a-zA-Z0-9-]+\.[a-zA-Z]{2,}(?:\/[^\s)\]}]*)?)/gi },
-    { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?:\n)?/g },
+    { type: 'MENTION', regex: /(?:^|\B)@[a-zA-Z0-9_-]+(?:\n|(?=\W)|$)/g },
     { type: 'HASHTAG', regex: /\B#[\p{L}0-9_]+/gu },
     { type: 'CASHTAG', regex: /\B\$[A-Za-z]{1,6}\b/g },
     { type: 'QMARK', regex: /\?/g },
