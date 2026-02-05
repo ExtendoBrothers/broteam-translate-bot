@@ -39,22 +39,45 @@ export function safeWriteJsonSync<T>(filePath: string, data: T): boolean {
 /**
  * Atomically write JSON file to prevent corruption
  * Uses temp file + rename strategy for atomic operation
- * Windows-safe: deletes target file before rename if needed
+ * Windows-safe: deletes target file before rename if needed, with retry logic for race conditions
  */
 export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
   const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  const maxRetries = 3;
+  let lastError: any;
+  
   try {
     // Write to temp file first
     fs.writeFileSync(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     
-    // On Windows, rename fails if target exists - delete it first
-    if (process.platform === 'win32' && fs.existsSync(filePath)) {
-      fs.unlinkSync(filePath);
+    // Retry logic to handle race conditions on Windows
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
+      try {
+        // On Windows, rename fails if target exists - delete it first
+        if (process.platform === 'win32' && fs.existsSync(filePath)) {
+          fs.unlinkSync(filePath);
+        }
+        
+        // Atomic rename (replaces existing file on Unix, now safe on Windows)
+        fs.renameSync(tempFile, filePath);
+        return true;
+      } catch (renameError) {
+        const err = renameError as { code?: string };
+        // On Windows, retry if another process created the file between unlink and rename
+        if (process.platform === 'win32' && err.code === 'EEXIST' && attempt < maxRetries - 1) {
+          lastError = renameError;
+          // Brief exponential backoff: 10ms, 20ms, 40ms
+          const delay = 10 * Math.pow(2, attempt);
+          const start = Date.now();
+          while (Date.now() - start < delay) { /* busy wait */ }
+          continue;
+        }
+        throw renameError;
+      }
     }
     
-    // Atomic rename (replaces existing file on Unix, now safe on Windows)
-    fs.renameSync(tempFile, filePath);
-    return true;
+    // If we exhausted retries, throw the last error
+    throw lastError || new Error('Failed to rename after retries');
   } catch (error) {
     logger.error(`Failed to atomically write JSON to ${filePath}: ${error}`);
     // Clean up temp file if it exists
@@ -101,30 +124,51 @@ export async function safeWriteJson<T>(filePath: string, data: T): Promise<boole
 /**
  * Async atomic write for JSON files
  * Uses temp file + rename strategy for atomic operation
- * Windows-safe: deletes target file before rename if needed
+ * Windows-safe: deletes target file before rename if needed, with retry logic for race conditions
  */
 export async function atomicWriteJson<T>(filePath: string, data: T): Promise<boolean> {
   const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
+  const maxRetries = 3;
+  let lastError: any;
+  
   try {
     // Write to temp file first
     await fsPromises.writeFile(tempFile, JSON.stringify(data, null, 2), 'utf-8');
     
-    // On Windows, rename fails if target exists - delete it first
-    if (process.platform === 'win32') {
+    // Retry logic to handle race conditions on Windows
+    for (let attempt = 0; attempt < maxRetries; attempt++) {
       try {
-        await fsPromises.unlink(filePath);
-      } catch (unlinkError) {
-        const err = unlinkError as { code?: string };
-        // ENOENT is OK (file doesn't exist yet), other errors should fail
-        if (err.code !== 'ENOENT') {
-          throw unlinkError;
+        // On Windows, rename fails if target exists - delete it first
+        if (process.platform === 'win32') {
+          try {
+            await fsPromises.unlink(filePath);
+          } catch (unlinkError) {
+            const err = unlinkError as { code?: string };
+            // ENOENT is OK (file doesn't exist yet), other errors should fail
+            if (err.code !== 'ENOENT') {
+              throw unlinkError;
+            }
+          }
         }
+        
+        // Atomic rename (replaces existing file on Unix, now safe on Windows)
+        await fsPromises.rename(tempFile, filePath);
+        return true;
+      } catch (renameError) {
+        const err = renameError as { code?: string };
+        // On Windows, retry if another process created the file between unlink and rename
+        if (process.platform === 'win32' && err.code === 'EEXIST' && attempt < maxRetries - 1) {
+          lastError = renameError;
+          // Brief exponential backoff: 10ms, 20ms, 40ms
+          await new Promise(resolve => setTimeout(resolve, 10 * Math.pow(2, attempt)));
+          continue;
+        }
+        throw renameError;
       }
     }
     
-    // Atomic rename (replaces existing file on Unix, now safe on Windows)
-    await fsPromises.rename(tempFile, filePath);
-    return true;
+    // If we exhausted retries, throw the last error
+    throw lastError || new Error('Failed to rename after retries');
   } catch (error) {
     logger.error(`Failed to atomically write JSON to ${filePath}: ${error}`);
     // Clean up temp file if it exists
