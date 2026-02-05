@@ -24,16 +24,22 @@ function isProcessAlive(pid: number): boolean {
     return false;
   }
 
+  // Convert to string and ensure it is strictly numeric to defensively guard interpolation
+  const pidStr = String(pid);
+  if (!/^\d+$/.test(pidStr)) {
+    return false;
+  }
+
   try {
     if (process.platform === 'win32') {
       // Windows: use tasklist with execFileSync (no shell) to check if process exists
-      const result = execFileSync('tasklist', ['/FI', `PID eq ${pid}`, '/NH'], { 
+      const result = execFileSync('tasklist', ['/FI', 'PID eq ' + pidStr, '/NH'], { 
         encoding: 'utf8', 
         stdio: ['pipe', 'pipe', 'ignore'] 
       });
       // Match PID in the output using word boundary to avoid false matches
       // tasklist output format: "Image Name    PID    Session Name    Session#    Mem Usage"
-      const pidPattern = new RegExp(`\\b${pid}\\b`);
+      const pidPattern = new RegExp('\\b' + pidStr + '\\b');
       return pidPattern.test(result);
     } else {
       // Unix: use kill with signal 0
