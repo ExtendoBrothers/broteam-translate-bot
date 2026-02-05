@@ -5,8 +5,9 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { getCachedUserId, setCachedUserId } from '../src/utils/userCache';
+import { TEST_TEMP_DIR } from './setup';
 
-const TEST_CACHE_FILE = path.join(process.cwd(), '.twitter-user-cache.json');
+const TEST_CACHE_FILE = path.join(TEST_TEMP_DIR, '.twitter-user-cache.json');
 
 describe('userCache', () => {
   beforeEach(() => {

@@ -3,7 +3,12 @@ import * as path from 'path';
 import { logger } from './logger';
 import { atomicWriteJsonSync } from './safeFileOps';
 
-const USER_CACHE_FILE = path.join(process.cwd(), '.twitter-user-cache.json');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const USER_CACHE_FILE = path.join(BASE_DIR, '.twitter-user-cache.json');
 
 type CacheShape = Record<string, string>; // username(lowercased) -> userId
 

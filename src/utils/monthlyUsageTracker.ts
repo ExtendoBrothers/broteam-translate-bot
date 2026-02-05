@@ -16,7 +16,12 @@ interface UsageState {
   months: Record<string, MonthRecord>;
 }
 
-const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const USAGE_FILE = path.join(BASE_DIR, '.monthly-fetch-usage.json');
 
 class MonthlyUsageTracker {
   private months: Map<string, MonthRecord> = new Map();

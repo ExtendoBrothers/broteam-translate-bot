@@ -40,6 +40,7 @@ export function safeWriteJsonSync<T>(filePath: string, data: T): boolean {
  * Atomically write JSON file to prevent corruption
  * Uses temp file + rename strategy for atomic operation
  * Windows-safe: deletes target file before rename if needed, with retry logic for race conditions
+ * Note: Retries are immediate (no backoff delay). For proper exponential backoff, use atomicWriteJson()
  */
 export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
   const tempFile = `${filePath}.tmp.${Date.now()}.${Math.random().toString(36).slice(2)}`;
@@ -66,10 +67,8 @@ export function atomicWriteJsonSync<T>(filePath: string, data: T): boolean {
         // On Windows, retry if another process created the file between unlink and rename
         if (process.platform === 'win32' && err.code === 'EEXIST' && attempt < maxRetries - 1) {
           lastError = renameError;
-          // Brief exponential backoff: 10ms, 20ms, 40ms
-          const delay = 10 * Math.pow(2, attempt);
-          const start = Date.now();
-          while (Date.now() - start < delay) { /* busy wait */ }
+          // Immediate retry (no delay in sync version to avoid CPU-wasting busy-wait)
+          // For proper exponential backoff, use the async version: atomicWriteJson()
           continue;
         }
         throw renameError;

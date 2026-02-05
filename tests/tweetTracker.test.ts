@@ -4,9 +4,10 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { TEST_TEMP_DIR } from './setup';
 
-const STATE_FILE = path.join(process.cwd(), '.processed-tweets.json');
-const TEST_LOG = path.join(process.cwd(), 'test-combined.log');
+const STATE_FILE = path.join(TEST_TEMP_DIR, '.processed-tweets.json');
+const TEST_LOG = path.join(TEST_TEMP_DIR, 'test-combined.log');
 
 describe('tweetTracker', () => {
   let tweetTracker: any;

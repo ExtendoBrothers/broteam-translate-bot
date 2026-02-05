@@ -4,6 +4,7 @@
 
 import * as fs from 'fs';
 import * as path from 'path';
+import { TEST_TEMP_DIR } from './setup';
 
 // Mock the config before importing the tracker
 jest.mock('../src/config', () => ({
@@ -12,7 +13,7 @@ jest.mock('../src/config', () => ({
   }
 }));
 
-const USAGE_FILE = path.join(process.cwd(), '.monthly-fetch-usage.json');
+const USAGE_FILE = path.join(TEST_TEMP_DIR, '.monthly-fetch-usage.json');
 
 describe('monthlyUsageTracker', () => {
   beforeEach(() => {

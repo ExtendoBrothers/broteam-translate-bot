@@ -9,8 +9,9 @@ import {
   getStabilityMetrics,
   pruneStabilityLog
 } from '../src/utils/translationStability';
+import { TEST_TEMP_DIR } from './setup';
 
-const STABILITY_LOG = path.join(process.cwd(), 'translation-stability.log');
+const STABILITY_LOG = path.join(TEST_TEMP_DIR, 'translation-stability.log');
 
 describe('translationStability', () => {
   beforeEach(() => {

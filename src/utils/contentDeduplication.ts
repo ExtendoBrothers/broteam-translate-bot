@@ -13,7 +13,12 @@ import { processLogFileLines } from './streamLogReader';
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
-const POSTED_OUTPUTS_FILE = path.join(process.cwd(), 'posted-outputs.log');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const POSTED_OUTPUTS_FILE = path.join(BASE_DIR, 'posted-outputs.log');
 const SIMILARITY_THRESHOLD = 0.85; // Jaccard similarity threshold for duplicates
 
 /**

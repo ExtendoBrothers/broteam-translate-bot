@@ -7,7 +7,12 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 
-const STABILITY_LOG = path.join(process.cwd(), 'translation-stability.log');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const STABILITY_LOG = path.join(BASE_DIR, 'translation-stability.log');
 const STABILITY_WINDOW = 10; // Check last N translations
 const SIMILARITY_THRESHOLD = 0.8; // Consider translations similar if >80% overlap
 

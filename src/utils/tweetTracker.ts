@@ -11,7 +11,12 @@ import { safeReadJsonSync, atomicWriteJsonSync } from './safeFileOps';
 import { searchLogFile } from './streamLogReader';
 import { config } from '../config';
 
-const TWEET_TRACKER_FILE = path.join(process.cwd(), '.processed-tweets.json');
+// Use test-specific directory in test environment for parallel execution
+const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
+  ? path.join(process.cwd(), '.test-temp', `worker-${process.env.JEST_WORKER_ID}`)
+  : process.cwd();
+
+const TWEET_TRACKER_FILE = path.join(BASE_DIR, '.processed-tweets.json');
 const START_DATE = new Date(config.START_DATE); // Ignore tweets before this date
 
 interface TweetTrackerStateV1 {
