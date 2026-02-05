@@ -1,5 +1,6 @@
 import { logger } from '../utils/logger';
 import { Tweet } from '../types';
+import { snowflakeToDateSafe } from '../utils/snowflakeId';
 
 /**
  * Twitter Syndication API - Public, no auth required
@@ -47,14 +48,7 @@ async function fetchFromSyndicationAPI(username: string, maxTweets = 40): Promis
       // Always extract timestamp from Twitter snowflake ID since API created_at is unreliable
       if (!tweetId) continue;
       
-      let createdAt: Date;
-      try {
-        const timestamp = (BigInt(tweetId) >> 22n) + 1288834974657n;
-        createdAt = new Date(Number(timestamp));
-      } catch {
-        // Fallback to current time if snowflake parsing fails
-        createdAt = new Date();
-      }
+      const createdAt = snowflakeToDateSafe(tweetId);
       
       if (!tweetId || !text) continue;
       

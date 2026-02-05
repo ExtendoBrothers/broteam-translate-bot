@@ -8,6 +8,7 @@ import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { getCachedUserId, setCachedUserId } from '../utils/userCache';
 import { config } from '../config';
 import { setEnvVar } from '../utils/envWriter';
+import { snowflakeToDateSafe } from '../utils/snowflakeId';
 import { tweetTracker } from '../utils/tweetTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
 import * as fs from 'fs';
@@ -137,14 +138,7 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const trimmedText = text.trim();
         
         // Extract timestamp from Twitter snowflake ID since manual inputs might be old
-        let createdAt: Date;
-        try {
-          const timestamp = (BigInt(id) >> 22n) + 1288834974657n;
-          createdAt = new Date(Number(timestamp));
-        } catch {
-          // Fallback to current time if snowflake parsing fails
-          createdAt = new Date();
-        }
+        const createdAt = snowflakeToDateSafe(id);
         
         const shouldProc = isDryRun || tweetTracker.shouldProcess(id, createdAt.toISOString());
         // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');

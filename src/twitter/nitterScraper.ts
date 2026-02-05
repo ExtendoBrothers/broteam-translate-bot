@@ -1,13 +1,7 @@
 import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
-
-// Decode Twitter Snowflake ID to get tweet creation timestamp
-function snowflakeToDate(snowflakeId: string): Date {
-  const TWITTER_EPOCH = 1288834974657;
-  const timestamp = Math.floor(parseInt(snowflakeId) / 4194304) + TWITTER_EPOCH;
-  return new Date(timestamp);
-}
+import { snowflakeToDate } from '../utils/snowflakeId';
 
 /**
  * Try various Nitter instances via RSS feeds

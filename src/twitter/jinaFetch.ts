@@ -1,13 +1,7 @@
 import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
-
-// Decode Twitter Snowflake ID to get tweet creation timestamp
-function snowflakeToDate(snowflakeId: string): Date {
-  const TWITTER_EPOCH = 1288834974657; // Nov 04 2010 01:42:54 UTC
-  const timestamp = Math.floor(parseInt(snowflakeId) / 4194304) + TWITTER_EPOCH;
-  return new Date(timestamp);
-}
+import { snowflakeToDate } from '../utils/snowflakeId';
 
 // Simple fallback fetcher using r.jina.ai to retrieve public timeline HTML.
 // This is a best-effort scraper: it may not always return full recent tweets.
