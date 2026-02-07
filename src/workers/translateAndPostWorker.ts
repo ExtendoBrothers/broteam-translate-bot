@@ -32,7 +32,7 @@ import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import fs from 'fs';
 import path from 'path';
-import { detectLanguageByLexicon } from '../translator/lexicon';
+import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -137,12 +137,25 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
   // If lexicon explicitly returned null (checked all languages, none matched), trust that result
   if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+    // Check English lexicon match percentage to reject gibberish
+    const englishMatchPct = getEnglishMatchPercentage(textOnly);
+    appendToDebugLog(`[DEBUG] English lexicon match: ${englishMatchPct.toFixed(1)}% for "${textOnly}"\n`);
+    
+    // Gibberish filter: if <20% of words are real English, reject langdetect's English classification
+    // This prevents fake words like "Bylanish shiltemessia" from passing
+    const minEnglishLexiconMatch = 20;
+    
     // Lexicon couldn't determine language, try langdetect as fallback
     try {
       const detections = langdetect.detect(textOnly);
       appendToDebugLog(`[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`);
       if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-        detectedLang = detections[0].lang;
+        // Only trust langdetect's English classification if it has sufficient real English words
+        if (englishMatchPct >= minEnglishLexiconMatch) {
+          detectedLang = detections[0].lang;
+        } else {
+          appendToDebugLog(`[DEBUG] REJECTED langdetect English classification - only ${englishMatchPct.toFixed(1)}% real English words (need ${minEnglishLexiconMatch}%)\n`);
+        }
       }
     } catch (e) {
       appendToDebugLog(`[DEBUG] Langdetect error for "${textOnly}": ${e}\n`);
@@ -454,11 +467,18 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       
       let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
       if (detectedLang === 'und') {
+        // Check English lexicon match to reject gibberish
+        const englishMatchPct = getEnglishMatchPercentage(textOnly);
+        const minEnglishLexiconMatch = 20;
+        
         try {
           const detections = langdetect.detect(textOnly);
           appendToDebugLog(`[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`);
           if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-            detectedLang = detections[0].lang;
+            // Only trust langdetect's English classification if it has sufficient real English words
+            if (englishMatchPct >= minEnglishLexiconMatch) {
+              detectedLang = detections[0].lang;
+            }
           }
         } catch {
           // ignore
@@ -567,10 +587,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       
       let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
       if (detectedLang === 'und') {
+        // Check English lexicon match to reject gibberish
+        const englishMatchPct = getEnglishMatchPercentage(textOnly);
+        const minEnglishLexiconMatch = 20;
+        
         try {
           const detections = langdetect.detect(textOnly);
           if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-            detectedLang = detections[0].lang;
+            // Only trust langdetect's English classification if it has sufficient real English words
+            if (englishMatchPct >= minEnglishLexiconMatch) {
+              detectedLang = detections[0].lang;
+            }
           }
         } catch {
           // ignore
@@ -896,10 +923,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
           
         if (detectedLang === 'und') {
+          // Check English lexicon match to reject gibberish
+          const englishMatchPct = getEnglishMatchPercentage(textOnly);
+          const minEnglishLexiconMatch = 20;
+          
           try {
             const detections = langdetect.detect(textOnly);
             if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-              detectedLang = detections[0].lang;
+              // Only trust langdetect's English classification if it has sufficient real English words
+              if (englishMatchPct >= minEnglishLexiconMatch) {
+                detectedLang = detections[0].lang;
+              }
             }
           } catch {
             // ignore

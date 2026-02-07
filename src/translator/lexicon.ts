@@ -38,3 +38,19 @@ export function detectLanguageByLexicon(text: string): string | null {
 
   return bestMatch.percentage >= 33 ? bestMatch.lang : null;
 }
+
+/**
+ * Get English lexicon match percentage for gibberish detection
+ * Returns the percentage of words that exist in the English dictionary
+ */
+export function getEnglishMatchPercentage(text: string): number {
+  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  if (words.length === 0) return 0;
+
+  let matchCount = 0;
+  for (const word of words) {
+    if (LEXICONS.en.has(word)) matchCount++;
+  }
+
+  return (matchCount / words.length) * 100;
+}

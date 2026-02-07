@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
-import { detectLanguageByLexicon } from '../translator/lexicon';
+import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { calculateSimilarity, normalizeText as optimizedNormalize } from './optimizedDuplicateCheck';
 import { processLogFileLines } from './streamLogReader';
 
@@ -171,9 +171,16 @@ export function isAcceptableWithSemanticCheck(
     const lexiconResult = detectLanguageByLexicon(textOnly);
     detectedLang = lexiconResult || 'und';
     if (detectedLang === 'und') {
+      // Check English lexicon match to reject gibberish
+      const englishMatchPct = getEnglishMatchPercentage(textOnly);
+      const minEnglishLexiconMatch = 20;
+      
       const detections = langdetect.detect(textOnly);
       if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-        detectedLang = detections[0].lang;
+        // Only trust langdetect's English classification if it has sufficient real English words
+        if (englishMatchPct >= minEnglishLexiconMatch) {
+          detectedLang = detections[0].lang;
+        }
       }
     }
   } catch {

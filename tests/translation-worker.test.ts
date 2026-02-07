@@ -108,7 +108,8 @@ jest.mock('path', () => ({
 }));
 
 jest.mock('../src/translator/lexicon', () => ({
-  detectLanguageByLexicon: jest.fn()
+  detectLanguageByLexicon: jest.fn(),
+  getEnglishMatchPercentage: jest.fn(() => 50) // Default: 50% match (acceptable)
 }));
 
 jest.mock('langdetect', () => ({
