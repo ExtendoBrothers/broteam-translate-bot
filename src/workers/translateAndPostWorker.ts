@@ -900,18 +900,27 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
     ];
 
-    // All candidates should already be acceptable and non-spammy at this point
-    // But double-check for any edge cases
+    // All RANDOM candidates should already be acceptable (from collectMultipleRandomResults)
+    // But OLDSCHOOL runs with maxRetries=1 so may be unacceptable (e.g., same as input)
+    // Filter out unacceptable results and spam
     const filteredCandidates = allCandidates.filter(candidate => {
-      const isResultSpammy = isSpammyResult(candidate.result);
-      if (isResultSpammy) {
-        logger.warn(`[SPAM_FILTER] Unexpected spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+      // First check acceptability (e.g., same as input, too short, etc.)
+      if (!candidate.acceptable) {
+        logger.warn(`[ACCEPTABILITY_FILTER] Excluding unacceptable result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
         return false;
       }
+      
+      // Then check for spam
+      const isResultSpammy = isSpammyResult(candidate.result);
+      if (isResultSpammy) {
+        logger.warn(`[SPAM_FILTER] Excluding spammy result from ${candidate.source}: ${candidate.result.substring(0, 100)}...`);
+        return false;
+      }
+      
       return true;
     });
 
-    logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out as spam)...`);
+    logger.info(`[MULTI_CHAIN] Comparing ${filteredCandidates.length} candidates (${allCandidates.length - filteredCandidates.length} filtered out due to acceptability/spam checks)...`);
 
     // Detect language of each candidate and only score English results
     const originalText = tweet.text; // Store for tie-breaker calculations
