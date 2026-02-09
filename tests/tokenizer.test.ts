@@ -33,6 +33,35 @@ describe('Tokenizer', () => {
   });
 
   describe('protectTokens', () => {
+    it('should protect mentions and URLs separately when separated by newlines', () => {
+      // Regression test for bug where mention regex would capture URL with __XNL__ placeholder
+      const input = '@Spark1892\nhumansubstrate.com\nyou\'ll be the first';
+      const result = protectTokens(input);
+      
+      // Should have separate tokens for mention and URL
+      expect(result).toContain('__XTOK_MENTION_');
+      expect(result).toContain('__XTOK_URL_');
+      
+      // Extract and verify tokens
+      const mentionMatch = result.match(/__XTOK_MENTION_\d+_([A-Za-z0-9+/=]+)__/);
+      const urlMatch = result.match(/__XTOK_URL_\d+_([A-Za-z0-9+/=]+)__/);
+      
+      expect(mentionMatch).toBeTruthy();
+      expect(urlMatch).toBeTruthy();
+      
+      if (mentionMatch && urlMatch) {
+        const decodedMention = Buffer.from(mentionMatch[1], 'base64').toString('utf8');
+        const decodedUrl = Buffer.from(urlMatch[1], 'base64').toString('utf8');
+        
+        // Mention should include the newline (or just @Spark1892)
+        expect(decodedMention).toMatch(/^@Spark1892/);
+        // URL should NOT contain XNL or underscores
+        expect(decodedUrl).toBe('humansubstrate.com');
+        expect(decodedUrl).not.toContain('XNL');
+        expect(decodedUrl).not.toContain('_');
+      }
+    });
+
     it('should protect code blocks', () => {
       const input = 'Here is some code: ```console.log("hello")```';
       const result = protectTokens(input);
