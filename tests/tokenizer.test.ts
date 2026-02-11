@@ -229,5 +229,29 @@ describe('Tokenizer', () => {
 
       expect(restored).toBe(complexContent);
     });
+
+    it('should preserve space after mention followed by a word', () => {
+      const original = '@hitlersnewgroov why';
+      const tokenized = protectTokens(original);
+      
+      // Should have a space between the token and the word "why"
+      // This ensures the word can be translated independently
+      expect(tokenized).toMatch(/__XTOK_MENTION_\d+_[A-Za-z0-9+/=]+__\s+why/);
+      
+      const restored = restoreTokens(tokenized);
+      expect(restored).toBe(original);
+    });
+
+    it('should preserve newline after mention followed by a word', () => {
+      const original = '@hitlersnewgroov\nwhy';
+      const tokenized = protectTokens(original);
+      
+      // Should have newline between the token and the word "why"
+      // This ensures the word can be translated independently
+      expect(tokenized).toMatch(/__XTOK_MENTION_\d+_[A-Za-z0-9+/=]+__\nwhy/);
+      
+      const restored = restoreTokens(tokenized);
+      expect(restored).toBe(original);
+    });
   });
 });
