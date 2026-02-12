@@ -33,13 +33,13 @@ export function detectLanguageByLexicon(text: string): string | null {
 
     const percentage = (matchCount / totalWords) * 100;
 
-    // Require at least 40% of words to match for confident detection
-    if (percentage >= 40 && percentage > bestMatch.percentage) {
+    // Require at least 50% of words to match for confident detection
+    if (percentage >= 50 && percentage > bestMatch.percentage) {
       bestMatch = { lang, count: matchCount, percentage };
     }
   }
 
-  return bestMatch.percentage >= 40 ? bestMatch.lang : null;
+  return bestMatch.percentage >= 50 ? bestMatch.lang : null;
 }
 
 /**

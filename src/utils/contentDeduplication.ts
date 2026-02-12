@@ -165,26 +165,41 @@ export function isAcceptableWithSemanticCheck(
   // NEW: Semantic duplicate check (using sync version)
   const semanticDuplicate = isContentDuplicateSync(trimmed);
 
-  // Language detection (existing logic)
+  // Language detection with enhanced checks
+  // Quick reject: Check for non-Latin scripts
+  const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+  const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+  const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+  
   let detectedLang = 'und';
-  try {
-    const lexiconResult = detectLanguageByLexicon(textOnly);
-    detectedLang = lexiconResult || 'und';
-    if (detectedLang === 'und') {
-      // Check English lexicon match to reject gibberish
+  if (hasCyrillic || hasArabic || hasCJK) {
+    detectedLang = 'non-latin';
+  } else {
+    try {
+      const lexiconResult = detectLanguageByLexicon(textOnly);
+      detectedLang = lexiconResult || 'und';
       const englishMatchPct = getEnglishMatchPercentage(textOnly);
-      const minEnglishLexiconMatch = 20;
       
-      const detections = langdetect.detect(textOnly);
-      if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-        // Only trust langdetect's English classification if it has sufficient real English words
-        if (englishMatchPct >= minEnglishLexiconMatch) {
-          detectedLang = detections[0].lang;
+      // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+      if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+        const detections = langdetect.detect(textOnly);
+        if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+          detectedLang = 'und';
         }
       }
+      
+      if (detectedLang === 'und') {
+        const minEnglishLexiconMatch = 20;
+        const detections = langdetect.detect(textOnly);
+        if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+          if (englishMatchPct >= minEnglishLexiconMatch) {
+            detectedLang = detections[0].lang;
+          }
+        }
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
   const notEnglish = detectedLang !== 'en';
 

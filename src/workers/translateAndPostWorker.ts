@@ -129,18 +129,55 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const tooLong = trimmed.length > 288;
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
+  // Quick reject: Check for non-Latin scripts that should never be classified as English
+  const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+  const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+  const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+  
+  if (hasCyrillic || hasArabic || hasCJK) {
+    appendToDebugLog(`[DEBUG] Non-Latin script detected (Cyrillic=${hasCyrillic}, Arabic=${hasArabic}, CJK=${hasCJK}) - not English\n`);
+    const detectedLang = 'non-latin';
+    const notEnglish = true;
+    const unacceptableReasons: string[] = [];
+    if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+    if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
+    if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
+    if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
+    if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
+    if (sameAsInput) unacceptableReasons.push('Output is the same as the input');
+    if (notEnglish) unacceptableReasons.push(`Contains non-Latin script: detected ${detectedLang}`);
+    if (problematicChar) unacceptableReasons.push('Output is a problematic character or starts with /');
+    if (repetitive) unacceptableReasons.push('Output contains repetitive/spammy content');
+    const acceptable = unacceptableReasons.length === 0;
+    const reason = unacceptableReasons.join('; ');
+    appendToDebugLog(`[DEBUG] isAcceptable: finalResult='${finalResult}', acceptable=${acceptable}, reason='${reason}'\n`);
+    return { acceptable, reason };
+  }
+  
   // Try lexicon-based detection first for short texts
   const lexiconResult = detectLanguageByLexicon(textOnly);
   let detectedLang = lexiconResult || 'und';
-  appendToDebugLog(`[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult}\n`);
+  const englishMatchPct = getEnglishMatchPercentage(textOnly);
+  appendToDebugLog(`[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult} (${englishMatchPct.toFixed(1)}% English words)\n`);
+  
+  // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+  if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+    try {
+      const detections = langdetect.detect(textOnly);
+      appendToDebugLog(`[DEBUG] Validating borderline English detection with langdetect: ${JSON.stringify(detections)}\n`);
+      // If langdetect disagrees strongly or confidence is low, reject
+      if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+        detectedLang = 'und'; // Reset to undetermined
+        appendToDebugLog(`[DEBUG] REJECTED borderline English classification - langdetect disagrees or low confidence\n`);
+      }
+    } catch (e) {
+      appendToDebugLog(`[DEBUG] Langdetect validation error: ${e}\n`);
+    }
+  }
   
   // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
   // If lexicon explicitly returned null (checked all languages, none matched), trust that result
   if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-    // Check English lexicon match percentage to reject gibberish
-    const englishMatchPct = getEnglishMatchPercentage(textOnly);
-    appendToDebugLog(`[DEBUG] English lexicon match: ${englishMatchPct.toFixed(1)}% for "${textOnly}"\n`);
-    
     // Gibberish filter: if <20% of words are real English, reject langdetect's English classification
     // This prevents fake words like "Bylanish shiltemessia" from passing
     const minEnglishLexiconMatch = 20;
@@ -465,23 +502,48 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const sameAsInput = textOnly === originalTextOnly;
       const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
       
-      let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
-      if (detectedLang === 'und') {
-        // Check English lexicon match to reject gibberish
+      // Quick reject: Check for non-Latin scripts
+      const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+      const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+      const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+      
+      let detectedLang = 'und';
+      if (hasCyrillic || hasArabic || hasCJK) {
+        detectedLang = 'non-latin';
+        appendToDebugLog(`[DEBUG][${chainLabel}] Non-Latin script detected - not English\n`);
+      } else {
+        const lexiconResult = detectLanguageByLexicon(textOnly);
+        detectedLang = lexiconResult || 'und';
         const englishMatchPct = getEnglishMatchPercentage(textOnly);
-        const minEnglishLexiconMatch = 20;
         
-        try {
-          const detections = langdetect.detect(textOnly);
-          appendToDebugLog(`[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`);
-          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-            // Only trust langdetect's English classification if it has sufficient real English words
-            if (englishMatchPct >= minEnglishLexiconMatch) {
-              detectedLang = detections[0].lang;
+        // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+        if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+          try {
+            const detections = langdetect.detect(textOnly);
+            if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+              detectedLang = 'und';
+              appendToDebugLog(`[DEBUG][${chainLabel}] REJECTED borderline English (${englishMatchPct.toFixed(1)}%)\n`);
             }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
+        }
+        
+        if (detectedLang === 'und') {
+          const englishMatchPct = getEnglishMatchPercentage(textOnly);
+          const minEnglishLexiconMatch = 20;
+          
+          try {
+            const detections = langdetect.detect(textOnly);
+            appendToDebugLog(`[DEBUG][${chainLabel}] Langdetect fallback for attempt ${attempts} "${textOnly}": ${JSON.stringify(detections)}\n`);
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
+              if (englishMatchPct >= minEnglishLexiconMatch) {
+                detectedLang = detections[0].lang;
+              }
+            }
+          } catch {
+            // ignore
+          }
         }
       }
       const notEnglish = detectedLang !== 'en';
@@ -585,22 +647,45 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const sameAsInput = textOnly === originalTextOnly;
       const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
       
-      let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
-      if (detectedLang === 'und') {
-        // Check English lexicon match to reject gibberish
+      // Quick reject: Check for non-Latin scripts
+      const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+      const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+      const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+      
+      let detectedLang = 'und';
+      if (hasCyrillic || hasArabic || hasCJK) {
+        detectedLang = 'non-latin';
+      } else {
+        const lexiconResult = detectLanguageByLexicon(textOnly);
+        detectedLang = lexiconResult || 'und';
         const englishMatchPct = getEnglishMatchPercentage(textOnly);
-        const minEnglishLexiconMatch = 20;
         
-        try {
-          const detections = langdetect.detect(textOnly);
-          if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-            // Only trust langdetect's English classification if it has sufficient real English words
-            if (englishMatchPct >= minEnglishLexiconMatch) {
-              detectedLang = detections[0].lang;
+        // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+        if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+          try {
+            const detections = langdetect.detect(textOnly);
+            if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+              detectedLang = 'und';
             }
+          } catch {
+            // ignore
           }
-        } catch {
-          // ignore
+        }
+        
+        if (detectedLang === 'und') {
+          const englishMatchPct = getEnglishMatchPercentage(textOnly);
+          const minEnglishLexiconMatch = 20;
+          
+          try {
+            const detections = langdetect.detect(textOnly);
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
+              if (englishMatchPct >= minEnglishLexiconMatch) {
+                detectedLang = detections[0].lang;
+              }
+            }
+          } catch {
+            // ignore
+          }
         }
       }
       const notEnglish = detectedLang !== 'en';
@@ -929,23 +1014,46 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // Detect language
         const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
         const textOnly = candidate.result.replace(tokenPattern, '').trim();
-        let detectedLang = detectLanguageByLexicon(textOnly) || 'und';
-          
-        if (detectedLang === 'und') {
-          // Check English lexicon match to reject gibberish
+        
+        // Quick reject: Check for non-Latin scripts
+        const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+        const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+        const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+        
+        let detectedLang = 'und';
+        if (hasCyrillic || hasArabic || hasCJK) {
+          detectedLang = 'non-latin';
+        } else {
+          const lexiconResult = detectLanguageByLexicon(textOnly);
+          detectedLang = lexiconResult || 'und';
           const englishMatchPct = getEnglishMatchPercentage(textOnly);
-          const minEnglishLexiconMatch = 20;
           
-          try {
-            const detections = langdetect.detect(textOnly);
-            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-              // Only trust langdetect's English classification if it has sufficient real English words
-              if (englishMatchPct >= minEnglishLexiconMatch) {
-                detectedLang = detections[0].lang;
+          // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+          if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+            try {
+              const detections = langdetect.detect(textOnly);
+              if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+                detectedLang = 'und';
               }
+            } catch {
+              // ignore
             }
-          } catch {
-            // ignore
+          }
+          
+          if (detectedLang === 'und') {
+            const englishMatchPct = getEnglishMatchPercentage(textOnly);
+            const minEnglishLexiconMatch = 20;
+            
+            try {
+              const detections = langdetect.detect(textOnly);
+              if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+                if (englishMatchPct >= minEnglishLexiconMatch) {
+                  detectedLang = detections[0].lang;
+                }
+              }
+            } catch {
+              // ignore
+            }
           }
         }
           
