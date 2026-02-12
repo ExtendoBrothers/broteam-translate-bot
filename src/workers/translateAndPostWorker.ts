@@ -168,7 +168,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
       // If langdetect disagrees strongly or confidence is low, reject
       if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
         detectedLang = 'und'; // Reset to undetermined
-        appendToDebugLog(`[DEBUG] REJECTED borderline English classification - langdetect disagrees or low confidence\n`);
+        appendToDebugLog('[DEBUG] REJECTED borderline English classification - langdetect disagrees or low confidence\n');
       }
     } catch (e) {
       appendToDebugLog(`[DEBUG] Langdetect validation error: ${e}\n`);
