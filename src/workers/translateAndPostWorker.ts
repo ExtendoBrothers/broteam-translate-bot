@@ -804,6 +804,13 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
       logger.info(`[QUEUE_DEBUG] Posting queued tweet ${queuedTweet.sourceTweetId} (attempt ${queuedTweet.attemptCount + 1})`);
       
+      // CRITICAL SAFETY CHECK: Skip if already processed (prevents double-posting from concurrent instances)
+      if (tweetTracker.isProcessed(queuedTweet.sourceTweetId)) {
+        logger.warn(`[QUEUE_DEBUG] Tweet ${queuedTweet.sourceTweetId} already processed (likely by concurrent instance). Removing from queue.`);
+        tweetQueue.dequeue();
+        continue;
+      }
+      
       // Safety check for error messages in queued tweets
       if (queuedTweet.finalTranslation.includes('rate limit') || queuedTweet.finalTranslation.includes('retranslation') || queuedTweet.finalTranslation.includes('removed due to')) {
         logger.warn(`[QUEUE_DEBUG] Skipping queued tweet ${queuedTweet.sourceTweetId} due to error message in translation: '${queuedTweet.finalTranslation}'`);
