@@ -13,7 +13,9 @@ import { logger } from './logger';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - consider lock stale if no heartbeat
+const LOCK_TIMEOUT = 60 * 1000; // 1 minute - consider lock stale if no heartbeat
+const ACQUISITION_RETRIES = 3; // Number of times to retry acquiring lock
+const RETRY_DELAY = 2000; // 2 seconds between retries
 
 /**
  * Check if a process is alive (cross-platform)
@@ -68,8 +70,37 @@ class InstanceLock {
   private isLocked = false;
 
   constructor() {
-    this.checkExistingLock();
+    this.checkExistingLockWithRetry();
     this.startHeartbeat();
+  }
+
+  /**
+   * Synchronous sleep for startup blocking
+   */
+  private sleep(ms: number): void {
+    const start = Date.now();
+    while (Date.now() - start < ms) {
+      // Busy wait
+    }
+  }
+
+  /**
+   * Check existing lock with retry logic for race conditions
+   */
+  private checkExistingLockWithRetry() {
+    for (let attempt = 1; attempt <= ACQUISITION_RETRIES; attempt++) {
+      try {
+        this.checkExistingLock();
+        return; // Success
+      } catch (error) {
+        if (error instanceof Error && error.message === 'RETRY_LOCK_ACQUISITION' && attempt < ACQUISITION_RETRIES) {
+          logger.info(`Lock acquisition retry ${attempt}/${ACQUISITION_RETRIES}. Waiting ${RETRY_DELAY}ms...`);
+          this.sleep(RETRY_DELAY);
+        } else {
+          throw error; // Re-throw if not retryable or exhausted retries
+        }
+      }
+    }
   }
 
   /**
@@ -103,6 +134,16 @@ class InstanceLock {
       }
 
       // Process is alive - another instance is running
+      // Check if it's been running for less than 5 seconds (likely a restart race condition)
+      const startTime = new Date(existingLock.startTime);
+      const timeSinceStart = now.getTime() - startTime.getTime();
+      
+      if (timeSinceStart < 5000) {
+        logger.warn(`Found recently started instance (PID: ${existingLock.pid}, started ${Math.round(timeSinceStart / 1000)}s ago). Will retry lock acquisition.`);
+        throw new Error('RETRY_LOCK_ACQUISITION');
+      }
+      
+      // Process has been running for a while - genuine conflict
       logger.error(`Another instance is already running (PID: ${existingLock.pid}, started: ${existingLock.startTime})`);
       logger.error('If this is incorrect, delete the .bot-instance.lock file manually');
       process.exit(1);
