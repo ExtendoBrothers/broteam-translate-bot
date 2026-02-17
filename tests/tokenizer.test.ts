@@ -253,5 +253,43 @@ describe('Tokenizer', () => {
       const restored = restoreTokens(tokenized);
       expect(restored).toBe(original);
     });
+
+    it('should remove orphaned token placeholder fragments', () => {
+      // Test cases from actual logs where fragments like XN, XNL were left behind
+      const testCases = [
+        { input: 'Hello XN world', expected: 'Hello world' },
+        { input: 'Test XNL content', expected: 'Test content' },
+        { input: 'Some __X text', expected: 'Some text' },
+        { input: 'Data __XN here', expected: 'Data here' },
+        { input: 'Check __XTOK fragment', expected: 'Check fragment' },
+        { input: 'XTOK_ leftover', expected: 'leftover' },
+        { input: 'XTOK_URL_1 broken', expected: 'broken' },
+        { input: 'Something SILE else', expected: 'Something else' },
+        { input: 'Text with __ABC__ fragment', expected: 'Text with fragment' },
+        // Note: Multiple spaces without fragments are preserved (no false positives)
+        { input: 'No  fragments  here', expected: 'No  fragments  here' },
+      ];
+
+      for (const { input, expected } of testCases) {
+        const restored = restoreTokens(input);
+        expect(restored).toBe(expected);
+      }
+    });
+
+    it('should handle real-world mangled token examples from logs', () => {
+      // From: "@hitlersnewgroov XN, ON TIME" - should remove XN
+      const mangled1 = '@hitlersnewgroov XN, both';
+      const restored1 = restoreTokens(mangled1);
+      // The XN between spaces gets removed, leaving space cleanup
+      expect(restored1).toBe('@hitlersnewgroov, both');
+      expect(restored1).not.toContain('XN');
+
+      // From: "HumanSubstrate.com SILE XNL" - should remove SILE and XNL
+      const mangled2 = 'HumanSubstrate.com SILE XNL Look who you are';
+      const restored2 = restoreTokens(mangled2);
+      expect(restored2).toBe('HumanSubstrate.com Look who you are');
+      expect(restored2).not.toContain('SILE');
+      expect(restored2).not.toContain('XNL');
+    });
   });
 });

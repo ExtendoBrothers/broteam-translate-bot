@@ -96,5 +96,30 @@ export function restoreTokens(text: string): string {
     }
   }
 
+  // Remove any remaining token placeholder fragments that weren't restored
+  // These are partial tokens like "XN", "XNL", "__XTOK", "TOK_", etc.
+  // Only apply cleanup if we actually find and remove fragments
+  const beforeCleanup = restored;
+  
+  restored = restored
+    // Remove fragments between spaces
+    .replace(/\s+\b__X[A-Z]*\b\s+/g, ' ')       // __X, __XN, __XTOK between spaces
+    .replace(/\s+\bXTOK_[A-Z0-9_]*\b\s+/g, ' ') // XTOK_ between spaces
+    .replace(/\s+\b_+[A-Z]{2,}_+\b\s+/g, ' ')   // __ABC__ between spaces
+    .replace(/\s+\bXNL?\b\s+/g, ' ')            // XN or XNL between spaces
+    .replace(/\s+\bSILE\b\s+/g, ' ')            // SILE between spaces
+    // Remove fragments before punctuation (with space before fragment)
+    .replace(/\s+\bXNL?\b(?=[,.:;!?])/g, '')    // XN/XNL before punctuation
+    .replace(/\s+\bSILE\b(?=[,.:;!?])/g, '')    // SILE before punctuation
+    // Remove any remaining fragments
+    .replace(/\b__X[A-Z]*\b/g, '')              // Remaining __X fragments
+    .replace(/\bXTOK_[A-Z0-9_]*/g, '')          // Remaining XTOK fragments
+    .replace(/\b_+[A-Z]{2,}_+\b/g, '');         // Remaining __ABC__ fragments
+  
+  // Only collapse multiple spaces if we actually removed fragments
+  if (restored !== beforeCleanup) {
+    restored = restored.replace(/ {2,}/g, ' ').trim();
+  }
+
   return normalizeNFC(restored);
 }
