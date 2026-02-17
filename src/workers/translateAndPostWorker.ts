@@ -1324,14 +1324,18 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       atomicWriteTextSync(feedbackPath, jsonlContent);
         
       // Check if feedback threshold reached for analysis (every 5 feedbacks)
+      // Add slight delay to ensure file write is complete
+      await new Promise(resolve => setTimeout(resolve, 100));
       try {
         const { execSync } = await import('child_process');
         execSync('node scripts/check-feedback-threshold.js', { 
           stdio: 'inherit',
-          cwd: process.cwd()
+          cwd: process.cwd(),
+          timeout: 10000 // 10 second timeout to prevent hanging
         });
       } catch (checkErr) {
-        logger.warn('[FEEDBACK] Failed to run threshold check:', checkErr);
+        // Don't log at warn level since this is non-critical
+        logger.debug('[FEEDBACK] Threshold check skipped:', checkErr instanceof Error ? checkErr.message : checkErr);
       }
     } catch (err) {
       logger.error('[ERROR] Failed to save feedback data:', err);
