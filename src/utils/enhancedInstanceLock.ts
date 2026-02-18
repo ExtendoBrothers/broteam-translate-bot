@@ -76,12 +76,19 @@ class InstanceLock {
 
   /**
    * Synchronous sleep for startup blocking
+   * Uses Atomics.wait on a SharedArrayBuffer to avoid CPU-spinning busy-wait.
    */
   private sleep(ms: number): void {
-    const start = Date.now();
-    while (Date.now() - start < ms) {
-      // Busy wait
+    if (ms <= 0) {
+      return;
     }
+    // Use a 4-byte SharedArrayBuffer and Atomics.wait to block efficiently.
+    // This keeps the method synchronous without pegging a CPU core.
+    const sharedBuffer = new SharedArrayBuffer(4);
+    const int32 = new Int32Array(sharedBuffer);
+    // Atomics.wait will block the current thread until the timeout elapses.
+    // We ignore the result since we only care about the delay.
+    Atomics.wait(int32, 0, 0, ms);
   }
 
   /**
