@@ -33,7 +33,11 @@ export function detectLanguageByLexicon(text: string): string | null {
 
     const percentage = (matchCount / totalWords) * 100;
 
-    // Require at least 50% of words to match for confident detection
+    // Require at least 50% of words to match for confident detection.
+    // Threshold was raised from 33% to 50% because lower values caused false acceptance:
+    // - Partially failed translations sometimes retained enough English words to pass at 33%.
+    // - Coincidental matches with short foreign texts (e.g., Russian, Spanish) could trigger false positives.
+    // Raising to 50% reduces these errors and improves reliability for English detection.
     if (percentage >= 50 && percentage > bestMatch.percentage) {
       bestMatch = { lang, count: matchCount, percentage };
     }

@@ -818,17 +818,27 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         continue;
       }
       
-      // COMPREHENSIVE DUPLICATE PREVENTION CHECK FOR QUEUED TWEETS (ENABLED)
-      const duplicateCheck = await checkForDuplicates(
-        queuedTweet.sourceTweetId,
-        queuedTweet.finalTranslation,
-        '', // We don't have original text for queued tweets
-        'queued',
-        queuedTweet.attemptCount
-      );
+      // ATOMIC: Mark as processed before duplicate check to prevent race conditions
+      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+      let duplicateCheck;
+      try {
+        duplicateCheck = await checkForDuplicates(
+          queuedTweet.sourceTweetId,
+          queuedTweet.finalTranslation,
+          '', // We don't have original text for queued tweets
+          'queued',
+          queuedTweet.attemptCount
+        );
+      } catch (error) {
+        logger.error(`[DUPLICATE_PREVENTION] Error during duplicate check for queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
+        tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
+        tweetQueue.dequeue();
+        continue;
+      }
 
       if (!duplicateCheck.canProceed) {
         logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
+        tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
         if (duplicateCheck.severity === 'block') {
           tweetQueue.dequeue();
           logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);

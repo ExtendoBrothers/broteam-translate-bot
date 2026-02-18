@@ -15,6 +15,13 @@ export function acquireLock(): boolean {
     const MAX_RETRIES = 3;
     const RETRY_DELAY = 500; // ms
     
+    const sleep = (ms: number) => {
+      const start = Date.now();
+      while (Date.now() - start < ms) {
+        // Busy wait (short waits only)
+      }
+    };
+    
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
       // Check if lock file exists and is still valid
       if (fs.existsSync(LOCK_FILE)) {
@@ -29,9 +36,8 @@ export function acquireLock(): boolean {
           const age = Date.now() - timestamp;
           if (age < 2000 && attempt < MAX_RETRIES) {
             logger.warn(`Found recent lock from PID ${pid} (age: ${age}ms). Retrying in ${RETRY_DELAY}ms... (attempt ${attempt}/${MAX_RETRIES})`);
-            // Sleep synchronously to block startup
-            const start = Date.now();
-            while (Date.now() - start < RETRY_DELAY) { /* busy wait */ }
+            // Sleep synchronously for short race condition window
+            sleep(RETRY_DELAY);
             continue; // Retry
           }
           
@@ -62,8 +68,7 @@ export function acquireLock(): boolean {
           if (attempt < MAX_RETRIES) {
             logger.warn(`Lock acquisition race detected: ${errMsg}. Retrying... (attempt ${attempt}/${MAX_RETRIES})`);
             try { fs.unlinkSync(tempFile); } catch { /* ignore */ }
-            const start = Date.now();
-            while (Date.now() - start < RETRY_DELAY) { /* busy wait */ }
+            sleep(RETRY_DELAY);
             continue; // Retry
           }
           throw renameError;
