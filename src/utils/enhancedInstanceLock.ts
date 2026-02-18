@@ -13,7 +13,7 @@ import { logger } from './logger';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
-const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - tolerate long-running translations and transient heartbeat delays
+const LOCK_TIMEOUT = 5 * 60 * 1000; // 5 minutes - maximum time without heartbeat before considering the lock stale / process dead
 const ACQUISITION_RETRIES = 3; // Number of times to retry acquiring lock
 const RETRY_DELAY = 2000; // 2 seconds between retries
 

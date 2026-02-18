@@ -16,10 +16,11 @@ export function acquireLock(): boolean {
     const RETRY_DELAY = 500; // ms
     
     const sleep = (ms: number) => {
-      const start = Date.now();
-      while (Date.now() - start < ms) {
-        // Busy wait (short waits only)
-      }
+      // Synchronous sleep without busy-waiting using Atomics.wait
+      // This blocks the current thread but does not spin the CPU
+      const sab = new SharedArrayBuffer(4);
+      const arr = new Int32Array(sab);
+      Atomics.wait(arr, 0, 0, ms);
     };
     
     for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {

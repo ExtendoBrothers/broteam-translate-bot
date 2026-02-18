@@ -109,7 +109,7 @@ jest.mock('path', () => ({
 
 jest.mock('../src/translator/lexicon', () => ({
   detectLanguageByLexicon: jest.fn(),
-  getEnglishMatchPercentage: jest.fn(() => 60) // Default: 60% match (clearly above threshold)
+  getEnglishMatchPercentage: jest.fn(() => 51) // Default: 51% match (just above 50% threshold to exercise boundary behavior)
 }));
 
 jest.mock('langdetect', () => ({

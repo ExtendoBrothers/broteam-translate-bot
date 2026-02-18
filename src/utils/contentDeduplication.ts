@@ -166,13 +166,15 @@ export function isAcceptableWithSemanticCheck(
   const semanticDuplicate = isContentDuplicateSync(trimmed);
 
   // Language detection with enhanced checks
-  // Quick reject: Check for non-Latin scripts
-  const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
-  const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
-  const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
-  
+  // Quick reject only when text is predominantly non-Latin to avoid false rejects
+  const nonLatinMatch = textOnly.match(/[\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/g);
+  const letterMatch = textOnly.match(/\p{L}/gu);
+  const nonLatinCount = nonLatinMatch ? nonLatinMatch.length : 0;
+  const letterCount = letterMatch ? letterMatch.length : 0;
+  const nonLatinRatio = letterCount > 0 ? nonLatinCount / letterCount : 0;
+
   let detectedLang = 'und';
-  if (hasCyrillic || hasArabic || hasCJK) {
+  if (nonLatinRatio >= 0.5) {
     detectedLang = 'non-latin';
   } else {
     try {

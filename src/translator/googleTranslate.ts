@@ -153,8 +153,9 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
 export async function translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   if (!text) return '';
 
-  // Normalize and protect tokens BEFORE replacing newlines
-  // This ensures mention regex can properly terminate at literal \n characters
+  // Normalize and protect tokens BEFORE replacing newlines.
+  // Mentions use a lookahead to avoid consuming trailing newlines, so we keep
+  // literal \n in place until tokenization is complete.
   text = normalizeNFC(text);
   const sanitized = protectTokens(text);
 
