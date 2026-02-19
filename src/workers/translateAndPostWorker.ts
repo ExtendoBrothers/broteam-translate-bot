@@ -500,6 +500,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
       const duplicate = postedOutputs.includes(trimmed);
       const sameAsInput = textOnly === originalTextOnly;
+      const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
+      
       /**
        * Shared language detection helper to eliminate duplication across the codebase.
        * Uses multi-stage detection: non-Latin script quick-reject → lexicon-based → 
