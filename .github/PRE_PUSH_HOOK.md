@@ -23,13 +23,13 @@ Once configured, the hook will be invoked automatically by Git before each push.
 
 2. **ESLint** (`npm run lint`)
    - Checks code style and best practices
-   - Allows warnings (230 warnings are normal)
+   - Allows warnings (currently acceptable)
    - Only fails on actual errors
 
-3. **Tests** (`npm test`)
-   - Runs all 419 tests (20 test suites)
-   - Uses `--bail` to exit on first failure (faster feedback)
-   - Uses `--maxWorkers=2` to reduce resource contention
+3. **Tests** (`npm test -- --bail --maxWorkers=2`)
+   - Runs the full Jest test suite
+   - Hook adds `--bail` to exit on first failure (faster feedback)
+   - Hook adds `--maxWorkers=2` to reduce resource contention
    - Takes ~2 minutes to complete
 
 ## Typical Output
@@ -39,7 +39,7 @@ Running pre-push checks...
 → Building TypeScript...
 → Running ESLint...
 → Running tests...
-✅ Pre-push checks passed (build + lint + 419 tests).
+✅ Pre-push checks passed (build + lint + tests).
 ```
 
 ## If Checks Fail
