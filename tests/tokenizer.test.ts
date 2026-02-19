@@ -33,6 +33,35 @@ describe('Tokenizer', () => {
   });
 
   describe('protectTokens', () => {
+    it('should protect mentions and URLs separately when separated by newlines', () => {
+      // Regression test for bug where mention regex would capture URL with __XNL__ placeholder
+      const input = '@Spark1892\nhumansubstrate.com\nyou\'ll be the first';
+      const result = protectTokens(input);
+      
+      // Should have separate tokens for mention and URL
+      expect(result).toContain('__XTOK_MENTION_');
+      expect(result).toContain('__XTOK_URL_');
+      
+      // Extract and verify tokens
+      const mentionMatch = result.match(/__XTOK_MENTION_\d+_([A-Za-z0-9+/=]+)__/);
+      const urlMatch = result.match(/__XTOK_URL_\d+_([A-Za-z0-9+/=]+)__/);
+      
+      expect(mentionMatch).toBeTruthy();
+      expect(urlMatch).toBeTruthy();
+      
+      if (mentionMatch && urlMatch) {
+        const decodedMention = Buffer.from(mentionMatch[1], 'base64').toString('utf8');
+        const decodedUrl = Buffer.from(urlMatch[1], 'base64').toString('utf8');
+        
+        // Mention should include the newline (or just @Spark1892)
+        expect(decodedMention).toMatch(/^@Spark1892/);
+        // URL should NOT contain XNL or underscores
+        expect(decodedUrl).toBe('humansubstrate.com');
+        expect(decodedUrl).not.toContain('XNL');
+        expect(decodedUrl).not.toContain('_');
+      }
+    });
+
     it('should protect code blocks', () => {
       const input = 'Here is some code: ```console.log("hello")```';
       const result = protectTokens(input);
@@ -199,6 +228,68 @@ describe('Tokenizer', () => {
       const restored = restoreTokens(tokenized);
 
       expect(restored).toBe(complexContent);
+    });
+
+    it('should preserve space after mention followed by a word', () => {
+      const original = '@hitlersnewgroov why';
+      const tokenized = protectTokens(original);
+      
+      // Should have a space between the token and the word "why"
+      // This ensures the word can be translated independently
+      expect(tokenized).toMatch(/__XTOK_MENTION_\d+_[A-Za-z0-9+/=]+__\s+why/);
+      
+      const restored = restoreTokens(tokenized);
+      expect(restored).toBe(original);
+    });
+
+    it('should preserve newline after mention followed by a word', () => {
+      const original = '@hitlersnewgroov\nwhy';
+      const tokenized = protectTokens(original);
+      
+      // Should have newline between the token and the word "why"
+      // This ensures the word can be translated independently
+      expect(tokenized).toMatch(/__XTOK_MENTION_\d+_[A-Za-z0-9+/=]+__\nwhy/);
+      
+      const restored = restoreTokens(tokenized);
+      expect(restored).toBe(original);
+    });
+
+    it('should remove orphaned token placeholder fragments', () => {
+      // Test cases from actual logs where fragments like XN, XNL were left behind
+      const testCases = [
+        { input: 'Hello XN world', expected: 'Hello world' },
+        { input: 'Test XNL content', expected: 'Test content' },
+        { input: 'Some __X text', expected: 'Some text' },
+        { input: 'Data __XN here', expected: 'Data here' },
+        { input: 'Check __XTOK fragment', expected: 'Check fragment' },
+        { input: 'XTOK_ leftover', expected: 'leftover' },
+        { input: 'XTOK_URL_1 broken', expected: 'broken' },
+        { input: 'Something SILE else', expected: 'Something else' },
+        { input: 'Text with __ABC__ fragment', expected: 'Text with fragment' },
+        // Note: Multiple spaces without fragments are preserved (no false positives)
+        { input: 'No  fragments  here', expected: 'No  fragments  here' },
+      ];
+
+      for (const { input, expected } of testCases) {
+        const restored = restoreTokens(input);
+        expect(restored).toBe(expected);
+      }
+    });
+
+    it('should handle real-world mangled token examples from logs', () => {
+      // From: "@hitlersnewgroov XN, ON TIME" - should remove XN
+      const mangled1 = '@hitlersnewgroov XN, both';
+      const restored1 = restoreTokens(mangled1);
+      // The XN between spaces gets removed, leaving space cleanup
+      expect(restored1).toBe('@hitlersnewgroov, both');
+      expect(restored1).not.toContain('XN');
+
+      // From: "HumanSubstrate.com SILE XNL" - should remove SILE and XNL
+      const mangled2 = 'HumanSubstrate.com SILE XNL Look who you are';
+      const restored2 = restoreTokens(mangled2);
+      expect(restored2).toBe('HumanSubstrate.com Look who you are');
+      expect(restored2).not.toContain('SILE');
+      expect(restored2).not.toContain('XNL');
     });
   });
 });

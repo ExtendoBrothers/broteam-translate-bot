@@ -153,12 +153,14 @@ async function doTranslateOnce(q: string, targetLanguage: string, timeoutMs: num
 export async function translateText(text: string, targetLanguage: string, sourceLanguage?: string): Promise<string> {
   if (!text) return '';
 
-  // Protect newlines before translation
-  text = text.replace(/\n/g, '__XNL__');
-
-  // Normalize and protect tokens before translation
+  // Normalize and protect tokens BEFORE replacing newlines.
+  // Mentions use a lookahead to avoid consuming trailing newlines, so we keep
+  // literal \n in place until tokenization is complete.
   text = normalizeNFC(text);
   const sanitized = protectTokens(text);
+
+  // Protect newlines AFTER tokenization
+  const withNewlinesProtected = sanitized.replace(/\n/g, '__XNL__');
 
   const MAX_RETRIES = 5;
   const BASE_TIMEOUT_MS = 30000; // 30s per attempt (increased from 15s)
@@ -169,7 +171,7 @@ export async function translateText(text: string, targetLanguage: string, source
     try {
       // For English target, don't specify source to let LibreTranslate auto-detect
       const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;
-      const raw = await translateWithTokenProtection(sanitized, targetLanguage, effectiveSource);
+      const raw = await translateWithTokenProtection(withNewlinesProtected, targetLanguage, effectiveSource);
       return restoreTokens(raw).replace(/__XNL__/g, '\n');
     } catch (error: unknown) {
       lastErr = error;
@@ -194,7 +196,7 @@ export async function translateText(text: string, targetLanguage: string, source
       if (!triedChunkFallback) {
         triedChunkFallback = true;
         try {
-          const chunks = splitProtectedIntoChunks(sanitized, 220);
+          const chunks = splitProtectedIntoChunks(withNewlinesProtected, 220);
           const outPieces: string[] = [];
           for (const ch of chunks) {
             const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;

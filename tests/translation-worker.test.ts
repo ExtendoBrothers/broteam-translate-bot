@@ -2,9 +2,9 @@
  * Unit tests for translation worker utilities
  */
 
-import {
-  translateAndPostWorker
-} from '../src/workers/translateAndPostWorker';
+import '@jest/globals';
+
+// Note: translateAndPostWorker is tested indirectly through utility function tests
 
 // Mock all dependencies
 jest.mock('../src/twitter/fetchTweets', () => ({
@@ -108,7 +108,8 @@ jest.mock('path', () => ({
 }));
 
 jest.mock('../src/translator/lexicon', () => ({
-  detectLanguageByLexicon: jest.fn()
+  detectLanguageByLexicon: jest.fn(),
+  getEnglishMatchPercentage: jest.fn(() => 51) // Default: 51% match (just above 50% threshold to exercise boundary behavior)
 }));
 
 jest.mock('langdetect', () => ({

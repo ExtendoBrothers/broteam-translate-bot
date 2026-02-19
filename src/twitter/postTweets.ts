@@ -62,7 +62,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
         
     return { id: previousTweetId, threadLength: chunks.length };
   } catch (error: unknown) {
-    // Handle rate limit errors (429 and 403) and extract reset time
+    // Handle rate limit errors (429 only) and extract reset time
     const err = error as { 
       code?: number; 
       rateLimit?: { reset?: number }; 
@@ -72,14 +72,12 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       data?: { rateLimit?: { reset?: number } };
     };
     
-    // Check for rate limit indicators (only 429, not 403 which is Forbidden/Auth)
-    const isRateLimited = err?.code === 429 || 
-                         err?.statusCode === 429 ||
-                         err?.rateLimit?.reset ||
-                         err?.headers?.['x-rate-limit-reset'] ||
-                         err?.message?.includes('429') || 
-                         err?.message?.includes('rate limit') ||
-                         err?.message?.includes('Rate limit');
+    // Check for rate limit indicators (ONLY 429, not 403 which is Forbidden/Auth)
+    // Don't check error message text as it can be misleading - only check HTTP status codes
+    const isRateLimitedStatus = err?.code === 429 || err?.statusCode === 429;
+    // Treat any 429 as a rate limit; use metadata only to refine the reset time when available
+    const isRateLimited = isRateLimitedStatus;
+    
     
     if (isRateLimited) {
       // Extract reset time from Twitter's response
@@ -105,9 +103,12 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       const resetInfo = resetTime ? `Twitter reset: ${new Date(resetTime * 1000).toISOString()}` : 'No reset time available';
       logger.warn(`Post rate limit hit (429). ${resetInfo}`);
     } else {
-      // Non-rate-limit error - still set 45-minute cooldown
-      rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'cooldown after non-rate-limit error');
-      logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown after post error`);
+      // Non-rate-limit error (e.g., 403 auth, 401 unauthorized, network error)
+      const statusCode = err?.code || err?.statusCode || 'unknown';
+      
+      // Set 45-minute cooldown after non-rate-limit errors
+      rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, `cooldown after ${statusCode} error`);
+      logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown after post error (status: ${statusCode})`);
       
       // Log detailed error information for debugging
       const errorDetails = {
@@ -117,7 +118,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
         data: err?.data,
         stack: (error as Error)?.stack
       };
-      logger.error('Failed to post tweet with detailed error:', errorDetails);
+      logger.error(`Failed to post tweet (HTTP ${statusCode}):`, errorDetails);
       logger.error(`Tweet content that failed: "${content.substring(0, 200)}${content.length > 200 ? '...' : ''}"`);
     }
     throw error;

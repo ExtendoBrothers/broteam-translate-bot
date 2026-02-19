@@ -17,8 +17,17 @@ if (!fs.existsSync(FEEDBACK_FILE)) {
   process.exit(0);
 }
 
+// Read feedback file with error handling for concurrent access
+let fileContent;
+try {
+  fileContent = fs.readFileSync(FEEDBACK_FILE, 'utf8');
+} catch (err) {
+  console.log('⚠️  Could not read feedback file (may be locked):', err instanceof Error ? err.message : String(err));
+  process.exit(0);
+}
+
 // Count feedback entries with userFeedback populated
-const lines = fs.readFileSync(FEEDBACK_FILE, 'utf8').split('\n').filter(l => l.trim());
+const lines = fileContent.split('\n').filter(l => l.trim());
 
 // Simple line-by-line parsing with robust error handling
 const entries = [];
@@ -31,8 +40,12 @@ for (const line of lines) {
     const entry = JSON.parse(line);
     entries.push(entry);
   } catch {
-    // Skip malformed lines silently
+    // Skip malformed lines - may be incomplete due to concurrent write
     skippedLines++;
+    // Only log if there are multiple failures (indicates actual corruption)
+    if (skippedLines === 1) {
+      console.log('⚠️  Encountered malformed JSONL line (may be incomplete write)');
+    }
   }
 }
 
@@ -67,7 +80,7 @@ if (feedbackCount > 0 && feedbackCount % ANALYSIS_INTERVAL === 0) {
     console.log('     python scripts/convert-humor-model-to-onnx.py --custom');
     
   } catch (error) {
-    console.error('Error running analysis:', error.message);
+    console.error('Error running analysis:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 } else {

@@ -18,6 +18,10 @@ module.exports = {
       kill_timeout: 5000,
       shutdown_with_message: true,
       listen_timeout: 3000,
+      // Restart loop prevention (use exponential backoff to avoid tight restart loops)
+      max_restarts: 10,           // Max 10 restarts within min_uptime window
+      min_uptime: '30s',          // Consider unstable if crashes within 30s
+      exp_backoff_restart_delay: 100,  // Exponential backoff starting at 100ms
       env_windows: {
         NODE_ENV: 'production',
         DRY_RUN: '0'

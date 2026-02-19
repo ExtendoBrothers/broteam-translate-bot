@@ -30,7 +30,7 @@ Twitter translation bot that fetches tweets from @BroTeamPills, translates them 
 
 **Test Environment**: Tests use `NODE_ENV=test` to trigger test-specific behavior. `monthlyUsageTracker.ts` uses `isTestEnv = process.env.NODE_ENV === 'test'` to disable tracking (NOT coupled to DISABLE_USAGE_TRACKING flag). Tests run in parallel with worker-isolated temp directories (`.test-temp/worker-{id}/`).
 
-**Pre-Push Hooks**: Husky runs `npm run build` + `npm run lint` before push. All commits MUST compile and pass linting. CI runs same checks on PRs.
+**Pre-Push Hooks**: If installed locally (`git/hooks/pre-push`), runs build + lint + tests before push. All commits MUST compile and pass linting. CI runs same checks on PRs. See `.github/PRE_PUSH_HOOK.md` for setup instructions.
 
 **Coverage Goals**: 100% on core utilities. 388 tests across 18 suites (414 total assertions). Run `npm run test:coverage` for reports. Tests execute in parallel using Jest workers (50% of available cores).
 

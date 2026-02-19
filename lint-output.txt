@@ -1,0 +1,32 @@
+
+> broteam-translate-bot@0.12.1 lint
+> eslint src scripts --ext .ts,.js
+
+(node:36768) [MODULE_TYPELESS_PACKAGE_JSON] Warning: Module type of file:///C:/Users/Daniel/broteam-translate-bot/eslint.config.js?mtime=1771454026811 is not specified and it doesn't parse as CommonJS.
+Reparsing as ES module because module syntax was detected. This incurs a performance overhead.
+To eliminate this warning, add "type": "module" to C:\Users\Daniel\broteam-translate-bot\package.json.
+(Use `node --trace-warnings ...` to show where the warning was created)
+
+C:\Users\Daniel\broteam-translate-bot\src\scripts\testTokenizer.ts
+   6:5  warning  Unexpected console statement  no-console
+  38:3  warning  Unexpected console statement  no-console
+
+C:\Users\Daniel\broteam-translate-bot\src\utils\enhancedInstanceLock.ts
+  285:29  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Daniel\broteam-translate-bot\src\utils\profiler.ts
+  237:33  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  241:47  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Daniel\broteam-translate-bot\src\utils\safeFileOps.ts
+   48:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  104:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  187:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+  252:18  warning  Unexpected any. Specify a different type  @typescript-eslint/no-explicit-any
+
+C:\Users\Daniel\broteam-translate-bot\src\workers\translateAndPostWorker.ts
+  514:16  error    'detectEnglish' is defined but never used  no-unused-vars
+  514:16  warning  'detectEnglish' is defined but never used  @typescript-eslint/no-unused-vars
+
+Γ£û 11 problems (1 error, 10 warnings)
+

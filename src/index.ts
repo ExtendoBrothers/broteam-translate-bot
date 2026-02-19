@@ -1,3 +1,5 @@
+// Load .env file FIRST before any other imports that use config
+import 'dotenv/config';
 import { scheduleJobs, recordLastRun } from './scheduler/jobs';
 import { translateAndPostWorker } from './workers/translateAndPostWorker';
 import { logger } from './utils/logger';
@@ -27,7 +29,14 @@ function validateEnv(): boolean {
     return false;
   }
     
-  logger.info('Environment validated successfully.');
+  // Log which auth methods are available
+  if (hasOAuth1 && hasOAuth2) {
+    logger.info('Environment validated successfully. OAuth2 primary, OAuth1 available as fallback.');
+  } else if (hasOAuth2) {
+    logger.info('Environment validated successfully. OAuth2 only (no OAuth1 fallback).');
+  } else if (hasOAuth1) {
+    logger.info('Environment validated successfully. OAuth1 only (autonomous mode).');
+  }
   return true;
 }
 

@@ -16,6 +16,26 @@ node scripts/update-package-version.js
 Write-Host "Stopping and deleting PM2 bot process..."
 pm2 delete broteam-translate-bot 2>$null
 
+Write-Host "Waiting for process to fully exit..."
+Start-Sleep -Seconds 3
+
+# Clean up lock file if it exists (handles case where process crashed)
+if (Test-Path ".bot-instance.lock") {
+    Write-Host "Removing stale lock file..."
+    Remove-Item -Force .bot-instance.lock
+}
+
+# Verify no orphaned Node processes
+$orphans = Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object {
+    $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
+    $cmdLine -like "*broteam*" -or $cmdLine -like "*dist\src\index.js*"
+}
+if ($orphans) {
+    Write-Host "⚠️  Found orphaned processes, killing..."
+    $orphans | Stop-Process -Force
+    Start-Sleep -Seconds 1
+}
+
 Write-Host "Starting PM2 bot with fresh environment..."
 pm2 start ecosystem.config.js --only broteam-translate-bot
 

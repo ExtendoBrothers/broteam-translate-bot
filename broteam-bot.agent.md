@@ -90,7 +90,7 @@ jest.mock('../src/utils/tweetTracker', () => ({ tweetTracker: { isProcessed: jes
 jest.mock('../src/utils/postTracker', () => ({ postTracker: { canPost: jest.fn(), recordPost: jest.fn() } }));
 ```
 
-**Pre-Push Hooks**: Husky automatically runs `npm run build` and `npm run lint`. All commits must compile and pass linting.
+**Pre-Push Hooks**: If installed (`.git/hooks/pre-push`), automatically runs build + lint + tests before push. See `.github/PRE_PUSH_HOOK.md` for setup. All commits must compile and pass linting.
 
 **Parallel Execution**: Tests run with Jest workers (50% of available cores). Each worker gets isolated temp directory `.test-temp/worker-{id}/`. Modules automatically detect test environment via `NODE_ENV=test` and `JEST_WORKER_ID`.
 

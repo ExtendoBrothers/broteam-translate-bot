@@ -6,7 +6,7 @@
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
-import { detectLanguageByLexicon } from '../translator/lexicon';
+import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { calculateSimilarity, normalizeText as optimizedNormalize } from './optimizedDuplicateCheck';
 import { processLogFileLines } from './streamLogReader';
 
@@ -165,19 +165,43 @@ export function isAcceptableWithSemanticCheck(
   // NEW: Semantic duplicate check (using sync version)
   const semanticDuplicate = isContentDuplicateSync(trimmed);
 
-  // Language detection (existing logic)
+  // Language detection with enhanced checks
+  // Quick reject only when text is predominantly non-Latin to avoid false rejects
+  const nonLatinMatch = textOnly.match(/[\u0400-\u04FF\u0600-\u06FF\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/g);
+  const letterMatch = textOnly.match(/\p{L}/gu);
+  const nonLatinCount = nonLatinMatch ? nonLatinMatch.length : 0;
+  const letterCount = letterMatch ? letterMatch.length : 0;
+  const nonLatinRatio = letterCount > 0 ? nonLatinCount / letterCount : 0;
+
   let detectedLang = 'und';
-  try {
-    const lexiconResult = detectLanguageByLexicon(textOnly);
-    detectedLang = lexiconResult || 'und';
-    if (detectedLang === 'und') {
-      const detections = langdetect.detect(textOnly);
-      if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
-        detectedLang = detections[0].lang;
+  if (nonLatinRatio >= 0.5) {
+    detectedLang = 'non-latin';
+  } else {
+    try {
+      const lexiconResult = detectLanguageByLexicon(textOnly);
+      detectedLang = lexiconResult || 'und';
+      const englishMatchPct = getEnglishMatchPercentage(textOnly);
+      
+      // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+      if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+        const detections = langdetect.detect(textOnly);
+        if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+          detectedLang = 'und';
+        }
       }
+      
+      if (detectedLang === 'und') {
+        const minEnglishLexiconMatch = 20;
+        const detections = langdetect.detect(textOnly);
+        if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8) {
+          if (englishMatchPct >= minEnglishLexiconMatch) {
+            detectedLang = detections[0].lang;
+          }
+        }
+      }
+    } catch {
+      // ignore
     }
-  } catch {
-    // ignore
   }
   const notEnglish = detectedLang !== 'en';
 
