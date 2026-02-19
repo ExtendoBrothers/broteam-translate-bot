@@ -38,7 +38,7 @@ export function acquireLock(): boolean {
         break; // Success!
         
       } catch (error: unknown) {
-        const err = error as NodeJS.ErrnoException;
+        const err = error as Error & { code?: string };
         
         // EEXIST means lock file already exists - check if it's stale
         if (err.code === 'EEXIST') {
