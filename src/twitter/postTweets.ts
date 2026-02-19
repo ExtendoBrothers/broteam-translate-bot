@@ -75,9 +75,9 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     // Check for rate limit indicators (ONLY 429, not 403 which is Forbidden/Auth)
     // Don't check error message text as it can be misleading - only check HTTP status codes
     const isRateLimitedStatus = err?.code === 429 || err?.statusCode === 429;
-    const hasRateLimitMetadata =
-      !!(err?.rateLimit?.reset || err?.headers?.['x-rate-limit-reset'] || err?.data?.rateLimit?.reset);
-    const isRateLimited = isRateLimitedStatus && hasRateLimitMetadata;
+    // Treat any 429 as a rate limit; use metadata only to refine the reset time when available
+    const isRateLimited = isRateLimitedStatus;
+    
     
     if (isRateLimited) {
       // Extract reset time from Twitter's response

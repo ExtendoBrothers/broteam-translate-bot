@@ -22,7 +22,7 @@ let fileContent;
 try {
   fileContent = fs.readFileSync(FEEDBACK_FILE, 'utf8');
 } catch (err) {
-  console.log('⚠️  Could not read feedback file (may be locked):', err.message);
+  console.log('⚠️  Could not read feedback file (may be locked):', err instanceof Error ? err.message : String(err));
   process.exit(0);
 }
 
@@ -80,7 +80,7 @@ if (feedbackCount > 0 && feedbackCount % ANALYSIS_INTERVAL === 0) {
     console.log('     python scripts/convert-humor-model-to-onnx.py --custom');
     
   } catch (error) {
-    console.error('Error running analysis:', error.message);
+    console.error('Error running analysis:', error instanceof Error ? error.message : String(error));
     process.exit(1);
   }
 } else {

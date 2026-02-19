@@ -500,7 +500,73 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
       const duplicate = postedOutputs.includes(trimmed);
       const sameAsInput = textOnly === originalTextOnly;
-      const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
+      /**
+       * Shared language detection helper to eliminate duplication across the codebase.
+       * Uses multi-stage detection: non-Latin script quick-reject → lexicon-based → 
+       * langdetect fallback with validation.
+       * 
+       * @param textOnly - Text with tokens already removed
+       * @param debugLabel - Optional label for debug logging (e.g., "CHAIN_1", "RANDOM_COLLECT")
+       * @returns Object with detectedLang ('en' or 'und' or 'non-latin') and englishMatchPct
+       */
+      function detectEnglish(textOnly: string, debugLabel: string = ''): { detectedLang: string; englishMatchPct: number } {
+        const prefix = debugLabel ? `[${debugLabel}] ` : '';
+        
+        // Quick reject: Check for non-Latin scripts that should never be classified as English
+        const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+        const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
+        const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+        
+        if (hasCyrillic || hasArabic || hasCJK) {
+          appendToDebugLog(`${prefix}Non-Latin script detected (Cyrillic=${hasCyrillic}, Arabic=${hasArabic}, CJK=${hasCJK}) - not English\n`);
+          return { detectedLang: 'non-latin', englishMatchPct: 0 };
+        }
+        
+        // Try lexicon-based detection first for short texts
+        const lexiconResult = detectLanguageByLexicon(textOnly);
+        let detectedLang = lexiconResult || 'und';
+        const englishMatchPct = getEnglishMatchPercentage(textOnly);
+        appendToDebugLog(`${prefix}Lexicon detection: ${lexiconResult} (${englishMatchPct.toFixed(1)}% English words)\n`);
+        
+        // If lexicon detected English but match is borderline (50-70%), validate with langdetect
+        if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+          try {
+            const detections = langdetect.detect(textOnly);
+            appendToDebugLog(`${prefix}Validating borderline English detection with langdetect: ${JSON.stringify(detections)}\n`);
+            // If langdetect disagrees strongly or confidence is low, reject
+            if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
+              detectedLang = 'und'; // Reset to undetermined
+              appendToDebugLog(`${prefix}REJECTED borderline English classification - langdetect disagrees or low confidence\n`);
+            }
+          } catch (e) {
+            appendToDebugLog(`${prefix}Langdetect validation error: ${e}\n`);
+          }
+        }
+        
+        // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
+        if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+          const minEnglishLexiconMatch = 20;
+          
+          // Lexicon couldn't determine language, try langdetect as fallback
+          try {
+            const detections = langdetect.detect(textOnly);
+            appendToDebugLog(`${prefix}Langdetect fallback: ${JSON.stringify(detections)}\n`);
+            if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
+              // Only trust langdetect's English classification if it has sufficient real English words
+              if (englishMatchPct >= minEnglishLexiconMatch) {
+                detectedLang = detections[0].lang;
+              } else {
+                appendToDebugLog(`${prefix}REJECTED langdetect English classification - only ${englishMatchPct.toFixed(1)}% real English words (need ${minEnglishLexiconMatch}%)\n`);
+              }
+            }
+          } catch (e) {
+            appendToDebugLog(`${prefix}Langdetect error: ${e}\n`);
+            logger.warn(`Language detection failed: ${e}`);
+          }
+        }
+        
+        return { detectedLang, englishMatchPct };
+      }
       
       // Quick reject: Check for non-Latin scripts
       const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
@@ -818,8 +884,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         continue;
       }
       
-      // ATOMIC: Mark as processed before duplicate check to prevent race conditions
-      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
+      // Perform duplicate check BEFORE marking as processed
+      // This prevents the "already processed" check in checkForDuplicates from blocking queued tweets
       let duplicateCheck;
       try {
         duplicateCheck = await checkForDuplicates(
@@ -831,20 +897,21 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         );
       } catch (error) {
         logger.error(`[DUPLICATE_PREVENTION] Error during duplicate check for queued tweet ${queuedTweet.sourceTweetId}: ${error}`);
-        tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
         tweetQueue.dequeue();
         continue;
       }
 
       if (!duplicateCheck.canProceed) {
         logger.warn(`[DUPLICATE_PREVENTION] Blocking queued post for tweet ${queuedTweet.sourceTweetId}: ${duplicateCheck.reason}`);
-        tweetTracker.unmarkProcessed(queuedTweet.sourceTweetId);
         if (duplicateCheck.severity === 'block') {
           tweetQueue.dequeue();
           logger.info(`[QUEUE_DEBUG] Dequeued blocked tweet. New queue size: ${tweetQueue.size()}`);
           continue;
         }
       }
+
+      // ATOMIC: Mark as processed only after duplicate check succeeds
+      tweetTracker.markProcessed(queuedTweet.sourceTweetId);
       
       // Mark as processed before posting (only for real posts, not dry runs)
       let markedAsProcessed = false;
