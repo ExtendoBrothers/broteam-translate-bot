@@ -55,10 +55,11 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const trimmed = finalResult.trim();
   const originalTrimmed = originalText.trim();
 
-  // Extract text content without tokens for quality checks
+  // Extract text content without tokens, mentions, or hashtags for quality checks
+  // @mentions and #hashtags are not real words in any language and skew language detection
   const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-  const textOnly = trimmed.replace(tokenPattern, '').trim();
-  const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+  const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
 
   // Check if output is too short (less than 33% of input text length)
   const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
@@ -233,7 +234,7 @@ const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
 // Minimum delay between posts to avoid rapid-fire posting (45 minutes)
 // NOTE: If you change MIN_POST_INTERVAL_MS, ensure consistency with postTweets.ts and update tests
-const MIN_POST_INTERVAL_MS = 45 * 60 * 1000; // 45 minutes
+const MIN_POST_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes — queue drains at this cadence until daily limit reached
 let lastPostTime = 0;
 
 // Circuit breaker to temporarily skip languages that are failing repeatedly.
@@ -492,8 +493,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const trimmed = finalResult.trim();
       const originalTrimmed = inputText.trim();
       const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-      const textOnly = trimmed.replace(tokenPattern, '').trim();
-      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+      const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
+      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       
       const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
       const empty = textOnly.length <= 1;
@@ -637,8 +638,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const trimmed = chainResult.result.trim();
       const originalTrimmed = inputText.trim();
       const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-      const textOnly = trimmed.replace(tokenPattern, '').trim();
-      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+      const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
+      const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       
       const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
       const empty = textOnly.length <= 1;
@@ -1030,7 +1031,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       filteredCandidates.map(async (candidate) => {
         // Detect language
         const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-        const textOnly = candidate.result.replace(tokenPattern, '').trim();
+        const textOnly = candidate.result.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
         
         // Quick reject: Check for non-Latin scripts
         const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);

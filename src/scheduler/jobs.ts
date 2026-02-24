@@ -31,15 +31,15 @@ function computeDynamicIntervalMs(): number {
   // Always schedule 30 minutes after the last run (most recent operation)
   const anchor = readLastRun() || readLastPost();
   if (!anchor) {
-    // No previous run/post found, schedule in 30 minutes from now
-    logger.info('No previous run or post found, scheduling in 30 minutes');
+    // No previous run/post found, schedule in 20 minutes from now
+    logger.info('No previous run or post found, scheduling in 20 minutes');
     return 30 * 60 * 1000;
   }
   const now = new Date();
   const elapsed = now.getTime() - anchor.getTime();
-  const intervalMs = 30 * 60 * 1000; // 30 minutes
+  const intervalMs = 20 * 60 * 1000; // 20 minutes — matches post cadence so queue drains once per run
 
-  logger.info(`Interval calculation: now=${now.toISOString()}, anchor=${anchor.toISOString()}, elapsed=${Math.ceil(elapsed/1000)}s, target=1800s`);
+  logger.info(`Interval calculation: now=${now.toISOString()}, anchor=${anchor.toISOString()}, elapsed=${Math.ceil(elapsed/1000)}s, target=1200s`);
 
   return Math.max(0, intervalMs - elapsed);
 }
@@ -93,5 +93,5 @@ function scheduleNext() {
 
 export function scheduleJobs() {
   scheduleNext();
-  logger.info('Scheduler configured: running every 30 minutes since the last run');
+  logger.info('Scheduler configured: running every 20 minutes since the last run');
 }

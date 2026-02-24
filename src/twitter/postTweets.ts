@@ -4,10 +4,9 @@ import { splitTweet } from '../utils/tweetSplitter';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 
 // Minimum seconds between posts to avoid hitting rate limits (proactive throttling)
-// Twitter allows up to 50 posts per 24 hours, but we use 12 posts with 45-minute intervals
-// This ultra-conservative approach ensures we never hit any rate limits
+// Twitter allows up to 50 posts per 24 hours; we use 12 posts with 20-minute intervals (12 × 20 min = 4h)
 // NOTE: If you change MIN_POST_INTERVAL_SECONDS, update related test expectations if they exist
-const MIN_POST_INTERVAL_SECONDS = 45 * 60; // 45 minutes between posts
+const MIN_POST_INTERVAL_SECONDS = 20 * 60; // 20 minutes between posts
 
 export async function postTweet(client: TwitterClient, content: string, sourceTweetId?: string) {
   const isDryRun = process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true';

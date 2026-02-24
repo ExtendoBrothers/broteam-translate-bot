@@ -20,7 +20,8 @@ export const LEXICONS: Record<string, Set<string>> = {
 export function detectLanguageByLexicon(text: string): string | null {
   // Filter words: ignore very short words (<=2 chars) as they're unreliable indicators
   // (e.g., "de", "l", "a", "i" exist in many languages)
-  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  // Strip @mentions and #hashtags - they aren't real words in any language and skew detection
+  const words = text.replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').toLowerCase().split(/\W+/).filter(w => w.length > 2);
   const totalWords = words.length;
 
   if (totalWords === 0) return null;
@@ -53,7 +54,8 @@ export function detectLanguageByLexicon(text: string): string | null {
  * Returns the percentage of words that exist in the English dictionary
  */
 export function getEnglishMatchPercentage(text: string): number {
-  const words = text.toLowerCase().split(/\W+/).filter(w => w.length > 2);
+  // Strip @mentions and #hashtags - they aren't real words in any language and skew detection
+  const words = text.replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').toLowerCase().split(/\W+/).filter(w => w.length > 2);
   if (words.length === 0) return 0;
 
   let matchCount = 0;
