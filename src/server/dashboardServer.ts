@@ -19,7 +19,7 @@ import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
 import { candidateStore } from './candidateStore';
-import { generateCandidates } from '../workers/candidateGenerator';
+import { generationQueue } from './generationQueue';
 import { fetchTweets } from '../twitter/fetchTweets';
 import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
@@ -58,22 +58,7 @@ function isAuthorized(req: http.IncomingMessage): boolean {
   return auth === `Bearer ${DASHBOARD_PASSWORD}`;
 }
 
-/** 
- * Kick off candidate generation for a tweet in the background.
- * Errors are stored on the queue item rather than thrown.
- */
-function generateInBackground(queueId: string, tweet: Tweet): void {
-  setImmediate(async () => {
-    try {
-      const candidates = await generateCandidates(tweet);
-      candidateStore.setReady(queueId, candidates);
-      logger.info(`[DashboardServer] Candidates ready for queue item ${queueId}`);
-    } catch (err) {
-      candidateStore.setError(queueId, String(err));
-      logger.error(`[DashboardServer] Candidate generation failed for ${queueId}: ${err}`);
-    }
-  });
-}
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Route handlers
@@ -119,7 +104,7 @@ async function handleRequest(
   // ── GET /api/queue ───────────────────────────────────────────────────────
   if (method === 'GET' && url === '/api/queue') {
     const items = candidateStore.list(['generating', 'ready']);
-    json(res, 200, items);
+    json(res, 200, { items, generatingCount: generationQueue.depth });
     return;
   }
 
@@ -137,8 +122,8 @@ async function handleRequest(
             continue;
           }
           const queueId = candidateStore.add(tweet);
-          generateInBackground(queueId, tweet);
           tweetTracker.markProcessed(tweet.id);
+          generationQueue.enqueue(queueId, tweet);
         }
       } catch (err) {
         logger.error(`[DashboardServer] Fetch cycle error: ${err}`);
@@ -168,7 +153,7 @@ async function handleRequest(
       user: { id: 'manual', username: 'manual', displayName: 'Manual Input' },
     };
     const queueId = candidateStore.add(syntheticTweet);
-    generateInBackground(queueId, syntheticTweet);
+    generationQueue.enqueue(queueId, syntheticTweet);
     json(res, 201, { id: queueId, message: 'Tweet added to queue, generating candidates…' });
     return;
   }

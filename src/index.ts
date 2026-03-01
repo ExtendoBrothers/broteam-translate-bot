@@ -26,7 +26,7 @@ import { initializeGracefulShutdown, onShutdown } from './utils/gracefulShutdown
 import { startHealthMonitoring, logHealthReport } from './utils/healthCheck';
 import { startDashboardServer, stopDashboardServer } from './server/dashboardServer';
 import { candidateStore } from './server/candidateStore';
-import { generateCandidates } from './workers/candidateGenerator';
+import { generationQueue } from './server/generationQueue';
 import { fetchTweets } from './twitter/fetchTweets';
 import { tweetTracker } from './utils/tweetTracker';
 
@@ -47,17 +47,7 @@ async function runFetchCycle(): Promise<void> {
       const queueId = candidateStore.add(tweet);
       tweetTracker.markProcessed(tweet.id);
       added++;
-      // Generate in background so the HTTP response is not blocked
-      setImmediate(async () => {
-        try {
-          const candidates = await generateCandidates(tweet);
-          candidateStore.setReady(queueId, candidates);
-          logger.info(`[FetchCycle] Candidates ready for tweet ${tweet.id} (queue: ${queueId})`);
-        } catch (err) {
-          candidateStore.setError(queueId, String(err));
-          logger.error(`[FetchCycle] Candidate generation failed for ${tweet.id}: ${err}`);
-        }
-      });
+      generationQueue.enqueue(queueId, tweet);
     }
     logger.info(`[FetchCycle] Added ${added} new tweet(s) to queue`);
   } catch (err) {
