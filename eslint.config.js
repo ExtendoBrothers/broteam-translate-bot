@@ -26,6 +26,8 @@ export default [
         setInterval: 'readonly',
         clearTimeout: 'readonly',
         clearInterval: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
         fetch: 'readonly',
         AbortController: 'readonly',
         URL: 'readonly',
@@ -77,6 +79,32 @@ export default [
       'indent': ['error', 2],
       'quotes': ['error', 'single'],
       'semi': ['error', 'always']
+    }
+  },
+  {
+    files: ['tests/**/*.ts'],
+    languageOptions: {
+      globals: {
+        // Jest globals
+        jest: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        test: 'readonly',
+        expect: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        setImmediate: 'readonly',
+        clearImmediate: 'readonly',
+        require: 'readonly',
+        global: 'readonly'
+      }
+    },
+    rules: {
+      // Unused vars in tests are common (catch(e), intentional stubs, etc.)
+      'no-unused-vars': 'off',
+      '@typescript-eslint/no-unused-vars': 'off'
     }
   },
   {
