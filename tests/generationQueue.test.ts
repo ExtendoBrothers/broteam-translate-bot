@@ -5,6 +5,8 @@
  * LibreTranslate is never hit concurrently. Jobs are processed FIFO.
  */
 
+export {}; // ensure this file is treated as an ES module, not a global script
+
 jest.mock('../src/workers/candidateGenerator', () => ({
   generateCandidates: jest.fn(),
 }));
