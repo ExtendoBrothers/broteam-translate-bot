@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>BroTeam Translate · Manual Mode</title>
+  <style>
+    /* ── Reset & base ───────────────────────────────────────── */
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    :root {
+      --bg:       #1e1e1e;
+      --bg2:      #252526;
+      --bg3:      #2d2d30;
+      --border:   #3e3e42;
+      --text:     #d4d4d4;
+      --muted:    #858585;
+      --accent:   #4ec9b0;
+      --red:      #f48771;
+      --yellow:   #dcdcaa;
+      --green:    #89d185;
+      --blue:     #569cd6;
+      --purple:   #c586c0;
+      --best-glow: rgba(78, 201, 176, 0.18);
+    }
+    body {
+      font-family: system-ui, -apple-system, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 0 0 40px;
+    }
+
+    /* ── Layout ─────────────────────────────────────────────── */
+    .topbar {
+      background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      padding: 14px 24px;
+      display: flex;
+      align-items: center;
+      gap: 16px;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    .topbar h1 { font-size: 18px; color: var(--accent); font-weight: 700; flex: 1; }
+    .topbar .subtitle { font-size: 12px; color: var(--muted); margin-top: 2px; }
+
+    .main { max-width: 1280px; margin: 0 auto; padding: 24px; }
+
+    /* ── Buttons ─────────────────────────────────────────────── */
+    .btn {
+      display: inline-flex; align-items: center; gap: 6px;
+      padding: 7px 14px; border-radius: 5px; font-size: 13px; font-weight: 600;
+      border: 1px solid transparent; cursor: pointer; transition: opacity .15s;
+      user-select: none;
+    }
+    .btn:hover { opacity: .85; }
+    .btn:active { opacity: .7; }
+    .btn:disabled { opacity: .4; cursor: not-allowed; }
+    .btn-primary   { background: var(--accent); color: #000; }
+    .btn-ghost     { background: transparent; border-color: var(--border); color: var(--text); }
+    .btn-post      { background: #1d9bf0; color: #fff; }
+    .btn-danger    { background: #5a1d1d; border-color: #7a2d2d; color: var(--red); }
+
+    /* ── Input / Textarea ────────────────────────────────────── */
+    .input-row { display: flex; gap: 10px; align-items: flex-start; }
+    textarea, input[type="text"] {
+      background: var(--bg3); color: var(--text); border: 1px solid var(--border);
+      border-radius: 5px; padding: 10px 12px; font-size: 13px; width: 100%;
+      outline: none; resize: vertical;
+    }
+    textarea:focus, input[type="text"]:focus { border-color: var(--accent); }
+
+    /* ── Section card ────────────────────────────────────────── */
+    .section {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; margin-bottom: 24px; overflow: hidden;
+    }
+    .section-header {
+      background: var(--bg3); padding: 12px 18px;
+      display: flex; align-items: center; gap: 10px;
+    }
+    .section-header h2 { font-size: 14px; color: var(--accent); font-weight: 600; flex: 1; }
+    .section-body { padding: 18px; }
+
+    /* ── Status bar ──────────────────────────────────────────── */
+    #statusBar {
+      font-size: 12px; color: var(--muted);
+      padding: 6px 24px; background: var(--bg3);
+      border-bottom: 1px solid var(--border);
+      display: flex; gap: 16px; align-items: center;
+    }
+    #statusBar .dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+    .dot-ok   { background: var(--green); }
+    .dot-warn { background: var(--yellow); }
+    .dot-err  { background: var(--red); }
+
+    /* ── Tweet queue ─────────────────────────────────────────── */
+    #queue { list-style: none; display: flex; flex-direction: column; gap: 16px; }
+
+    .tweet-card {
+      background: var(--bg2); border: 1px solid var(--border);
+      border-radius: 8px; overflow: hidden;
+    }
+
+    .tweet-card-header {
+      background: var(--bg3); padding: 10px 16px;
+      display: flex; align-items: flex-start; gap: 12px;
+    }
+    .tweet-source-text {
+      flex: 1; font-size: 13px; color: var(--text); line-height: 1.5;
+      word-break: break-word;
+    }
+    .tweet-meta { font-size: 11px; color: var(--muted); white-space: nowrap; margin-top: 2px; }
+    .tweet-card-actions {
+      display: flex; gap: 8px; align-items: flex-start; flex-shrink: 0;
+    }
+
+    /* ── Candidates grid ─────────────────────────────────────── */
+    .candidates-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 12px;
+      padding: 14px 16px;
+    }
+
+    .candidate-card {
+      background: var(--bg); border: 1px solid var(--border);
+      border-radius: 6px; padding: 12px 14px;
+      display: flex; flex-direction: column; gap: 10px;
+      position: relative;
+      transition: border-color .2s;
+    }
+    .candidate-card.is-best {
+      border-color: var(--accent);
+      box-shadow: 0 0 0 2px var(--best-glow);
+    }
+
+    .candidate-label {
+      display: flex; align-items: center; gap: 8px;
+      font-size: 12px; font-weight: 700; color: var(--blue);
+    }
+    .badge-best {
+      background: var(--accent); color: #000;
+      font-size: 10px; font-weight: 800; padding: 2px 6px; border-radius: 3px;
+    }
+    .badge-error {
+      background: #5a1d1d; color: var(--red);
+      font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 3px;
+    }
+
+    .candidate-langs {
+      font-size: 10px; color: var(--muted); font-family: ui-monospace, monospace;
+      overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+    }
+
+    .candidate-result {
+      font-size: 13px; color: var(--text); line-height: 1.5;
+      word-break: break-word; min-height: 50px;
+    }
+    .candidate-result.generating {
+      color: var(--muted); font-style: italic;
+    }
+
+    .scores {
+      display: flex; flex-direction: column; gap: 4px;
+    }
+    .score-row {
+      display: flex; align-items: center; gap: 8px; font-size: 11px;
+    }
+    .score-label { color: var(--muted); width: 68px; flex-shrink: 0; }
+    .score-bar-wrap {
+      flex: 1; background: var(--bg3); border-radius: 3px; height: 6px; overflow: hidden;
+    }
+    .score-bar { height: 100%; border-radius: 3px; transition: width .4s; }
+    .score-bar.humor      { background: var(--purple); }
+    .score-bar.heuristic  { background: var(--blue); }
+    .score-bar.combined   { background: var(--accent); }
+    .score-value { color: var(--text); width: 36px; text-align: right; flex-shrink: 0; }
+
+    .candidate-footer {
+      display: flex; gap: 8px; margin-top: 2px;
+    }
+
+    /* ── Generating spinner ──────────────────────────────────── */
+    .spinner {
+      display: inline-block; width: 14px; height: 14px;
+      border: 2px solid var(--border); border-top-color: var(--accent);
+      border-radius: 50%; animation: spin .7s linear infinite;
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+
+    /* ── Empty state ─────────────────────────────────────────── */
+    .empty-state {
+      text-align: center; padding: 48px 24px;
+      color: var(--muted); font-size: 14px;
+    }
+    .empty-state p+p { margin-top: 8px; }
+
+    /* ── Toast notifications ─────────────────────────────────── */
+    #toasts {
+      position: fixed; bottom: 24px; right: 24px;
+      display: flex; flex-direction: column; gap: 8px; z-index: 100;
+    }
+    .toast {
+      background: var(--bg3); border: 1px solid var(--border);
+      border-radius: 6px; padding: 10px 14px; font-size: 13px;
+      max-width: 340px; animation: slideIn .2s ease;
+    }
+    .toast.ok   { border-color: var(--green); color: var(--green); }
+    .toast.err  { border-color: var(--red);   color: var(--red); }
+    .toast.info { border-color: var(--blue);  color: var(--blue); }
+    @keyframes slideIn {
+      from { transform: translateX(20px); opacity: 0; }
+      to   { transform: translateX(0);   opacity: 1; }
+    }
+
+    /* ── Responsive ──────────────────────────────────────────── */
+    @media (max-width: 640px) {
+      .candidates-grid { grid-template-columns: 1fr; }
+      .input-row { flex-direction: column; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ── Top bar ───────────────────────────────────────────────────── -->
+<div class="topbar">
+  <div>
+    <h1>🔁 BroTeam Translate · Manual Mode</h1>
+    <div class="subtitle">No Twitter API required — you post, you decide</div>
+  </div>
+  <button class="btn btn-primary" id="btnFetch" onclick="triggerFetch()">
+    ⬇ Fetch from Nitter
+  </button>
+</div>
+
+<!-- ── Status bar ────────────────────────────────────────────────── -->
+<div id="statusBar">
+  <span><span id="dotStatus" class="dot dot-warn"></span>&nbsp;<span id="statusText">Connecting…</span></span>
+  <span id="queueCount">0 pending</span>
+  <span id="lastRefresh"></span>
+</div>
+
+<!-- ── Main content ──────────────────────────────────────────────── -->
+<div class="main">
+
+  <!-- Manual input -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Manual Tweet Input</h2>
+    </div>
+    <div class="section-body">
+      <div class="input-row">
+        <textarea id="manualText" rows="3" placeholder="Paste a tweet text here to generate candidates…" maxlength="1000"></textarea>
+        <button class="btn btn-primary" style="white-space:nowrap" onclick="submitManual()">Generate →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Queue -->
+  <div class="section">
+    <div class="section-header">
+      <h2>Translation Queue</h2>
+      <span id="queueCountBadge" style="font-size:12px;color:var(--muted)">0 items</span>
+    </div>
+    <div class="section-body" style="padding:0">
+      <ul id="queue"></ul>
+    </div>
+  </div>
+
+</div>
+
+<!-- ── Toast container ───────────────────────────────────────────── -->
+<div id="toasts"></div>
+
+<script>
+// ─── Config ────────────────────────────────────────────────────────────────
+const API = '';  // same origin
+const POLL_MS = 4000;
+
+// ─── State ──────────────────────────────────────────────────────────────────
+let queueItems = [];
+let postedIds = new Set(JSON.parse(localStorage.getItem('postedIds') || '[]'));
+let pollTimer = null;
+
+// ─── Toast ──────────────────────────────────────────────────────────────────
+function toast(msg, type = 'info', duration = 4000) {
+  const el = document.createElement('div');
+  el.className = `toast ${type}`;
+  el.textContent = msg;
+  document.getElementById('toasts').appendChild(el);
+  setTimeout(() => el.remove(), duration);
+}
+
+// ─── API helpers ────────────────────────────────────────────────────────────
+async function apiFetch(path, opts = {}) {
+  const headers = { 'Content-Type': 'application/json', ...opts.headers };
+  const password = sessionStorage.getItem('dashPassword');
+  if (password) headers['Authorization'] = `Bearer ${password}`;
+  const r = await fetch(API + path, { ...opts, headers });
+  if (r.status === 401) {
+    const pw = prompt('Dashboard password:');
+    if (pw) { sessionStorage.setItem('dashPassword', pw); return apiFetch(path, opts); }
+    throw new Error('Unauthorized');
+  }
+  return r;
+}
+
+// ─── Fetch queue ─────────────────────────────────────────────────────────────
+async function refreshQueue() {
+  try {
+    const r = await apiFetch('/api/queue');
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    queueItems = await r.json();
+
+    renderQueue();
+    updateStatus(true);
+  } catch (e) {
+    updateStatus(false, e.message);
+  }
+}
+
+// ─── Status bar ──────────────────────────────────────────────────────────────
+function updateStatus(ok, errMsg) {
+  const dot = document.getElementById('dotStatus');
+  const txt = document.getElementById('statusText');
+  const lastPoll = document.getElementById('lastRefresh');
+
+  dot.className = `dot ${ok ? 'dot-ok' : 'dot-err'}`;
+  txt.textContent = ok ? 'Connected' : `Error: ${errMsg}`;
+  lastPoll.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
+
+  const pending = queueItems.filter(i => i.status === 'generating' || i.status === 'ready').length;
+  document.getElementById('queueCount').textContent = `${pending} pending`;
+  document.getElementById('queueCountBadge').textContent = `${pending} item${pending !== 1 ? 's' : ''}`;
+}
+
+// ─── Trigger manual fetch ────────────────────────────────────────────────────
+async function triggerFetch() {
+  const btn = document.getElementById('btnFetch');
+  btn.disabled = true;
+  btn.textContent = '⏳ Fetching…';
+  try {
+    const r = await apiFetch('/api/queue/fetch', { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    toast('Fetch started — new tweets will appear shortly', 'ok');
+  } catch (e) {
+    toast(`Fetch failed: ${e.message}`, 'err');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = '⬇ Fetch from Nitter';
+    setTimeout(refreshQueue, 1500);
+  }
+}
+
+// ─── Manual submit ────────────────────────────────────────────────────────────
+async function submitManual() {
+  const text = document.getElementById('manualText').value.trim();
+  if (!text) { toast('Enter tweet text first', 'err'); return; }
+  try {
+    const r = await apiFetch('/api/queue/submit', {
+      method: 'POST',
+      body: JSON.stringify({ text }),
+    });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    document.getElementById('manualText').value = '';
+    toast('Added to queue — generating candidates…', 'ok');
+    setTimeout(refreshQueue, 500);
+  } catch (e) {
+    toast(`Submit failed: ${e.message}`, 'err');
+  }
+}
+
+// ─── Post candidate ───────────────────────────────────────────────────────────
+async function postCandidate(queueId, candidateIndex) {
+  try {
+    const r = await apiFetch(`/api/queue/${queueId}/post/${candidateIndex}`, { method: 'POST' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    const { intentUrl } = await r.json();
+    window.open(intentUrl, '_blank', 'noopener,noreferrer');
+    postedIds.add(queueId);
+    localStorage.setItem('postedIds', JSON.stringify([...postedIds]));
+    toast('Twitter composer opened in a new tab — click Tweet to post!', 'ok', 6000);
+    setTimeout(refreshQueue, 800);
+  } catch (e) {
+    toast(`Post failed: ${e.message}`, 'err');
+  }
+}
+
+// ─── Skip tweet ───────────────────────────────────────────────────────────────
+async function skipTweet(queueId) {
+  try {
+    const r = await apiFetch(`/api/queue/${queueId}`, { method: 'DELETE' });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    toast('Tweet skipped', 'info');
+    setTimeout(refreshQueue, 400);
+  } catch (e) {
+    toast(`Skip failed: ${e.message}`, 'err');
+  }
+}
+
+// ─── Score bar helper ─────────────────────────────────────────────────────────
+function scoreBar(label, value, cssClass) {
+  const pct = Math.round((value || 0) * 100);
+  return `
+    <div class="score-row">
+      <span class="score-label">${label}</span>
+      <div class="score-bar-wrap">
+        <div class="score-bar ${cssClass}" style="width:${pct}%"></div>
+      </div>
+      <span class="score-value">${pct}%</span>
+    </div>`;
+}
+
+// ─── Render a single candidate card ──────────────────────────────────────────
+function renderCandidate(queueId, candidate, isGenerating) {
+  const isBest = candidate.isBestCandidate;
+  const hasError = !!candidate.error;
+  const langPath = (candidate.languages || []).join(' → ') || '—';
+  const resultHtml = isGenerating
+    ? `<div class="candidate-result generating"><span class="spinner"></span> Generating…</div>`
+    : `<div class="candidate-result">${escHtml(candidate.result || '—')}</div>`;
+
+  const badgeHtml = isBest && !isGenerating
+    ? `<span class="badge-best">★ BEST</span>`
+    : hasError ? `<span class="badge-error">ERROR</span>` : '';
+
+  const scoresHtml = isGenerating ? '' : `
+    <div class="scores">
+      ${scoreBar('Humor',     candidate.humorScore,    'humor')}
+      ${scoreBar('Heuristic', candidate.heuristicScore,'heuristic')}
+      ${scoreBar('Combined',  candidate.combinedScore, 'combined')}
+    </div>`;
+
+  const postBtn = isGenerating
+    ? `<button class="btn btn-ghost" disabled><span class="spinner"></span></button>`
+    : `<button class="btn btn-post" onclick="postCandidate('${escAttr(queueId)}', ${candidate.chainIndex})">
+         🐦 Post
+       </button>`;
+
+  return `
+    <div class="candidate-card${isBest && !isGenerating ? ' is-best' : ''}">
+      <div class="candidate-label">
+        ${escHtml(candidate.chainLabel || `Chain ${candidate.chainIndex}`)}
+        ${badgeHtml}
+      </div>
+      <div class="candidate-langs" title="${escAttr(langPath)}">en → ${escHtml(langPath)} → en</div>
+      ${resultHtml}
+      ${scoresHtml}
+      <div class="candidate-footer">
+        ${postBtn}
+      </div>
+    </div>`;
+}
+
+// ─── Render a tweet card ──────────────────────────────────────────────────────
+function renderTweetCard(item) {
+  const isGenerating = item.status === 'generating';
+  const tweetDate = item.tweet.createdAt
+    ? new Date(item.tweet.createdAt).toLocaleString()
+    : '';
+
+  // Determine 4 candidate slots (fill with placeholders while generating)
+  const slots = isGenerating
+    ? [0, 1, 2, 3].map(i => ({
+        chainIndex: i,
+        chainLabel: ['Random-1','Random-2','Random-3','Oldschool'][i],
+        languages: [],
+        result: '',
+        humorScore: 0, heuristicScore: 0, combinedScore: 0,
+        isBestCandidate: false,
+      }))
+    : item.candidates;
+
+  const candidatesHtml = (slots || [])
+    .map(c => renderCandidate(item.id, c, isGenerating))
+    .join('');
+
+  return `
+    <li class="tweet-card" data-id="${escAttr(item.id)}">
+      <div class="tweet-card-header">
+        <div>
+          <div class="tweet-source-text">${escHtml(item.tweet.text)}</div>
+          <div class="tweet-meta">
+            @${escHtml(item.tweet.user?.username || 'unknown')} · ${escHtml(tweetDate)}
+            ${isGenerating ? ' · <span class="spinner" style="vertical-align:middle"></span> generating candidates…' : ''}
+          </div>
+        </div>
+        <div class="tweet-card-actions">
+          <button class="btn btn-danger" onclick="skipTweet('${escAttr(item.id)}')">✕ Skip</button>
+        </div>
+      </div>
+      <div class="candidates-grid">
+        ${candidatesHtml}
+      </div>
+    </li>`;
+}
+
+// ─── Render full queue ────────────────────────────────────────────────────────
+function renderQueue() {
+  const list = document.getElementById('queue');
+  const visible = queueItems.filter(i => i.status === 'generating' || i.status === 'ready');
+
+  if (visible.length === 0) {
+    list.innerHTML = `
+      <div class="empty-state">
+        <p>No tweets in queue.</p>
+        <p>Click <strong>Fetch from Nitter</strong> or paste a tweet above to get started.</p>
+      </div>`;
+    return;
+  }
+
+  // Preserve scroll position
+  const prevScroll = list.parentElement ? list.parentElement.scrollTop : 0;
+  list.innerHTML = visible.map(renderTweetCard).join('');
+  if (list.parentElement) list.parentElement.scrollTop = prevScroll;
+}
+
+// ─── Escape helpers ───────────────────────────────────────────────────────────
+function escHtml(s) {
+  return String(s)
+    .replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+function escAttr(s) { return escHtml(s); }
+
+// ─── Init & poll ────────────────────────────────────────────────────────────
+(async function init() {
+  await refreshQueue();
+  pollTimer = setInterval(refreshQueue, POLL_MS);
+})();
+</script>
+</body>
+</html>

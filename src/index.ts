@@ -1,129 +1,125 @@
+/**
+ * MANUAL MODE FORK
+ *
+ * This entry point replaces the auto-posting bot with a manual review dashboard.
+ * - No Twitter API credentials required (no posting via API)
+ * - Fetches source tweets via Nitter/Jina only
+ * - Generates 4 translation candidates per tweet
+ * - User reviews candidates and posts via twitter.com/intent/tweet in their browser
+ *
+ * Dashboard: http://127.0.0.1:3456  (configurable via DASHBOARD_PORT)
+ */
+
 // Load .env file FIRST before any other imports that use config
 import 'dotenv/config';
-import { scheduleJobs, recordLastRun } from './scheduler/jobs';
-import { translateAndPostWorker } from './workers/translateAndPostWorker';
+
+// ── Manual mode bootstrap ──────────────────────────────────────────────────
+// Force nitter-only fetching: set monthly fetch limit to 0 so the Twitter API
+// path inside fetchTweets is always skipped (remaining quota = 0 → fallback only).
+if (!process.env.MONTHLY_FETCH_LIMIT) {
+  process.env.MONTHLY_FETCH_LIMIT = '0';
+}
 import { logger } from './utils/logger';
-import { config } from './config';
 import { acquireLock } from './utils/instanceLock';
 import { getVersion } from './utils/version';
 import { initializeGracefulShutdown, onShutdown } from './utils/gracefulShutdown';
 import { startHealthMonitoring, logHealthReport } from './utils/healthCheck';
-import { monthlyUsageTracker } from './utils/monthlyUsageTracker';
+import { startDashboardServer, stopDashboardServer } from './server/dashboardServer';
+import { candidateStore } from './server/candidateStore';
+import { generateCandidates } from './workers/candidateGenerator';
+import { fetchTweets } from './twitter/fetchTweets';
+import { tweetTracker } from './utils/tweetTracker';
 
-function validateEnv(): boolean {
-  const missing: string[] = [];
-    
-  // We allow either OAuth1 or OAuth2 to be configured.
-  const hasOAuth1 = !!(config.TWITTER_API_KEY && config.TWITTER_API_SECRET && config.TWITTER_ACCESS_TOKEN && config.TWITTER_ACCESS_SECRET);
-  const hasOAuth2 = !!(config.TWITTER_CLIENT_ID && (config.TWITTER_OAUTH2_ACCESS_TOKEN || process.env.DRY_RUN === '1' || process.env.DRY_RUN === 'true'));
+// How often to poll Nitter for new tweets automatically (default: every 30 minutes)
+const FETCH_INTERVAL_MS = Number(process.env.FETCH_INTERVAL_MS || String(30 * 60 * 1000));
 
-  if (!hasOAuth1 && !hasOAuth2) {
-    if (!config.TWITTER_API_KEY) missing.push('TWITTER_API_KEY');
-    if (!config.TWITTER_API_SECRET) missing.push('TWITTER_API_SECRET');
-    if (!config.TWITTER_ACCESS_TOKEN) missing.push('TWITTER_ACCESS_TOKEN');
-    if (!config.TWITTER_ACCESS_SECRET) missing.push('TWITTER_ACCESS_SECRET');
-    if (!config.TWITTER_CLIENT_ID) missing.push('TWITTER_CLIENT_ID');
-    logger.error('Missing required authentication configuration. Provide either OAuth1 or OAuth2 credentials:');
-    missing.forEach(v => logger.error(` - ${v}`));
-    logger.error('Set these environment variables and restart.');
-    return false;
+/** Run one fetch cycle: pull tweets, generate candidates for any new ones. */
+async function runFetchCycle(): Promise<void> {
+  logger.info('[FetchCycle] Starting…');
+  try {
+    const tweets = await fetchTweets(false);
+    logger.info(`[FetchCycle] Fetched ${tweets.length} tweet(s)`);
+    let added = 0;
+    for (const tweet of tweets) {
+      if (!tweetTracker.shouldProcess(tweet.id, tweet.createdAt.toISOString())) {
+        continue;
+      }
+      const queueId = candidateStore.add(tweet);
+      tweetTracker.markProcessed(tweet.id);
+      added++;
+      // Generate in background so the HTTP response is not blocked
+      setImmediate(async () => {
+        try {
+          const candidates = await generateCandidates(tweet);
+          candidateStore.setReady(queueId, candidates);
+          logger.info(`[FetchCycle] Candidates ready for tweet ${tweet.id} (queue: ${queueId})`);
+        } catch (err) {
+          candidateStore.setError(queueId, String(err));
+          logger.error(`[FetchCycle] Candidate generation failed for ${tweet.id}: ${err}`);
+        }
+      });
+    }
+    logger.info(`[FetchCycle] Added ${added} new tweet(s) to queue`);
+  } catch (err) {
+    logger.error(`[FetchCycle] Error: ${err}`);
   }
-    
-  // Log which auth methods are available
-  if (hasOAuth1 && hasOAuth2) {
-    logger.info('Environment validated successfully. OAuth2 primary, OAuth1 available as fallback.');
-  } else if (hasOAuth2) {
-    logger.info('Environment validated successfully. OAuth2 only (no OAuth1 fallback).');
-  } else if (hasOAuth1) {
-    logger.info('Environment validated successfully. OAuth1 only (autonomous mode).');
-  }
-  return true;
 }
 
 async function main() {
   try {
     // Initialize graceful shutdown handlers
     initializeGracefulShutdown();
-    
-    // Register cleanup handlers
+
     onShutdown(async () => {
-      logger.info('Cleaning up resources...');
+      logger.info('[ManualMode] Shutting down dashboard server…');
+      await stopDashboardServer();
       await logHealthReport();
     });
-    
-    // Register monthly usage tracker for shutdown save
-    monthlyUsageTracker.registerShutdownHandler(onShutdown);
-    
-    // Global safety net for unhandled errors
-    process.on('unhandledRejection', (reason: unknown) => {
-      try {
-        const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
-        logger.error(`Unhandled promise rejection: ${msg}`);
-      } catch {
-        // ignore
-      }
-    });
 
-    process.on('uncaughtException', (error: Error) => {
-      try {
-        logger.error(`Uncaught exception: ${error.message}\n${error.stack}`);
-      } catch {
-        // ignore
-      }
-      process.exit(1);
-    });
-        
+    // Safety net for unhandled errors
+    if (process.listenerCount('unhandledRejection') === 0) {
+      process.on('unhandledRejection', (reason: unknown) => {
+        try {
+          const msg = (reason as Error)?.stack || (reason as Error)?.message || String(reason);
+          logger.error(`Unhandled promise rejection: ${msg}`);
+        } catch { /* ignore */ }
+      });
+    }
+
+    if (process.listenerCount('uncaughtException') === 0) {
+      process.on('uncaughtException', (error: Error) => {
+        try {
+          logger.error(`Uncaught exception: ${error.message}\n${error.stack}`);
+        } catch { /* ignore */ }
+        process.exit(1);
+      });
+    }
+
     // Ensure only one instance runs at a time
     if (!acquireLock()) {
       logger.error('Another instance is already running. Exiting.');
       process.exit(1);
     }
-        
-    if (!validateEnv()) {
-      process.exit(1);
-    }
-        
-    // Log version information
+
     const version = getVersion();
-    logger.info(`Starting BroTeam Translate Bot v${version}...`);
-    
-    // Log startup information for debugging
-    const startupInfo = {
-      timestamp: new Date().toISOString(),
-      pid: process.pid,
-      ppid: process.ppid,
-      platform: process.platform,
-      nodeVersion: process.version,
-      execPath: process.execPath,
-      cwd: process.cwd(),
-      argv: process.argv,
-      env: {
-        DRY_RUN: process.env.DRY_RUN,
-        NODE_ENV: process.env.NODE_ENV,
-        PM2_HOME: process.env.PM2_HOME,
-        PM2_INSTANCE: process.env.PM2_INSTANCE,
-        PM2_PROCESS_NAME: process.env.PM2_PROCESS_NAME
-      }
-    };
-    logger.info(`Startup information: ${JSON.stringify(startupInfo)}`);
-    
-    // Start health monitoring (check every 5 minutes)
+    logger.info(`Starting BroTeam Translate Bot v${version} [MANUAL MODE]…`);
+    logger.info('No Twitter API credentials required — using Nitter + dashboard posting.');
+
+    // Start health monitoring
     startHealthMonitoring(5 * 60 * 1000);
-    
-    // Log initial health report
     await logHealthReport();
-    
-    await translateAndPostWorker();
-    const now = new Date();
-    recordLastRun(now);
-    // Schedule next runs relative to now
-    scheduleJobs();
-    logger.info('Bot is running. Press Ctrl+C to stop.');
-    
-    // Keep the process alive even if not scheduling jobs
-    setInterval(() => {
-      logger.info('Bot is idle, waiting for timeline cooldown to expire.');
-    }, 60 * 60 * 1000); // Log every hour
+
+    // Start dashboard HTTP server
+    startDashboardServer();
+
+    // Initial fetch on startup
+    await runFetchCycle();
+
+    // Periodic fetch
+    setInterval(runFetchCycle, FETCH_INTERVAL_MS);
+    logger.info(`[ManualMode] Polling Nitter every ${FETCH_INTERVAL_MS / 60000} min.`);
+    logger.info('[ManualMode] Bot is running. Open the dashboard to review candidates.');
+
   } catch (error) {
     logger.error(`Error in main execution: ${error}`);
     process.exit(1);
