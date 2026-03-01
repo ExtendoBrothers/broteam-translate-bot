@@ -9,6 +9,8 @@
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
+    "manual": "node dist/src/index.js",
+    "manual:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
     "debug": "ts-node-dev --respawn --transpile-only --inspect=9229 src/index.ts",
     "lint": "eslint src scripts --ext .ts,.js",
