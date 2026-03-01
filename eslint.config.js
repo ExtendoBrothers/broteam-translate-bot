@@ -104,7 +104,9 @@ export default [
     rules: {
       // Unused vars in tests are common (catch(e), intentional stubs, etc.)
       'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'off'
+      '@typescript-eslint/no-unused-vars': 'off',
+      // any is common in test files for mocks and jest.resetModules() re-requires
+      '@typescript-eslint/no-explicit-any': 'off'
     }
   },
   {
