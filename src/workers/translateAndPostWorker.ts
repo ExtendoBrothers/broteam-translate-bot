@@ -232,7 +232,7 @@ function isAllCaps(text: string): boolean {
 // Helper to add delay between operations to respect rate limits
 const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
 
-// Minimum delay between posts to avoid rapid-fire posting (45 minutes)
+// Minimum delay between posts to avoid rapid-fire posting (20 minutes)
 // NOTE: If you change MIN_POST_INTERVAL_MS, ensure consistency with postTweets.ts and update tests
 const MIN_POST_INTERVAL_MS = 20 * 60 * 1000; // 20 minutes — queue drains at this cadence until daily limit reached
 let lastPostTime = 0;

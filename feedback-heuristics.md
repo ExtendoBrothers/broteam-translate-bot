@@ -2,11 +2,57 @@
 
 This file contains heuristics for manually adding feedback to posted tweets. These rules are derived from user-provided feedback patterns and can be used to automate or guide feedback addition when manually ordered.
 
+
 ## General Rules
 
 - **Rating Scale**: 1-5, where 1 is not funny at all, 5 is extremely funny.
 - **Best Source Selection**: Choose the source that best captures humor through absurdity, repetition, misinterpretation, or contextual twist.
 - **Notes**: Include brief explanations for why a translation is funny or not.
+
+---
+
+## Updated Heuristics (2026)
+
+### Major Overarching Themes
+- Favor translations that create a clear narrative or story, not just fragments or single words.
+- Absurdity is valued, but must be coherent: prefer "absurd but plausible" over pure gibberish.
+- Contradictions, extreme opinions, and emotional juxtapositions are consistently rated higher.
+- Sexual/crude references and technical gibberish are funny only when contextually relevant or exaggerated.
+- Foreign language fragments should be penalized unless they create a deliberate, funny juxtaposition.
+
+### Additive Heuristics (Implemented)
+- **Narrative Structure**: +0.25 bonus for multi-line or story-like translations.
+- **Absurd Coherence**: +0.15 bonus for absurd phrases that still make logical sense.
+- **Contradiction/Emotional Juxtaposition**: +0.35 bonus for conflicting emotions/opinions.
+- **Setup-Punchline**: +0.25 bonus for clear setup and payoff.
+- **Surprise/Exaggeration**: +0.1 bonus for sudden shifts or exaggerated stakes.
+- **Humor Themes**: +0.1 bonus for references to marketing, crime, autism, godsend, etc.
+
+### Corrective Heuristics (Implemented)
+- **Penalize Repetition/Spam**: -0.5 penalty for repetitive or spammy patterns.
+- **Penalize Incoherence**: -0.25 penalty for incoherent or gibberish text.
+- **Penalize Verbatim Repetition**: -0.3 penalty for translations too similar to the original.
+- **Penalize Single Words**: -0.1 penalty for single-word translations (not directly implemented, but covered by coherence penalty).
+- **Foreign Language Fragments**: -0.03 penalty unless part of a deliberate joke.
+
+### Minor Contexts (Implemented)
+- **Length**: +0.05 bonus for short, punchy text (<100 chars).
+- **Complete Sentences**: +0.1 bonus for subject-verb structure.
+- **Questions**: +0.05 bonus for question marks (setup for jokes).
+- **References**: +0.1 bonus for humor themes (marketing, crime, etc.).
+
+### General Rules (Reiterated)
+- Always penalize results identical to input.
+- Prefer translations that transform the original meaning, not just rephrase.
+- Notes should reference specific funny elements and explain why a translation is better than alternatives.
+
+---
+
+## Summary
+- Add bonuses for narrative, absurd coherence, contradiction, and setup-punchline.
+- Penalize single words, verbatim repetition, incoherence, and foreign fragments (unless funny).
+- Use length, references, and repetition as minor context bonuses.
+- Keep historical patterns in mind, but adapt to current feedback trends.
 
 ## Specific Heuristics
 

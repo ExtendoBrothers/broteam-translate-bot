@@ -55,7 +55,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
     // Note: Caller is responsible for marking as processed to prevent race conditions
     // (postTweet may be called from multiple contexts - queue, retry, main flow)
     
-    // ALWAYS set 45-minute cooldown after ANY successful post
+    // ALWAYS set cooldown after ANY successful post (interval: MIN_POST_INTERVAL_SECONDS, currently 20 minutes)
     rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, 'proactive post spacing');
     logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s (${MIN_POST_INTERVAL_SECONDS / 60}min) cooldown after successful post`);
         
@@ -97,7 +97,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
         resetTime = err.data.rateLimit.reset;
       }
       
-      // Set rate limit to Twitter's reset time + 2 minutes (or 45min fallback if no reset time)
+      // Set rate limit to Twitter's reset time + 2 minutes (or MIN_POST_INTERVAL_SECONDS fallback if no reset time)
       rateLimitTracker.setRateLimit('post', resetTime);
       const resetInfo = resetTime ? `Twitter reset: ${new Date(resetTime * 1000).toISOString()}` : 'No reset time available';
       logger.warn(`Post rate limit hit (429). ${resetInfo}`);
@@ -105,7 +105,7 @@ export async function postTweet(client: TwitterClient, content: string, sourceTw
       // Non-rate-limit error (e.g., 403 auth, 401 unauthorized, network error)
       const statusCode = err?.code || err?.statusCode || 'unknown';
       
-      // Set 45-minute cooldown after non-rate-limit errors
+      // Set cooldown after non-rate-limit errors (interval: MIN_POST_INTERVAL_SECONDS, currently 20 minutes)
       rateLimitTracker.setCooldown('post', MIN_POST_INTERVAL_SECONDS, `cooldown after ${statusCode} error`);
       logger.info(`[PROACTIVE_LIMIT] Set ${MIN_POST_INTERVAL_SECONDS}s cooldown after post error (status: ${statusCode})`);
       

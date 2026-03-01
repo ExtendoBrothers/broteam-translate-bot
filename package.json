@@ -69,9 +69,5 @@
     "detectOpenHandles": true,
     "forceExit": false
   },
-  "version": "0.12.1",
-  "overrides": {
-    "systeminformation": ">=5.30.8",
-    "basic-ftp": ">=5.2.0"
-  }
+  "version": "0.12.1"
 }

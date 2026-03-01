@@ -20,7 +20,8 @@ function Stop-AllBotInstances {
             $lockedProcess = Get-Process -Id $lockedPid -ErrorAction SilentlyContinue
             if ($lockedProcess) {
                 Write-Host "Lock file points to PID $lockedPid — sending graceful shutdown signal..."
-                # taskkill /PID sends CTRL_C_EVENT on Windows (closest to SIGTERM for Node)
+                # taskkill /PID requests a graceful shutdown (e.g. WM_CLOSE for windowed apps); for headless/PM2 Node
+                # processes this may or may not trigger signal handlers, so we follow with a force-kill if needed.
                 taskkill /PID $lockedPid 2>$null | Out-Null
 
                 # Wait up to 10 seconds for the process to exit on its own

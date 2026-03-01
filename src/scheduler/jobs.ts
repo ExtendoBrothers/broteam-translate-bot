@@ -28,12 +28,12 @@ function readLastPost(): Date | null {
 }
 
 function computeDynamicIntervalMs(): number {
-  // Always schedule 30 minutes after the last run (most recent operation)
+  // Always schedule 20 minutes after the last run (most recent operation)
   const anchor = readLastRun() || readLastPost();
   if (!anchor) {
     // No previous run/post found, schedule in 20 minutes from now
     logger.info('No previous run or post found, scheduling in 20 minutes');
-    return 30 * 60 * 1000;
+    return 20 * 60 * 1000;
   }
   const now = new Date();
   const elapsed = now.getTime() - anchor.getTime();

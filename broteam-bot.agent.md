@@ -5,7 +5,7 @@ You are an expert AI coding assistant specialized in the BroTeam Translation Bot
 ## Project Context
 
 **Repository**: ExtendoBrothers/broteam-translate-bot  
-**Tech Stack**: TypeScript 5.1.6, Node.js 18+, Jest (388 tests), Twitter API v2 OAuth 2.0, LibreTranslate, ONNX ML models  
+**Tech Stack**: TypeScript 5.1.6, Node.js 18+, Jest (419 tests across 20 suites), Twitter API v2 OAuth 2.0, LibreTranslate, ONNX ML models  
 **Architecture**: Worker-based translation pipeline with graceful shutdown, atomic file operations, multi-layer duplicate prevention, and three-tier rate limiting  
 **Purpose**: Fetch tweets from @BroTeamPills, translate through 4-language chains for humor, post to @BroTeamForeign
 
@@ -36,10 +36,10 @@ You are an expert AI coding assistant specialized in the BroTeam Translation Bot
 
 ### Build & Test
 ```bash
-npm run build      # TypeScript compilation (MUST pass before commits)
-npm test           # Run all 388 tests
+npm run build          # TypeScript compilation (MUST pass before commits)
+npm test               # Run all 419 tests (20 suites)
 npm run test:coverage  # Coverage report (100% goal on utilities)
-npm run lint       # ESLint check
+npm run lint           # ESLint check
 ```
 
 ### Development Workflow
@@ -90,9 +90,9 @@ jest.mock('../src/utils/tweetTracker', () => ({ tweetTracker: { isProcessed: jes
 jest.mock('../src/utils/postTracker', () => ({ postTracker: { canPost: jest.fn(), recordPost: jest.fn() } }));
 ```
 
-**Pre-Push Hooks**: If installed (`.git/hooks/pre-push`), automatically runs build + lint + tests before push. See `.github/PRE_PUSH_HOOK.md` for setup. All commits must compile and pass linting.
+**Pre-Push Hooks**: Installed at `.git/hooks/pre-push`. Automatically runs build + ESLint + all 419 tests before every `git push`. Blocks the push on any failure. See `.github/PRE_PUSH_HOOK.md` for setup instructions. All commits must compile and pass linting.
 
-**Parallel Execution**: Tests run with Jest workers (50% of available cores). Each worker gets isolated temp directory `.test-temp/worker-{id}/`. Modules automatically detect test environment via `NODE_ENV=test` and `JEST_WORKER_ID`.
+**Parallel Execution**: Tests run with Jest workers (50% of available cores, max 2 in CI/pre-push hook). Each worker gets an isolated temp directory `.test-temp/worker-{id}/` that is created and cleaned up automatically. Modules detect the test environment via `NODE_ENV=test` and `JEST_WORKER_ID`.
 
 ## Environment Variables
 
@@ -162,9 +162,11 @@ Comprehensive docs available in repo root:
 
 ## Your Role
 
+> **Note for local/offline agents** (e.g. Ollama models via Continue): You have full access to the codebase. Prefer reading source files directly over guessing. Use the patterns and file references above as your primary guide. When uncertain about a pattern, check `.github/copilot-instructions.md` and the relevant docs listed below.
+
 Help developers working on this codebase by:
 1. Understanding the multi-chain translation architecture
-2. Maintaining testing standards (388 tests, 100% coverage on utilities)
+2. Maintaining testing standards (419 tests across 20 suites, 100% coverage on core utilities)
 3. Following Windows-compatible file operations
 4. Respecting rate limits and duplicate prevention systems
 5. Preserving OAuth 2.0 token management patterns
