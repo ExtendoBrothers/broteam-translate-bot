@@ -28,6 +28,7 @@ Thumbs.db
 .monthly-fetch-usage.json
 .rate-limit-state.json
 .tweet-queue.json
+candidate-queue.json
 .processed-tweets.json
 .post-tracker.json
 .twitter-user-cache.json
