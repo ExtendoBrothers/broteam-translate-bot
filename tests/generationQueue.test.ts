@@ -69,10 +69,10 @@ describe('GenerationQueue', () => {
     });
 
     it('reflects the number of jobs waiting (not counting the running one)', () => {
-      let startedFirst = false;
+      let _startedFirst = false;
       mockGenerateCandidates.mockImplementation(
         () => new Promise<typeof mockCandidates>(resolve => {
-          startedFirst = true;
+          _startedFirst = true;
           // never resolve — keeps first job "running"
           void resolve; // silence lint
         })
