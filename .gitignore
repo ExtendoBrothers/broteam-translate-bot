@@ -50,6 +50,7 @@ tweet-inputs.log
 # Coverage / test
 coverage/
 test-output.txt
+lint-output.txt
 .test-temp/
 tests/test-data-*/
 

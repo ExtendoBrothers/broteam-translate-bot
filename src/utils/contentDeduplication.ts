@@ -149,10 +149,11 @@ export function isAcceptableWithSemanticCheck(
   const trimmed = finalResult.trim();
   const originalTrimmed = originalText.trim();
 
-  // Extract text content without tokens for quality checks
+  // Extract text content without tokens, mentions, or hashtags for quality checks
+  // @mentions and #hashtags are not real words in any language and skew language detection
   const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
-  const textOnly = trimmed.replace(tokenPattern, '').trim();
-  const originalTextOnly = originalTrimmed.replace(tokenPattern, '').trim();
+  const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
+  const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
 
   // Check if output is too short
   const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);

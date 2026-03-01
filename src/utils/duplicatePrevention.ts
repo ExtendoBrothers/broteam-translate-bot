@@ -47,8 +47,8 @@ export async function checkForDuplicates(
     };
   }
 
-  // 3. Check if tweet is already queued
-  if (tweetQueue.isQueued(tweetId)) {
+  // 3. Check if tweet is already queued (skip for queued posts being retried)
+  if (chain !== 'queued' && tweetQueue.isQueued(tweetId)) {
     return {
       canProceed: false,
       reason: `Tweet ${tweetId} is already in posting queue`,

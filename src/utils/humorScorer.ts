@@ -95,79 +95,92 @@ function calculateHeuristicScore(text: string, originalText?: string): number {
   let score = 0;
   const lowerText = text.toLowerCase();
 
-  // Check for humor keywords
+  // Humor keyword bonus (unchanged)
   for (const keyword of HUMOR_KEYWORDS) {
     if (lowerText.includes(keyword.toLowerCase())) {
       score += 0.15;
     }
   }
 
-  // Check for punctuation patterns
+  // Punctuation pattern bonus (unchanged)
   for (const pattern of HUMOR_PUNCTUATION_PATTERNS) {
     if (pattern.test(text)) {
       score += 0.1;
     }
   }
 
-  // Check for sarcasm indicators (context-dependent, but give some weight)
+  // Sarcasm indicator bonus (unchanged)
   for (const indicator of SARCASM_INDICATORS) {
     if (lowerText.includes(indicator)) {
       score += 0.05;
     }
   }
 
-  // Feedback-based bonuses
-  // Contradiction bonus (highly rated patterns)
+  // Contradiction bonus (tuned)
   for (const pattern of CONTRADICTION_PATTERNS) {
     if (pattern.test(text)) {
-      score += 0.3; // Strong bonus for contradictions
+      score += 0.35; // Increased bonus for contradictions
     }
   }
 
-  // Setup-punchline structure bonus
+  // Narrative/absurdity/surprise bonuses
+  // Narrative: multi-line, setup-punchline, or story structure
   for (const pattern of SETUP_PUNCHLINE_INDICATORS) {
     if (pattern.test(text)) {
-      score += 0.2; // Bonus for multi-line/narrative structure
+      score += 0.25; // Increased bonus for narrative structure
     }
   }
+  // Absurdity: look for keywords or contradiction patterns
+  if (/absurd|ridiculous|wtf|omg/.test(lowerText)) {
+    score += 0.15;
+  }
+  // Surprise: exclamations or sudden shifts
+  if (/!{2,}/.test(text) || /suddenly|unexpectedly/.test(lowerText)) {
+    score += 0.1;
+  }
 
-  // Spam penalties (highly disliked patterns)
+  // Spam/repetition penalties (tuned)
   for (const pattern of SPAM_PATTERNS) {
     if (pattern.test(text)) {
-      score -= 0.4; // Heavy penalty for repetitive spam
+      score -= 0.5; // Stronger penalty for repetitive spam
     }
   }
 
-  // Coherence penalties
+  // Coherence penalties (tuned)
   for (const pattern of COHERENCE_PENALTIES) {
     const matches = text.match(pattern);
-    if (matches && matches.length > text.split(/\s+/).length * 0.5) {
-      score -= 0.2; // Penalty for incoherent text
+    if (matches && matches.length > text.split(/\s+/).length * 0.4) {
+      score -= 0.25; // Increased penalty for incoherent text
     }
   }
 
-  // Originality penalty - penalize text too similar to original
+  // Originality penalty (unchanged)
   if (originalText) {
     const similarity = calculateTextSimilarity(text, originalText.toLowerCase());
     if (similarity > 0.7) {
-      score -= 0.3; // Heavy penalty for being too close to original
+      score -= 0.3;
     } else if (similarity > 0.5) {
-      score -= 0.1; // Moderate penalty
+      score -= 0.1;
     }
   }
 
-  // Bonus for questions (often setup for jokes)
+  // Bonus for questions (unchanged)
   if (text.includes('?')) {
     score += 0.05;
   }
 
-  // Bonus for short, punchy text (under 100 chars often more humorous)
+  // Bonus for short, punchy text (unchanged)
   if (text.length < 100) {
     score += 0.05;
   }
 
-  // Bonus for complete sentences (contains subject-verb structure)
+  // Bonus for complete sentences (unchanged)
   if (/\b\w+\s+\w+\b/.test(text)) {
+    score += 0.1;
+  }
+
+  // Bonus for humor themes (new)
+  if (/marketing|crime|autism|godsend/.test(lowerText)) {
     score += 0.1;
   }
 

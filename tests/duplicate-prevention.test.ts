@@ -125,6 +125,25 @@ describe('Duplicate Prevention', () => {
       expect(result.severity).toBe('block');
     });
 
+    it('should skip the queue check when chain is "queued"', async () => {
+      (acquireLock as jest.Mock).mockReturnValue(true);
+      (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
+      // Tweet IS in queue, but the check should be bypassed for chain === 'queued'
+      (tweetQueue.isQueued as jest.Mock).mockReturnValue(true);
+      (postTracker.canPost as jest.Mock).mockReturnValue(true);
+      (isContentDuplicateSync as jest.Mock).mockReturnValue(false);
+      (checkTranslationStability as jest.Mock).mockReturnValue({
+        isStable: true,
+        issues: []
+      });
+
+      const result = await checkForDuplicates(mockTweetId, mockContent, mockInputText, 'queued', mockAttempt);
+
+      expect(result.canProceed).toBe(true);
+      expect(result.reason).toBe('All duplicate checks passed');
+      expect(result.severity).toBe('info');
+    });
+
     it('should block when content is duplicate', async () => {
       (acquireLock as jest.Mock).mockReturnValue(true);
       (tweetTracker.isProcessed as jest.Mock).mockReturnValue(false);
