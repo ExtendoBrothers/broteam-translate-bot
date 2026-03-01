@@ -2,6 +2,8 @@
  * Unit tests for candidateGenerator (manual-mode fork)
  */
 
+export {}; // ensure this file is treated as an ES module, not a global script
+
 jest.mock('../src/translator/googleTranslate', () => ({
   translateText: jest.fn(),
 }));

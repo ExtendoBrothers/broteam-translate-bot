@@ -1,522 +1,291 @@
 # BroTeam Translate Bot
 
 [![CI](https://github.com/ExtendoBrothers/broteam-translate-bot/actions/workflows/ci.yml/badge.svg)](https://github.com/ExtendoBrothers/broteam-translate-bot/actions/workflows/ci.yml)
-[![codecov](https://codecov.io/gh/ExtendoBrothers/broteam-translate-bot/branch/main/graph/badge.svg)](https://codecov.io/gh/ExtendoBrothers/broteam-translate-bot)
 [![License: WTFPL](https://img.shields.io/badge/License-WTFPL-brightgreen.svg)](http://www.wtfpl.net/about/)
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.1.6-blue)](https://www.typescriptlang.org/)
 
-A production-ready, resilient Twitter bot that translates @BroTeamPills tweets through randomized language chains and posts them to @BroTeamForeign. Built with TypeScript, featuring comprehensive error handling, rate limiting, and extensive test coverage.
+A Twitter translation bot that fetches tweets from @BroTeamPills, runs them through multi-language chains for comedic effect, and presents the results in a **local web dashboard** for manual review. You choose which translation to post — the bot opens a `twitter.com/intent/tweet` URL in your browser so you post it yourself. **No Twitter API credentials required.**
 
-## ✨ Key Features
+## How It Works
 
-### 🔄 Translation Engine
-- **Multi-Chain Translation**: Randomized translation through 3 different language chains + 1 deterministic chain
-- **Humor Scoring**: ML-based humor detection using ONNX models with LRU caching (~50% performance improvement)
-- **Smart Selection**: Automatically selects the funniest translation from multiple candidates
-- **Fallback System**: Robust retry logic with up to 33 attempts per tweet
+1. The bot polls @BroTeamPills via Nitter (no Twitter API quota consumed)
+2. Each new tweet is run through **4 parallel translation chains** using LibreTranslate
+3. Candidates are scored by a humor ML model and heuristic evaluator
+4. Results appear in a **local dashboard** at `http://localhost:3456`
+5. You review the candidates, pick the best one, and click **Post**
+6. The bot opens `twitter.com/intent/tweet?text=...` in your browser — you click Tweet
 
-### 🛡️ Stability & Reliability
-- **Graceful Shutdown**: SIGINT/SIGTERM handlers with cleanup timeouts
-- **Health Monitoring**: Built-in health checks with memory and heap tracking
-- **Crash Recovery**: Comprehensive error handling with safe file operations
-- **Duplicate Prevention**: Multi-layer deduplication (exact match, fuzzy, semantic similarity)
-- **Queue System**: Persistent tweet queue survives restarts
+## Key Features
 
-### 📊 Rate Limiting & Safety
-- **17 Posts/24h**: Strict enforcement of Twitter's free tier limits
-- **Monthly Fetch Cap**: Dynamic spacing to avoid exhausting API quota
-- **Cooldown Tracking**: Persists rate limits across restarts
-- **Smart Scheduling**: Adaptive intervals (30-45 min) based on activity
+### Manual Review Dashboard
+- Web UI at `http://localhost:3456` — no frontend build step, vanilla JS/CSS
+- Per-tweet candidate cards with chain label, humor score bar, heuristic score, and best-candidate badge
+- **Fetch button** to manually trigger a Nitter poll
+- **Manual input** form to translate arbitrary text
+- Skip/dismiss per tweet
 
-### 🧪 Testing & Quality
-- **388 Tests**: Comprehensive Jest test suite across 18 test files
-- **100% Core Coverage**: All critical utilities tested
-- **Pre-Push Hooks**: Automatic TypeScript compilation and ESLint checks
-- **Type Safety**: Strict TypeScript configuration
+### Translation Engine
+- **4-Chain Translation**: 3 randomized language chains + 1 deterministic (oldschool) chain
+- **Deep Chains**: 6-hop pivot language sequences (`en→…→en`) for maximum comedic distortion
+- **Humor Scoring**: ML-based detection using ONNX BERT models with LRU caching
+- **Heuristic Scoring**: Rule-based evaluator as fallback/secondary signal
+- **Smart Selection**: Best candidate flagged automatically; you make the final call
 
-### 🔐 Security & Auth
-- **OAuth 2.0**: Full support with automatic token refresh
-- **PKCE Flow**: Secure authentication without client secrets
-- **Token Rotation**: Handles Twitter's rotating refresh tokens
-- **No Secrets in Logs**: Sensitive data properly excluded
+### Stability & Reliability
+- **Graceful Shutdown**: SIGINT/SIGTERM handlers with cleanup
+- **Crash Recovery**: Atomic file writes, candidate queue survives restarts
+- **Duplicate Prevention**: Multi-layer deduplication (exact hash, fuzzy, semantic similarity)
+- **Sequential Generation**: One LibreTranslate request at a time — no concurrent hammering
 
-## 📁 Project Structure
+### Testing & Quality
+- **261 Tests** across 12 test suites
+- **100% coverage** on core utilities
+- **Pre-push hooks**: TypeScript build + ESLint + full test suite before every push
 
-## 📁 Project Structure
+## Project Structure
 
 ```
-broteam-translate-bot
+broteam-translate-bot/
 ├── src/
-│   ├── index.ts                      # Entry point with graceful shutdown
+│   ├── index.ts                      # Entry point (manual mode bootstrap)
 │   ├── config/index.ts               # Environment configuration
+│   ├── server/
+│   │   ├── dashboardServer.ts        # HTTP server + REST API for the dashboard
+│   │   ├── candidateStore.ts         # In-memory queue with JSON persistence
+│   │   └── generationQueue.ts        # Sequential job queue (one job at a time)
+│   ├── workers/
+│   │   └── candidateGenerator.ts     # Runs 4 translation chains per tweet
 │   ├── twitter/
-│   │   ├── client.ts                 # Twitter API client with OAuth2
-│   │   ├── fetchTweets.ts            # Fetch from @BroTeamPills
-│   │   └── postTweets.ts             # Post to @BroTeamForeign
+│   │   └── fetchTweets.ts            # Nitter/Jina scraping (no Twitter API)
 │   ├── translator/
 │   │   └── googleTranslate.ts        # LibreTranslate integration
-│   ├── scheduler/jobs.ts             # Scheduled tasks with cooldowns
-│   ├── workers/
-│   │   └── translateAndPostWorker.ts # Main processing with multi-chain
 │   └── utils/
-│       ├── humorScorer.ts            # ML-based humor detection
+│       ├── humorScorer.ts            # ONNX BERT humor detection
 │       ├── duplicatePrevention.ts    # Multi-layer deduplication
 │       ├── gracefulShutdown.ts       # Process signal handlers
 │       ├── healthCheck.ts            # System health monitoring
 │       ├── safeFileOps.ts            # Atomic file operations
-│       ├── streamLogReader.ts        # Memory-efficient log reading
-│       └── optimizedDuplicateCheck.ts # Fast similarity detection
-├── tests/                            # 18 test suites, 388 tests
-├── models/humor-detector/            # ONNX humor detection models
-├── scripts/                          # Admin CLI and utilities
-├── STABILITY_IMPROVEMENTS.md         # Technical stability docs
-├── UNIT_TESTING_SUMMARY.md          # Test coverage report
-└── QUICK_REFERENCE.md               # Developer quick start
-
+│       └── tweetTracker.ts           # Tracks processed tweet IDs
+├── dashboard/
+│   └── index.html                    # Single-file dashboard SPA
+├── tests/                            # 12 test suites, 261 tests
+├── models/humor-detector/            # ONNX humor detection model
+└── scripts/                          # Utilities and admin tools
 ```
 
-## 🚀 Quick Start
+## Quick Start
 
 ### Prerequisites
 - Node.js v18+
 - Docker Desktop (for LibreTranslate)
-- Twitter API credentials (OAuth 2.0)
+- **No Twitter API credentials needed**
 
 ### Installation
 
 1. **Clone and install:**
    ```powershell
-   git clone https://github.com/yourusername/broteam-translate-bot.git
+   git clone https://github.com/ExtendoBrothers/broteam-translate-bot.git
    cd broteam-translate-bot
    npm install
    ```
 
 2. **Start LibreTranslate:**
    ```powershell
-   docker-compose up -d
+   docker-compose up -d libre
    ```
 
 3. **Configure environment:**
    ```powershell
    cp .env.example .env
-   # Edit .env with your Twitter API credentials
-   
-   # Or use interactive setup:
-   npm run admin  # Select "Authorize OAuth 2.0"
+   # Only DASHBOARD_PORT and LIBRE_TRANSLATE_URL are needed to get started
    ```
 
 4. **Run tests:**
    ```bash
-   npm test              # All 388 tests
-   npm run test:coverage # Coverage report
+   npm test
+   npm run test:coverage
    ```
 
 5. **Start the bot:**
    ```powershell
-   npm run dev           # Development mode
-   # or
-   npm run build && npm start  # Production mode
+   npm run build && npm start
+   # or in development:
+   npm run dev
    ```
 
-### OAuth 2.0 Setup
+6. **Open the dashboard:**
+   Navigate to `http://localhost:3456` in your browser.
 
-1. Go to [developer.x.com](https://developer.x.com) → Your App → User authentication settings
-2. Set **Type of App**: `Native App` (Public client)
-3. Add **Callback URL**: `http://127.0.0.1:6789/callback`
-4. Enable scopes: `tweet.read`, `tweet.write`, `users.read`, `offline.access`
-5. Run interactive setup:
-   ```powershell
-   npm run admin  # Select option 1 to authorize
-   ```
+## Environment Variables
 
-**Alternative manual flow:**
-```powershell
-npm run oauth2:auth
-# Open the printed URL in browser, approve app
-# Tokens saved automatically to .env and .twitter-oauth2-tokens.json
-```
-
-## ⚙️ Environment Variables
-
-### Required
-
-| Variable | Description |
-|----------|-------------|
-| `TWITTER_CLIENT_ID` | Twitter OAuth 2.0 client ID |
-| `TWITTER_CLIENT_SECRET` | OAuth 2.0 client secret (optional for PKCE) |
-| `TWITTER_REFRESH_TOKEN` | OAuth 2.0 refresh token (auto-populated) |
-| `SOURCE_USER_ID` | Numeric user ID of @BroTeamPills |
-| `TARGET_ACCOUNT_USERNAME` | Your bot's username (e.g., BroTeamForeign) |
-
-### Optional
+### Translation
 
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `LIBRE_TRANSLATE_URL` | `http://localhost:5000/translate` | LibreTranslate endpoint |
-| `LIBRE_TRANSLATE_API_KEY` | - | API key if required |
-| `FETCH_METHOD` | `nitter` | Fetch mode: `nitter` or `twitter` |
-| `FETCH_INTERVAL` | `5` | Minutes between fetches |
-| `TRANSLATE_INTERVAL` | `10` | Minutes between translation jobs |
-| `RATE_LIMIT_WINDOW_MS` | `900000` | Rate limit window (15 min) |
-| `RATE_LIMIT_MAX_POSTS` | `5` | Max posts per window |
-| `POST_RATE_LIMIT_PER_24H` | `50` | Daily post limit |
-| `OAUTH2_REFRESH_MAX_RETRIES` | `3` | Token refresh retry attempts |
-| `OAUTH2_REFRESH_BACKOFF_MS` | `2000` | Retry backoff duration |
-| `DRY_RUN` | `1` | Set to `0` to enable posting |
-| `OLDSCHOOL_MODE` | `false` | Use fixed translation chains |
+| `LIBRE_TRANSLATE_API_KEY` | — | API key if your instance requires one |
+| `CANDIDATE_CHAIN_DEPTH` | `6` | Pivot-language hops per chain (higher = slower, more distortion) |
+| `OLDSCHOOL_MODE` | `false` | Use fixed chains instead of randomized |
+
+### Dashboard
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `DASHBOARD_PORT` | `3456` | Dashboard server port |
+| `DASHBOARD_PASSWORD` | — | Optional bearer token for dashboard API auth |
+
+### Fetching
+
+| Variable | Default | Description |
+|----------|---------|-------------|
+| `FETCH_INTERVAL_MS` | `1800000` | Nitter poll interval in ms (default: 30 min) |
+| `SOURCE_USER_ID` | — | Numeric Twitter user ID of the source account |
+
+### Misc
+
+| Variable | Default | Description |
+|----------|---------|-------------|
 | `NODE_ENV` | `development` | Environment mode |
+| `MONTHLY_FETCH_LIMIT` | `0` | Keep at `0` to always skip the Twitter API |
 
-See [.env.example](.env.example) for complete configuration template.
+See [.env.example](.env.example) for a complete template.
 
-## 🧪 Testing
-
-### Test Coverage
-
-- **18 test suites, 388 passing tests**
-- **100% coverage on core utilities**
-- **Integration tests with mocked Twitter/LibreTranslate APIs**
+## Testing
 
 ```bash
-npm test                    # Run all tests
-npm run test:watch          # Watch mode for development
-npm run test:coverage       # Generate coverage report
-npm run test:unit           # Unit tests only
-npm run test:integration    # Integration tests only
+npm test                    # Run all 261 tests
+npm run test:watch          # Watch mode
+npm run test:coverage       # Coverage report
 ```
 
-### Key Test Suites
+### Test Suites
 
-- [tests/duplicate-prevention.test.ts](tests/duplicate-prevention.test.ts) - Exact & semantic duplicate detection
-- [tests/spam-filter.test.ts](tests/spam-filter.test.ts) - Content filtering logic
-- [tests/rate-limit-tracker.test.ts](tests/rate-limit-tracker.test.ts) - Sliding window rate limits
-- [tests/translation-worker.test.ts](tests/translation-worker.test.ts) - Multi-chain translation logic
-- [tests/crash-scenarios.test.ts](tests/crash-scenarios.test.ts) - Graceful shutdown & recovery
-- [tests/tokenizer.test.ts](tests/tokenizer.test.ts) - BERT tokenization for ML models
+| Suite | What it covers |
+|-------|----------------|
+| `candidateStore.test.ts` | Queue CRUD, persistence, old-queue import |
+| `generationQueue.test.ts` | Sequential job processing, backpressure |
+| `candidateGenerator.test.ts` | Chain runner, humor/heuristic scoring |
+| `duplicate-prevention.test.ts` | Exact & semantic deduplication |
+| `safeFileOps.test.ts` | Atomic writes, error recovery |
+| `tweetTracker.test.ts` | Processed-ID tracking and persistence |
+| `gracefulShutdown.test.ts` | SIGTERM/SIGINT handler ordering |
+| `healthCheck.test.ts` | System health reporting |
+| `monthlyUsageTracker.test.ts` | API quota bookkeeping |
+| `tokenizer.test.ts` | BERT tokenization for ML models |
+| `rate-limit-tracker.test.ts` | Sliding-window rate limiting |
+| `streamLogReader.test.ts` | Memory-efficient log parsing |
 
-## 🛠️ Advanced Features
+## Dashboard REST API
 
-### Admin CLI
+Served on `http://localhost:3456` (configurable via `DASHBOARD_PORT`).
 
-Interactive command-line tool for bot management:
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET` | `/api/queue` | List pending/ready queue items |
+| `POST` | `/api/queue/fetch` | Trigger a manual Nitter fetch cycle |
+| `POST` | `/api/queue/submit` | Add a tweet by manual text input |
+| `POST` | `/api/queue/:id/post/:idx` | Mark candidate as posted → returns `intentUrl` |
+| `DELETE` | `/api/queue/:id` | Dismiss/skip a tweet |
+
+The `POST .../post/:idx` response includes a `twitter.com/intent/tweet` URL the dashboard opens in a new tab.
+
+## Translation Chains
+
+Each tweet generates **4 candidates** in parallel:
+
+- **3 randomized chains** — random sequences of 6 pivot languages, e.g. `en→ja→ru→de→zh→fr→es→en`
+- **1 oldschool chain** — fixed deterministic sequence for consistency
+
+Each candidate is scored by:
+- **Humor scorer** — ONNX BERT classifier (0.0–1.0)
+- **Heuristic evaluator** — rule-based signals (punctuation density, capitalization, repetition, etc.)
+- **Combined score** — weighted blend; best candidate flagged with `isBestCandidate: true`
+
+## Humor Detection
+
+ML-based scoring using an ONNX BERT model:
+
+- **Model:** Fine-tuned DistilBERT classifier in [models/humor-detector/](models/humor-detector/)
+- **Cache:** LRU cache (500 entries, 5-minute TTL) for ~50% speed improvement
+- **Fallback:** Heuristic score used if ONNX runtime is unavailable
+
+See [HUMOR_DETECTION.md](HUMOR_DETECTION.md) for details.
+
+## Duplicate Prevention
+
+Multi-layer deduplication before queueing:
+
+1. **Exact match** — SHA-256 content hash
+2. **Semantic similarity** — cosine similarity on normalized text
+3. **URL tracking** — prevents re-queueing tweets with identical URLs
+4. **Temporal window** — ignores recently-seen content
+
+See [DUPLICATE_PREVENTION.md](DUPLICATE_PREVENTION.md) for details.
+
+## LibreTranslate / Docker
 
 ```powershell
-npm run admin
-```
+# Start LibreTranslate
+docker-compose up -d libre
 
-**Available Commands:**
-- 📋 View posted tweets (with date/language filters)
-- 🧹 Clean up processed tweet history
-- 💾 Export feedback data for model fine-tuning
-- 🏥 Monitor system health and rate limits
-- 🔐 Authorize OAuth 2.0 (interactive browser flow)
+# Check it's healthy
+curl http://localhost:5000/languages
 
-See [ADMIN_CLI.md](ADMIN_CLI.md) for complete documentation.
-
-### Humor Detection System
-
-ML-based humor scoring using ONNX BERT models:
-
-- **Model:** Fine-tuned BERT classifier (distilbert-base-uncased)
-- **Cache:** LRU cache with 500 entries, 5-minute TTL
-- **Performance:** ~50% faster with caching enabled
-- **Threshold:** Configurable humor threshold (default: 0.7)
-
-```typescript
-import { scoreHumor } from './utils/humorScorer';
-
-const score = await scoreHumor("This joke is hilarious!");
-console.log(`Humor score: ${score}`); // 0.0 - 1.0
-
-if (score > 0.7) {
-  // Use humor-optimized translation chain
-  useHumorChain();
-}
-```
-
-**Model files:** [models/humor-detector/](models/humor-detector/)
-
-### Duplicate Prevention
-
-Multi-layer duplicate detection system:
-
-1. **Exact Match:** SHA-256 content hashing
-2. **Semantic Similarity:** Cosine similarity on normalized text
-3. **URL Tracking:** Prevents reposting identical URLs
-4. **Time Windows:** Tracks recent posts for temporal deduplication
-
-```typescript
-import { isContentDuplicateSync } from './utils/duplicatePrevention';
-
-const isDuplicate = isContentDuplicateSync(
-  content,
-  0.85 // similarity threshold
-);
-```
-
-**Performance:** Optimized with bloom filters and efficient string matching.
-
-### Graceful Shutdown
-
-Handles process signals (SIGINT, SIGTERM, SIGHUP) for clean exits:
-
-```typescript
-import { registerShutdownHandler } from './utils/gracefulShutdown';
-
-registerShutdownHandler(async () => {
-  await stopScheduler();
-  await closeConnections();
-  await flushLogs();
-  console.log("✅ Graceful shutdown complete");
-});
-```
-
-**Features:**
-- Waits for in-flight translations to complete
-- Persists rate limit state to disk
-- Closes file handles and network connections
-- Prevents data loss during deployment/restart
-
-**Tests:** [tests/crash-scenarios.test.ts](tests/crash-scenarios.test.ts)
-
-### Health Monitoring
-
-Automated system health checks:
-
-```typescript
-import { startHealthCheck } from './utils/healthCheck';
-
-startHealthCheck({
-  interval: 60000, // 1 minute
-  onUnhealthy: (status) => {
-    logger.error("System unhealthy", status);
-    sendAlert(status);
-  }
-});
-```
-
-**Monitored Metrics:**
-- Translation API availability
-- Twitter API connectivity
-- Disk space for logs
-- Rate limit status
-- Memory usage
-
-### Safe File Operations
-
-Atomic file writes with automatic backups:
-
-```typescript
-import { writeFileSafely, readFileSafely } from './utils/safeFileOps';
-
-await writeFileSafely('data.json', JSON.stringify(data));
-// Creates data.json.tmp, validates, then atomically renames
-```
-
-**Features:**
-- Atomic writes (write-then-rename)
-- Automatic backup creation
-- JSON validation on read
-- Prevents corruption from crashes mid-write
-
-## 📊 Monitoring & Logs
-
-### Log Files
-
-```
-combined.log              # All activity (info, warnings, errors)
-error.log                 # Errors only
-translation-debug.log     # Detailed translation steps and validation
-translation-logs/         # Archived logs (rotated daily)
-```
-
-### Log Levels
-
-```env
-NODE_ENV=production       # Minimal logging
-NODE_ENV=development      # Verbose logging with debug info
-```
-
-### Stream Log Reading
-
-For large log files, use the memory-efficient stream reader:
-
-```typescript
-import { processLogFileLines } from './utils/streamLogReader';
-
-await processLogFileLines('combined.log', (line) => {
-  if (line.includes('ERROR')) {
-    console.log(line);
-  }
-});
-```
-
-**Benefits:** Processes multi-GB log files without loading into memory.
-
-### Rate Limit Monitoring
-
-```bash
-# View current rate limit status
-npm run admin
-# Select "Monitor system health"
-
-# Check specific endpoints
-grep "rate-limit" combined.log
-```
-
-### Performance Metrics
-
-- **Humor detection:** ~100ms with cache, ~200ms without
-- **Translation:** ~1-2s per tweet (12-hop chain)
-- **Duplicate check:** <10ms for exact, <50ms for semantic
-- **Memory usage:** ~150MB baseline, ~300MB under load
-
-## 🐛 Troubleshooting
-
-### OAuth 2.0 Issues
-
-**State mismatch error:**
-```powershell
-# Delete cached OAuth state
-Remove-Item .oauth2-meta.json
-npm run oauth2:auth
-```
-
-**Callback server not reachable:**
-```powershell
-# Use manual handler with full callback URL
-npm run oauth2:handle -- --force "http://127.0.0.1:6789/callback?code=...&state=..."
-```
-
-**Token expired/invalid:**
-- Bot automatically refreshes tokens if `offline.access` scope is granted
-- Check `.twitter-oauth2-tokens.json` for current tokens
-- Re-run authorization if refresh fails
-
-### Rate Limit Errors (429)
-
-**Twitter API rate limits:**
-- Wait 15 minutes for reset
-- Check rate limit status in logs: `grep "rate-limit" combined.log`
-- Bot automatically respects cooldowns and persists state
-
-**Monthly fetch limit reached:**
-- Bot falls back to Jina proxy scraping
-- Logs show: `⚠️ Monthly fetch limit reached, using fallback`
-- Set `MONTHLY_FETCH_LIMIT=100` (or higher with paid tier)
-
-**Single-instance lock:**
-- Prevents duplicate bot runs
-- If stuck, delete `.bot-lock` file
-
-### LibreTranslate Issues
-
-**Container not running:**
-```powershell
-docker ps --filter "name=libretranslate"
+# View logs
 docker logs libretranslate
-docker-compose restart
 ```
 
-**Connection refused:**
-- Check `LIBRE_TRANSLATE_URL` in `.env` (default: `http://localhost:5000/translate`)
-- Verify Docker Desktop is running
-- Test endpoint: `curl http://localhost:5000/translate`
+If LibreTranslate is unreachable, translation jobs are marked as `error` and shown with an error badge in the dashboard. The bot keeps running.
 
-**Translation quality issues:**
-- Disable problematic languages in [src/config/index.ts](src/config/index.ts)
-- Use `OLDSCHOOL_MODE=true` for predictable chains
-- Check language support: [LibreTranslate languages](https://libretranslate.com/)
+## Troubleshooting
 
-### Test Failures
+### Dashboard won't load
+- Check terminal for startup errors
+- Port conflict: `netstat -ano | findstr 3456`
+- Verify `DASHBOARD_PORT` in `.env`
 
-**Permission denied (EACCES):**
+### No tweets appearing
+- Click **Fetch from Nitter** in the dashboard
+- Nitter instances can be flaky — multiple fallbacks are tried automatically
+- Check `combined.log` for fetch errors
+
+### Translations all show as error
+- LibreTranslate is likely down: `docker-compose restart libre`
+- Verify `LIBRE_TRANSLATE_URL` in `.env`
+
+### Tests failing
 ```powershell
-# Run as administrator or fix permissions
-icacls . /grant Users:F /t
+npm run build   # must compile first
+npm test
 ```
 
-**Tests timeout:**
-```powershell
-# Increase timeout in jest.config.js
-npm test -- --testTimeout=10000
-```
+## Contributing
 
-**Mock API errors:**
-- Check test setup in [tests/setup.ts](tests/setup.ts)
-- Verify mocks match actual API responses
-
-### Health Check Failures
-
-**Translation API unhealthy:**
-- Verify LibreTranslate is running
-- Check network connectivity
-- Review error logs: `grep "health-check" error.log`
-
-**Disk space warnings:**
-- Clean up old logs: `npm run clean:logs`
-- Archive logs: `npm run archive:logs`
-- Check available space: `df -h` (Linux) or `Get-PSDrive` (PowerShell)
-
-**Memory issues:**
-- Restart bot to clear cache
-- Reduce `HUMOR_CACHE_SIZE` if needed
-- Monitor with: `Get-Process node | Select-Object WS,PM` (PowerShell)
-
-## 🤝 Contributing
-
-Contributions welcome! Please follow these guidelines:
-
-1. **Fork and clone** the repository
-2. **Create a branch** for your feature: `git checkout -b feature/my-feature`
-3. **Write tests** for new functionality (maintain 100% core coverage)
-4. **Run linter:** `npm run lint -- --fix`
-5. **Run tests:** `npm test` (all must pass)
-6. **Update docs:** Modify README or create new docs in `docs/`
-7. **Submit PR** with clear description
+1. Fork and clone
+2. Create a feature branch: `git checkout -b feature/my-feature`
+3. Write tests for new functionality
+4. Run `npm run build && npm test` — both must pass
+5. Submit a PR to `manual-mode`
 
 ### Code Style
+- TypeScript strict mode
+- ESLint flat config (`eslint.config.js`)
+- 2-space indentation, single quotes
 
-- **TypeScript:** Strict mode enabled
-- **ESLint:** Use provided config (`eslint.config.js`)
-- **Indentation:** 4 spaces (enforced by linter)
-- **Line length:** 120 characters max
-- **Naming:** camelCase for variables/functions, PascalCase for classes
+See [CONTRIBUTING.md](CONTRIBUTING.md) for full guidelines.
 
-### Testing Requirements
+## Additional Documentation
 
-- **Unit tests:** Required for all new utility functions
-- **Integration tests:** Required for API interactions
-- **Coverage:** Maintain 100% on core utilities
-- **Mock data:** Use realistic Twitter API responses
-
-See [CONTRIBUTING.md](CONTRIBUTING.md) for detailed guidelines.
-
-
-MIT License - See [LICENSE](LICENSE) file for details.
-
-## 📚 Additional Documentation
-
-- [ADMIN_CLI.md](ADMIN_CLI.md) - Complete admin CLI reference
-- [RATE_LIMITS.md](RATE_LIMITS.md) - Rate limiting details and strategies
-- [STABILITY_IMPROVEMENTS.md](STABILITY_IMPROVEMENTS.md) - Technical stability documentation
-- [UNIT_TESTING_SUMMARY.md](UNIT_TESTING_SUMMARY.md) - Comprehensive test coverage report
-- [FINE_TUNING.md](FINE_TUNING.md) - Model fine-tuning guide for humor detection
-- [HUMOR_DETECTION.md](HUMOR_DETECTION.md) - Humor scoring system details
-- [DUAL_CHAIN_TRANSLATION.md](DUAL_CHAIN_TRANSLATION.md) - Multi-chain translation architecture
-- [DUPLICATE_PREVENTION.md](DUPLICATE_PREVENTION.md) - Deduplication algorithms explained
-- [OAUTH2-AUTOMATION.md](OAUTH2-AUTOMATION.md) - OAuth 2.0 setup automation
-
-## 🙋 Support
-
-**Issues:** Report bugs or request features via [GitHub Issues](https://github.com/yourusername/broteam-translate-bot/issues)
-
-**Questions:** Check existing documentation or open a discussion
-
-**Security:** Report vulnerabilities privately to [security@example.com](mailto:security@example.com)
+- [ARCHITECTURE.md](ARCHITECTURE.md) — System design and component interactions
+- [HUMOR_DETECTION.md](HUMOR_DETECTION.md) — ML model details
+- [DUAL_CHAIN_TRANSLATION.md](DUAL_CHAIN_TRANSLATION.md) — Translation chain architecture
+- [DUPLICATE_PREVENTION.md](DUPLICATE_PREVENTION.md) — Deduplication algorithms
+- [RATE_LIMITS.md](RATE_LIMITS.md) — Rate limiting details
+- [DOCKER.md](DOCKER.md) — Docker setup guide
 
 ---
 
-**Built with:** TypeScript • Jest • ONNX Runtime • LibreTranslate • Twitter API v2
+**Built with:** TypeScript • Jest • ONNX Runtime • LibreTranslate • Nitter
 
-**Status:** ✅ Production-ready • 388 tests passing • 100% core coverage
+**Status:** 261 tests passing • No Twitter API required

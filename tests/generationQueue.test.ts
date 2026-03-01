@@ -5,6 +5,8 @@
  * LibreTranslate is never hit concurrently. Jobs are processed FIFO.
  */
 
+export {}; // ensure this file is treated as an ES module, not a global script
+
 jest.mock('../src/workers/candidateGenerator', () => ({
   generateCandidates: jest.fn(),
 }));
@@ -69,13 +71,9 @@ describe('GenerationQueue', () => {
     });
 
     it('reflects the number of jobs waiting (not counting the running one)', () => {
-      let _startedFirst = false;
       mockGenerateCandidates.mockImplementation(
-        () => new Promise<typeof mockCandidates>(resolve => {
-          _startedFirst = true;
-          // never resolve — keeps first job "running"
-          void resolve; // silence lint
-        })
+        // never resolves — keeps the first job running indefinitely
+        () => new Promise<typeof mockCandidates>(() => { /* intentionally pending */ })
       );
 
       generationQueue.enqueue('j1', mockTweet);

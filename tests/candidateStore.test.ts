@@ -2,6 +2,8 @@
  * Unit tests for CandidateStore (manual-mode fork)
  */
 
+export {}; // ensure this file is treated as an ES module, not a global script
+
 jest.mock('../src/utils/safeFileOps', () => ({
   atomicWriteJsonSync: jest.fn().mockReturnValue(true),
 }));
@@ -20,28 +22,28 @@ jest.mock('fs', () => ({
   readFileSync: jest.fn(),
 }));
 
-const mockTweet = {
-  id: 'tweet-1',
-  text: 'Test tweet text',
-  createdAt: new Date('2026-01-01T12:00:00.000Z'),
-  user: { id: 'user-1', username: 'testuser', displayName: 'Test User' },
-};
-
-const mockCandidate = {
-  chainIndex: 0,
-  chainLabel: 'Chain A',
-  languages: ['en', 'ja', 'en'],
-  result: 'Translated text',
-  humorScore: 0.8,
-  heuristicScore: 0.7,
-  combinedScore: 0.75,
-  isBestCandidate: true,
-};
-
 describe('CandidateStore', () => {
   let candidateStore: any;
   let mockFs: any;
   let mockSafeFileOps: any;
+
+  const mockTweet = {
+    id: 'tweet-1',
+    text: 'Test tweet text',
+    createdAt: new Date('2026-01-01T12:00:00.000Z'),
+    user: { id: 'user-1', username: 'testuser', displayName: 'Test User' },
+  };
+
+  const mockCandidate = {
+    chainIndex: 0,
+    chainLabel: 'Chain A',
+    languages: ['en', 'ja', 'en'],
+    result: 'Translated text',
+    humorScore: 0.8,
+    heuristicScore: 0.7,
+    combinedScore: 0.75,
+    isBestCandidate: true,
+  };
 
   beforeEach(() => {
     jest.resetModules();

@@ -102,11 +102,16 @@ export default [
       }
     },
     rules: {
-      // Unused vars in tests are common (catch(e), intentional stubs, etc.)
-      'no-unused-vars': 'off',
-      '@typescript-eslint/no-unused-vars': 'off',
-      // any is common in test files for mocks and jest.resetModules() re-requires
-      '@typescript-eslint/no-explicit-any': 'off'
+      // Allow intentionally unused vars/args when prefixed with `_`; catch errors too.
+      // Keeps the rule active so real mistakes (e.g. unused imports) are still caught.
+      'no-unused-vars': 'off', // superseded by the TS-aware rule below
+      '@typescript-eslint/no-unused-vars': ['warn', {
+        argsIgnorePattern: '^_',
+        varsIgnorePattern: '^_',
+        caughtErrorsIgnorePattern: '^_|^e$'
+      }],
+      // Keep explicit `any` visible as a warning rather than silently allowing it.
+      '@typescript-eslint/no-explicit-any': 'warn'
     }
   },
   {
