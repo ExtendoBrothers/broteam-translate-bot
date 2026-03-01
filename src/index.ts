@@ -112,6 +112,9 @@ async function main() {
     // Start dashboard HTTP server
     startDashboardServer();
 
+    // Import any pre-translated items from the old auto-bot's queue
+    candidateStore.importOldQueue();
+
     // Initial fetch on startup
     await runFetchCycle();
 
