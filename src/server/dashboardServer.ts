@@ -18,11 +18,13 @@
 import * as http from 'http';
 import * as fs from 'fs';
 import * as path from 'path';
-import { candidateStore } from './candidateStore';
+import { candidateStore, QueueItem } from './candidateStore';
 import { generationQueue } from './generationQueue';
 import { fetchTweets } from '../twitter/fetchTweets';
 import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
+import { atomicWriteTextSync } from '../utils/safeFileOps';
+import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { Tweet } from '../types';
 
 const DASHBOARD_PORT = Number(process.env.DASHBOARD_PORT || '3456');
@@ -56,6 +58,97 @@ function isAuthorized(req: http.IncomingMessage): boolean {
   if (!DASHBOARD_PASSWORD) return true;
   const auth = req.headers['authorization'] || '';
   return auth === `Bearer ${DASHBOARD_PASSWORD}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Feedback logging (ported from translateAndPostWorker)
+// ─────────────────────────────────────────────────────────────────────────────
+
+function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
+  try {
+    const selected = item.candidates[postedCandidateIndex];
+    if (!selected) return;
+
+    const botPick = item.candidates.find(c => c.isBestCandidate);
+
+    const feedbackEntry = {
+      timestamp:     new Date().toISOString(),
+      tweetId:       item.tweet.id,
+      originalText:  item.tweet.text,
+      candidates:    item.candidates.map(c => ({
+        source:            c.chainLabel,
+        result:            c.result,
+        humorScore:        c.humorScore,
+        unifiedHumorScore: c.unifiedHumorScore ?? c.combinedScore,
+        humorLabel:        c.humorScore >= 0.7 ? 'HUMOROUS' : c.humorScore >= 0.4 ? 'BORDERLINE' : 'NOT_HUMOROUS',
+        combinedScore:     c.combinedScore,
+        heuristicScore:    c.heuristicScore,
+        isEnglish:         c.isEnglish ?? true,
+        tieBreaker:        c.tieBreaker ?? 0,
+        isBestCandidate:   c.isBestCandidate,
+        acceptable:        (c.acceptabilityWarnings?.length ?? 0) === 0 && !c.error,
+        acceptabilityWarnings: c.acceptabilityWarnings ?? [],
+      })),
+      botSelected:    botPick?.chainLabel ?? null,
+      userSelected:   selected.chainLabel,
+      selectedResult: selected.result,
+      selectedScore:  selected.unifiedHumorScore ?? selected.combinedScore,
+      userFeedback:   null,
+    };
+
+    const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
+
+    // Read + dedup existing entries
+    let existingEntries: typeof feedbackEntry[] = [];
+    if (fs.existsSync(feedbackPath)) {
+      try {
+        const content = fs.readFileSync(feedbackPath, 'utf8');
+        for (const line of content.split('\n').filter(l => l.trim())) {
+          existingEntries.push(JSON.parse(line.trim()));
+        }
+      } catch (e) {
+        logger.warn('[FEEDBACK] Could not read existing feedback, starting fresh:', e);
+      }
+    }
+
+    if (isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
+      logger.warn('[FEEDBACK] Blocked spammy feedback entry.');
+      return;
+    }
+    existingEntries.push(feedbackEntry);
+
+    // Dedup by tweetId — keep most recent
+    const seen = new Set<string>();
+    const deduped: typeof existingEntries = [];
+    for (let i = existingEntries.length - 1; i >= 0; i--) {
+      const e = existingEntries[i] as { tweetId?: string };
+      const key = e.tweetId ?? '';
+      if (!seen.has(key)) { seen.add(key); deduped.unshift(existingEntries[i]); }
+    }
+
+    const jsonl = deduped.map(e => JSON.stringify(
+      JSON.parse(JSON.stringify(e, (_k, v) =>
+        typeof v === 'string' ? v.replace(/\n/g, '\\n').replace(/\r/g, '\\r') : v
+      ))
+    )).filter(Boolean).join('\n') + '\n';
+
+    atomicWriteTextSync(feedbackPath, jsonl);
+    logger.info(`[FEEDBACK] Logged feedback for tweet ${item.tweet.id} (userSelected=${selected.chainLabel})`);
+
+    // Trigger threshold check script (non-blocking, best-effort)
+    setTimeout(async () => {
+      try {
+        const { execSync } = await import('child_process');
+        execSync('node scripts/check-feedback-threshold.js', {
+          stdio: 'inherit', cwd: process.cwd(), timeout: 10000,
+        });
+      } catch (e) {
+        logger.debug('[FEEDBACK] Threshold check skipped:', e instanceof Error ? e.message : e);
+      }
+    }, 100);
+  } catch (err) {
+    logger.error('[FEEDBACK] Failed to write feedback entry:', err);
+  }
 }
 
 
@@ -189,12 +282,16 @@ async function handleRequest(
   if (method === 'POST' && postMatch) {
     const [, queueId, idxStr] = postMatch;
     const candidateIndex = parseInt(idxStr, 10);
+    // Snapshot item before markPosted mutates it (needed for feedback)
+    const item = candidateStore.getById(queueId);
     const result = candidateStore.markPosted(queueId, candidateIndex);
     if (!result) {
       json(res, 404, { error: 'Queue item or candidate not found' });
       return;
     }
     json(res, 200, { intentUrl: result.intentUrl });
+    // Write feedback asynchronously — never block the response
+    if (item) setImmediate(() => writeFeedback(item, candidateIndex));
     return;
   }
 

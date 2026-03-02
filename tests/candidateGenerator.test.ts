@@ -202,12 +202,14 @@ describe('generateCandidates', () => {
       expect(best.chainLabel).toBe('Random-3');
     });
 
-    it('flags chainIndex 0 when all scores are equal (first wins)', async () => {
+    it('Oldschool chain wins when raw humor scores are equal (Oldschool +0.05 bonus)', async () => {
+      // With equal raw humor and zero heuristic, Oldschool receives a +0.05 bonus
+      // from the ported extended heuristic scoring, so it always beats Random chains.
       mockScoreHumor.mockResolvedValue({ score: 0.5 });
       mockEvaluateHeuristics.mockReturnValue({ score: 0 });
       const candidates = await generateCandidates(baseTweet);
       const best = candidates.find(c => c.isBestCandidate)!;
-      expect(best.chainIndex).toBe(0);
+      expect(best.chainLabel).toBe('Oldschool');
     });
 
     it('only one candidate has isBestCandidate = true even with different scores', async () => {

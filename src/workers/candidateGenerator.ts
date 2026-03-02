@@ -59,6 +59,12 @@ export interface Candidate {
   combinedScore: number;
   /** True for the single highest-scoring candidate */
   isBestCandidate: boolean;
+  /** ML humor score + extended heuristic bonuses — used for best-candidate selection */
+  unifiedHumorScore?: number;
+  /** Whether the result was detected as English (humor model only scores English) */
+  isEnglish?: boolean;
+  /** differenceScore + 2 × unexpectednessScore — tiebreaker when unified scores are equal */
+  tieBreaker?: number;
   /** Number of chain attempts before an acceptable result was found */
   attempts?: number;
   /**
@@ -546,35 +552,152 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     });
   }
 
-  // Score each candidate
+  // ── Score each candidate (humor model + heuristics) ──────────────────────
   for (const candidate of candidates) {
+    let humorRaw = 0;
     try {
       const humor = await scoreHumor(candidate.result, tweet.text);
       candidate.humorScore = Math.max(0, Math.min(1, humor.score));
+      humorRaw = humor.score;
     } catch {
       candidate.humorScore = 0;
     }
 
+    let heuristicEval = { score: 0, details: [] as string[] };
     try {
-      const heuristics = evaluateHeuristics(candidate.result, tweet.text);
-      candidate.heuristicScore = Math.max(0, Math.min(1, (heuristics.score + 5) / 10));
+      heuristicEval = evaluateHeuristics(candidate.result, tweet.text);
+      candidate.heuristicScore = Math.max(0, Math.min(1, (heuristicEval.score + 5) / 10));
     } catch {
       candidate.heuristicScore = 0;
     }
 
     candidate.combinedScore = 0.6 * candidate.humorScore + 0.4 * candidate.heuristicScore;
+
+    // ── Language detection (same logic as isAcceptable / translateAndPostWorker) ──
+    const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
+    const textOnly = candidate.result
+      .replace(tokenPattern, '')
+      .replace(/@[a-zA-Z0-9_-]+/g, '')
+      .replace(/#[a-zA-Z0-9_]+/g, '')
+      .replace(/\s{2,}/g, ' ')
+      .trim();
+
+    const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
+    const hasArabic   = /[\u0600-\u06FF]/.test(textOnly);
+    const hasCJK      = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
+    let detectedLang  = 'und';
+
+    if (hasCyrillic || hasArabic || hasCJK) {
+      detectedLang = 'non-latin';
+    } else {
+      const lexiconResult   = detectLanguageByLexicon(textOnly);
+      detectedLang          = lexiconResult || 'und';
+      const englishMatchPct = getEnglishMatchPercentage(textOnly);
+
+      if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
+        try {
+          const d = langdetect.detect(textOnly);
+          if (!d?.length || d[0].lang !== 'en' || d[0].prob < 0.8) detectedLang = 'und';
+        } catch { /* ignore */ }
+      }
+
+      if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+        const pct = getEnglishMatchPercentage(textOnly);
+        try {
+          const d = langdetect.detect(textOnly);
+          if (d?.length && d[0].lang === 'en' && d[0].prob > 0.8 &&
+              (!d[1] || d[1].prob <= d[0].prob - 0.1) && pct >= 20) {
+            detectedLang = d[0].lang;
+          }
+        } catch { /* ignore */ }
+      }
+    }
+
+    candidate.isEnglish  = detectedLang === 'en';
+    candidate.tieBreaker = differenceScore(candidate.result, tweet.text)
+                         + unexpectednessScore(candidate.result, tweet.text) * 2;
+
+    // ── Extended heuristic bonuses (ported from translateAndPostWorker) ────
+    let bonus = 0;
+    const bonusLog: string[] = [];
+
+    // Oldschool chain preference
+    if (candidate.chainLabel === 'Oldschool') {
+      bonus += 0.05;
+      bonusLog.push('Oldschool +0.050');
+    }
+
+    // Length bonus (~0.05 for 100+ chars)
+    const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005);
+    if (lengthBonus > 0) { bonus += lengthBonus; bonusLog.push(`length +${lengthBonus.toFixed(4)}`); }
+
+    // Coherence bonus: sentence endings + verb presence
+    const text = candidate.result.trim();
+    const lowerText = text.toLowerCase();
+    const hasSentenceEnd = /[.!?]$/.test(text);
+    const VERBS = ['is','are','was','were','has','have','had','do','does','did','will','would','can','could','should','may','might'];
+    const hasVerb = lowerText.split(/\s+/).some(w => VERBS.includes(w));
+    const coherenceBonus = (hasSentenceEnd ? 0.01 : 0) + (hasVerb ? 0.01 : 0);
+    if (coherenceBonus > 0) { bonus += coherenceBonus; bonusLog.push(`coherence +${coherenceBonus.toFixed(3)}`); }
+
+    // Garbage penalty: low word diversity
+    const words = lowerText.split(/\s+/).filter(w => w.length > 0);
+    const diversityRatio = words.length > 0 ? new Set(words).size / words.length : 1;
+    if (diversityRatio < 0.7) { bonus -= 0.02; bonusLog.push('garbage -0.020'); }
+
+    // Contradiction bonus
+    const CONTRADICTIONS = [
+      /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
+      /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
+      /\b(fast|quick)\b.*\b(slow)\b/,
+      /\b(hot)\b.*\b(cold)\b/,
+    ];
+    if (CONTRADICTIONS.some(p => p.test(lowerText))) { bonus += 0.015; bonusLog.push('contradiction +0.015'); }
+
+    // Self-deprecation bonus
+    const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
+    const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
+    const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
+    if ((hasFirstPerson && hasNegativeSelf) || hasSelfCriticism) { bonus += 0.012; bonusLog.push('self-dep +0.012'); }
+
+    // Absurdity bonus
+    if (/\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/.test(lowerText)) { bonus += 0.008; bonusLog.push('absurd +0.008'); }
+    if (/\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/.test(lowerText)) { bonus += 0.005; bonusLog.push('extreme +0.005'); }
+    if (/\b(flying pigs|square circle|cold heat|dark light)\b/.test(lowerText)) { bonus += 0.010; bonusLog.push('impossible +0.010'); }
+
+    // User-defined heuristic evaluation (raw score, same as old worker)
+    if (heuristicEval.score !== 0) {
+      bonus += heuristicEval.score;
+      bonusLog.push(`heuristic ${heuristicEval.score > 0 ? '+' : ''}${heuristicEval.score.toFixed(3)}`);
+    }
+
+    const appliedBonus = Math.min(bonus, 0.15);
+    candidate.unifiedHumorScore = Math.min(1.0, humorRaw + appliedBonus);
+
+    if (bonusLog.length > 0) {
+      logger.info(`[CANDIDATE_GEN][HEURISTIC] ${candidate.chainLabel}: humor ${humorRaw.toFixed(3)} → unified ${candidate.unifiedHumorScore.toFixed(3)} (${bonusLog.join(', ')})`);
+    }
   }
 
-  // Flag the single best candidate
-  const bestIdx = candidates.reduce(
-    (best, curr, idx) => curr.combinedScore > candidates[best].combinedScore ? idx : best,
-    0
-  );
+  // ── Best-candidate selection: English preference → unified score → tiebreaker ──
+  let bestIdx = 0;
+  for (let i = 1; i < candidates.length; i++) {
+    const curr = candidates[i];
+    const best = candidates[bestIdx];
+    if (curr.isEnglish && !best.isEnglish)  { bestIdx = i; continue; }
+    if (!curr.isEnglish && best.isEnglish)  { continue; }
+    const currU = curr.unifiedHumorScore ?? curr.combinedScore;
+    const bestU = best.unifiedHumorScore ?? best.combinedScore;
+    if (currU > bestU) { bestIdx = i; continue; }
+    if (currU === bestU && (curr.tieBreaker ?? 0) > (best.tieBreaker ?? 0)) { bestIdx = i; }
+  }
   candidates[bestIdx].isBestCandidate = true;
 
   logger.info(
-    `[CANDIDATE_GEN] Done. Best: "${candidates[bestIdx].chainLabel}" ` +
-    `(score ${candidates[bestIdx].combinedScore.toFixed(3)})`
+    `[CANDIDATE_GEN] ✨ Best: "${candidates[bestIdx].chainLabel}" ` +
+    `unified=${candidates[bestIdx].unifiedHumorScore?.toFixed(3)} ` +
+    `combined=${candidates[bestIdx].combinedScore.toFixed(3)} ` +
+    `en=${candidates[bestIdx].isEnglish}`
   );
 
   return candidates;
