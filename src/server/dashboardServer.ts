@@ -25,6 +25,7 @@ import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
+import { recordSuccessfulPost } from '../utils/duplicatePrevention';
 import { Tweet } from '../types';
 
 const DASHBOARD_PORT = Number(process.env.DASHBOARD_PORT || '3456');
@@ -134,6 +135,29 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
 
     atomicWriteTextSync(feedbackPath, jsonl);
     logger.info(`[FEEDBACK] Logged feedback for tweet ${item.tweet.id} (userSelected=${selected.chainLabel})`);
+
+    // Record successful post for cross-session duplicate prevention
+    // (marks tweetTracker + logs content to contentDeduplication, same as main bot)
+    try {
+      recordSuccessfulPost(item.tweet.id, selected.result);
+    } catch (err) {
+      logger.warn('[FEEDBACK] recordSuccessfulPost failed (non-critical):', err);
+    }
+
+    // Append to all-translations.log (same format as main bot; feeds importOldQueue migration)
+    try {
+      const logDir  = path.join(process.cwd(), 'translation-logs');
+      if (!fs.existsSync(logDir)) fs.mkdirSync(logDir, { recursive: true });
+      const logFile = path.join(logDir, 'all-translations.log');
+      const ts      = new Date().toISOString();
+      const entry   =
+        `---\nTimestamp: ${ts}\nTweet ID: ${item.tweet.id}\nInput: ${item.tweet.text}\n` +
+        `Chosen Chain: ${selected.chainLabel}\nHumor Score: ${(selected.unifiedHumorScore ?? selected.combinedScore).toFixed(3)}\n` +
+        `Steps:\nFinal Result: ${selected.result}\n`;
+      fs.appendFileSync(logFile, entry, 'utf8');
+    } catch (err) {
+      logger.warn('[FEEDBACK] Failed to write all-translations.log (non-critical):', err);
+    }
 
     // Trigger threshold check script (non-blocking, best-effort)
     setTimeout(async () => {
