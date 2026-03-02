@@ -11,7 +11,6 @@ import { Tweet } from '../types';
 import { generateCandidates } from '../workers/candidateGenerator';
 import { candidateStore } from './candidateStore';
 import { logger } from '../utils/logger';
-import { config } from '../config';
 import { tweetTracker } from '../utils/tweetTracker';
 
 interface Job {
@@ -45,12 +44,6 @@ class GenerationQueue {
   private async _run(job: Job): Promise<void> {
     logger.info(`[GenQueue] Starting generation for ${job.queueId} (${this.pending.length} waiting)`);
     try {
-      // Skip tweets whose content is explicitly blocked
-      if (config.BLOCKED_TWEET_CONTENTS.includes(job.tweet.text.trim())) {
-        logger.info(`[GenQueue] Skipping blocked tweet content for ${job.queueId}: ${job.tweet.text.trim().substring(0, 60)}`);
-        candidateStore.setError(job.queueId, 'Blocked: tweet content is in BLOCKED_TWEET_CONTENTS list');
-        return;
-      }
       const candidates = await generateCandidates(job.tweet);
       candidateStore.setReady(job.queueId, candidates);
       logger.info(`[GenQueue] Done: ${job.queueId}`);
