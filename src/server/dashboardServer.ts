@@ -146,13 +146,39 @@ async function handleRequest(
       json(res, 400, { error: 'text is required' });
       return;
     }
+
+    // ── Dedup: tweet ID ──────────────────────────────────────────────────────
+    // If the caller provides a real tweet ID, check it against tweetTracker so
+    // we never queue a tweet that was already processed (auto-fetched or manually
+    // submitted before with the same ID).
+    const tweetId = (body.id || '').trim();
+    if (tweetId) {
+      if (!tweetTracker.shouldProcess(tweetId, new Date().toISOString())) {
+        json(res, 409, { error: 'Tweet already processed', id: tweetId });
+        return;
+      }
+    }
+
+    // ── Dedup: text content ──────────────────────────────────────────────────
+    // Guard against submitting the same text twice (e.g. double-click or
+    // re-paste). Compare normalised text against items currently in the queue.
+    const normalise = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
+    const normText = normalise(text);
+    const allItems = candidateStore.list(['generating', 'ready', 'posted']);
+    const textDupe = allItems.find(item => normalise(item.tweet.text) === normText);
+    if (textDupe) {
+      json(res, 409, { error: 'Duplicate text already in queue', existingId: textDupe.id });
+      return;
+    }
+
     const syntheticTweet: Tweet = {
-      id: body.id || `manual-${Date.now()}`,
+      id: tweetId || `manual-${Date.now()}`,
       text,
       createdAt: new Date(),
       user: { id: 'manual', username: 'manual', displayName: 'Manual Input' },
     };
     const queueId = candidateStore.add(syntheticTweet);
+    if (tweetId) tweetTracker.markProcessed(tweetId);
     generationQueue.enqueue(queueId, syntheticTweet);
     json(res, 201, { id: queueId, message: 'Tweet added to queue, generating candidates…' });
     return;
