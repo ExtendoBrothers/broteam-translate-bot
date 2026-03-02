@@ -252,6 +252,9 @@
       <h2>Manual Tweet Input</h2>
     </div>
     <div class="section-body">
+      <div class="input-row" style="margin-bottom:6px">
+        <input id="manualId" type="text" placeholder="Tweet ID (optional — used for duplicate detection)" style="flex:1;padding:6px 8px;border:1px solid var(--border);border-radius:4px;background:var(--bg2);color:var(--text);font-size:13px" />
+      </div>
       <div class="input-row">
         <textarea id="manualText" rows="3" placeholder="Paste a tweet text here to generate candidates…" maxlength="1000"></textarea>
         <button class="btn btn-primary" style="white-space:nowrap" onclick="submitManual()">Generate →</button>
@@ -365,14 +368,22 @@ async function triggerFetch() {
 // ─── Manual submit ────────────────────────────────────────────────────────────
 async function submitManual() {
   const text = document.getElementById('manualText').value.trim();
+  const id = document.getElementById('manualId').value.trim();
   if (!text) { toast('Enter tweet text first', 'err'); return; }
   try {
+    const body = id ? { text, id } : { text };
     const r = await apiFetch('/api/queue/submit', {
       method: 'POST',
-      body: JSON.stringify({ text }),
+      body: JSON.stringify(body),
     });
+    if (r.status === 409) {
+      const data = await r.json();
+      toast(`Duplicate: ${data.error}`, 'err');
+      return;
+    }
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     document.getElementById('manualText').value = '';
+    document.getElementById('manualId').value = '';
     toast('Added to queue — generating candidates…', 'ok');
     setTimeout(refreshQueue, 500);
   } catch (e) {
