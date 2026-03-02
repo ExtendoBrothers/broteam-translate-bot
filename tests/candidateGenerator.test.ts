@@ -4,6 +4,23 @@
 
 export {}; // ensure this file is treated as an ES module, not a global script
 
+// Disable per-hop delay so tests run at full speed
+process.env.TRANSLATION_HOP_DELAY_MS = '0';
+
+jest.mock('langdetect', () => ({
+  detect: jest.fn().mockReturnValue([{ lang: 'en', prob: 0.95 }]),
+}));
+
+jest.mock('../src/translator/lexicon', () => ({
+  detectLanguageByLexicon: jest.fn().mockReturnValue('en'),
+  getEnglishMatchPercentage: jest.fn().mockReturnValue(80),
+}));
+
+jest.mock('../src/utils/spamFilter', () => ({
+  isSpammyResult: jest.fn().mockReturnValue(false),
+  isSpammyFeedbackEntry: jest.fn().mockReturnValue(false),
+}));
+
 jest.mock('../src/translator/googleTranslate', () => ({
   translateText: jest.fn(),
 }));
@@ -23,6 +40,7 @@ jest.mock('../src/utils/logger', () => ({
     error: jest.fn(),
     debug: jest.fn(),
   },
+  rotateLogFile: jest.fn(),
 }));
 
 jest.mock('../src/config', () => ({
@@ -32,7 +50,7 @@ jest.mock('../src/config', () => ({
   },
 }));
 
-import { generateCandidates } from '../src/workers/candidateGenerator';
+import { generateCandidates, _resetCircuitBreaker } from '../src/workers/candidateGenerator';
 import { translateText } from '../src/translator/googleTranslate';
 import { scoreHumor } from '../src/utils/humorScorer';
 import { evaluateHeuristics } from '../src/utils/heuristicEvaluator';
@@ -48,9 +66,13 @@ const baseTweet = {
   user: { id: 'u1', username: 'testuser', displayName: 'Test' },
 };
 
+// Chains now retry up to 33× per attempt — allow extra time for worst-case paths
+jest.setTimeout(30000);
+
 describe('generateCandidates', () => {
   beforeEach(() => {
     jest.clearAllMocks();
+    _resetCircuitBreaker(); // prevent circuit state leaking between tests
     // Default: each translate call returns sensible translated text
     mockTranslateText.mockResolvedValue('Translated text');
     mockScoreHumor.mockResolvedValue({ score: 0.5 });
@@ -294,7 +316,10 @@ describe('generateCandidates', () => {
       jest.doMock('../src/translator/googleTranslate', () => ({ translateText: jest.fn().mockResolvedValue('ok') }));
       jest.doMock('../src/utils/humorScorer', () => ({ scoreHumor: jest.fn().mockResolvedValue({ score: 0.5 }) }));
       jest.doMock('../src/utils/heuristicEvaluator', () => ({ evaluateHeuristics: jest.fn().mockReturnValue({ score: 0 }) }));
-      jest.doMock('../src/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() } }));
+      jest.doMock('../src/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }, rotateLogFile: jest.fn() }));
+      jest.doMock('langdetect', () => ({ detect: jest.fn().mockReturnValue([{ lang: 'en', prob: 0.95 }]) }));
+      jest.doMock('../src/translator/lexicon', () => ({ detectLanguageByLexicon: jest.fn().mockReturnValue('en'), getEnglishMatchPercentage: jest.fn().mockReturnValue(80) }));
+      jest.doMock('../src/utils/spamFilter', () => ({ isSpammyResult: jest.fn().mockReturnValue(false) }));
       const { generateCandidates: freshGen } = require('../src/workers/candidateGenerator');
       const candidates = await freshGen(baseTweet);
       // Should still produce 4 candidates
