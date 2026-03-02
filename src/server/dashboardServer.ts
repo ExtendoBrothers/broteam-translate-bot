@@ -160,15 +160,29 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
     }
 
     // Trigger threshold check script (non-blocking, best-effort)
-    setTimeout(async () => {
-      try {
-        const { execSync } = await import('child_process');
-        execSync('node scripts/check-feedback-threshold.js', {
-          stdio: 'inherit', cwd: process.cwd(), timeout: 10000,
+    setTimeout(() => {
+      import('child_process')
+        .then(({ execFile }) => {
+          execFile(
+            'node',
+            ['scripts/check-feedback-threshold.js'],
+            { cwd: process.cwd(), timeout: 10000 },
+            (error) => {
+              if (error) {
+                logger.debug(
+                  '[FEEDBACK] Threshold check skipped:',
+                  error instanceof Error ? error.message : error,
+                );
+              }
+            },
+          );
+        })
+        .catch((e) => {
+          logger.debug(
+            '[FEEDBACK] Threshold check skipped:',
+            e instanceof Error ? e.message : e,
+          );
         });
-      } catch (e) {
-        logger.debug('[FEEDBACK] Threshold check skipped:', e instanceof Error ? e.message : e);
-      }
     }, 100);
   } catch (err) {
     logger.error('[FEEDBACK] Failed to write feedback entry:', err);

@@ -36,7 +36,15 @@ import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translato
 import * as langdetect from 'langdetect';
 
 // Number of pivot languages per chain. Default 12 matches translateAndPostWorker.
-const CANDIDATE_CHAIN_DEPTH = Number(process.env.CANDIDATE_CHAIN_DEPTH || '12');
+const DEFAULT_CANDIDATE_CHAIN_DEPTH = 12;
+const rawCandidateChainDepth = process.env.CANDIDATE_CHAIN_DEPTH;
+const parsedCandidateChainDepth = rawCandidateChainDepth
+  ? Number.parseInt(rawCandidateChainDepth, 10)
+  : DEFAULT_CANDIDATE_CHAIN_DEPTH;
+const CANDIDATE_CHAIN_DEPTH =
+  Number.isFinite(parsedCandidateChainDepth) && parsedCandidateChainDepth >= 1
+    ? parsedCandidateChainDepth
+    : DEFAULT_CANDIDATE_CHAIN_DEPTH;
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Public types
@@ -143,7 +151,9 @@ const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, m
 
 /** Returns per-hop delay in ms. Reads env var at call-time so tests can set it to 0. */
 function getHopDelay(): number {
-  const base = Number(process.env.TRANSLATION_HOP_DELAY_MS ?? '5000');
+  const raw = process.env.TRANSLATION_HOP_DELAY_MS;
+  const parsed = Number(raw ?? '5000');
+  const base = Number.isFinite(parsed) ? parsed : 5000;
   if (base === 0) return 0;
   return base + Math.floor(Math.random() * 1200);
 }
@@ -424,6 +434,7 @@ async function runChainWithRetries(
   let acceptable = false;
   let finalResult = inputText;
   const englishResults: string[] = [];
+  let chainNeverAttempted = false;
 
   while (!acceptable && attempts < maxRetries) {
     attempts++;
@@ -431,8 +442,13 @@ async function runChainWithRetries(
 
     const chainResult = await executeTranslationChain(inputText, languages, chainLabel);
     if (!chainResult.attempted) {
-      logger.warn(`[${chainLabel}] Chain failed to execute, retrying…`);
-      continue;
+      // All languages were skipped (circuits open, empty list, or depth resolves to 0).
+      // Retrying immediately cannot fix this — break rather than burning through all retries.
+      logger.warn(
+        `[${chainLabel}] Chain not attempted — all languages skipped (circuits open or empty list). Aborting retries.`
+      );
+      chainNeverAttempted = true;
+      break;
     }
 
     finalResult = chainResult.result;
@@ -460,6 +476,19 @@ async function runChainWithRetries(
   }
 
   if (!acceptable) {
+    if (chainNeverAttempted) {
+      logger.error(
+        `[${chainLabel}] Chain never attempted — no translation possible (all circuits open or language list empty)`
+      );
+      return {
+        result: inputText,
+        attempts,
+        acceptabilityWarnings: [
+          'chain not attempted: all languages skipped (circuits open or empty list)',
+        ],
+      };
+    }
+
     logger.error(`[${chainLabel}] No acceptable result after ${maxRetries} attempts`);
 
     if (englishResults.length > 0) {
