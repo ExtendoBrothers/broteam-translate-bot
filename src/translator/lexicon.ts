@@ -19,30 +19,36 @@ export const LEXICONS: Record<string, Set<string>> = {
 
 export function detectLanguageByLexicon(text: string): string | null {
   // Filter words: ignore very short words (<=2 chars) as they're unreliable indicators
-  // (e.g., "de", "l", "a", "i" exist in many languages)
   // Strip @mentions and #hashtags - they aren't real words in any language and skew detection
   const words = text.replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').toLowerCase().split(/\W+/).filter(w => w.length > 2);
   const totalWords = words.length;
 
   if (totalWords === 0) return null;
 
-  let bestMatch: { lang: string; count: number; percentage: number } = { lang: '', count: 0, percentage: 0 };
+  // ── English gets priority ───────────────────────────────────────────────
+  // Check English first. If ≥50% of words are English, return 'en' immediately
+  // without competing against other lexicons. This prevents translated English
+  // output that coincidentally contains words shared with, e.g., Spanish from
+  // being falsely classified as non-English.
+  let enCount = 0;
+  for (const word of words) {
+    if (LEXICONS.en.has(word)) enCount++;
+  }
+  if ((enCount / totalWords) * 100 >= 50) return 'en';
 
+  // ── Non-English detection ───────────────────────────────────────────────
+  // English didn't qualify — check other languages to positively identify
+  // the script family so callers can reject non-English results.
+  let bestMatch: { lang: string; percentage: number } = { lang: '', percentage: 0 };
   for (const [lang, lexicon] of Object.entries(LEXICONS)) {
+    if (lang === 'en') continue; // already checked above
     let matchCount = 0;
     for (const word of words) {
       if (lexicon.has(word)) matchCount++;
     }
-
     const percentage = (matchCount / totalWords) * 100;
-
-    // Require at least 50% of words to match for confident detection.
-    // Threshold was raised from 33% to 50% because lower values caused false acceptance:
-    // - Partially failed translations sometimes retained enough English words to pass at 33%.
-    // - Coincidental matches with short foreign texts (e.g., Russian, Spanish) could trigger false positives.
-    // Raising to 50% reduces these errors and improves reliability for English detection.
     if (percentage >= 50 && percentage > bestMatch.percentage) {
-      bestMatch = { lang, count: matchCount, percentage };
+      bestMatch = { lang, percentage };
     }
   }
 
