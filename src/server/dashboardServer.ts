@@ -26,6 +26,7 @@ import { logger } from '../utils/logger';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
+import { recordPositives } from '../utils/languageWeights';
 import { translationLogEmitter } from '../utils/translationLogEmitter';
 import { Tweet } from '../types';
 
@@ -162,6 +163,13 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
 
     atomicWriteTextSync(feedbackPath, jsonl);
     logger.info(`[FEEDBACK] Logged feedback for tweet ${item.tweet.id} (userSelected=${selected.chainLabel})`);
+
+    // Record language positives so weighted shuffle favours this chain's languages
+    try {
+      recordPositives(selected.languages || []);
+    } catch (err) {
+      logger.warn('[FEEDBACK] recordPositives failed (non-critical):', err);
+    }
 
     // Record successful post for cross-session duplicate prevention
     // (marks tweetTracker + logs content to contentDeduplication, same as main bot)

@@ -25,34 +25,36 @@ export function detectLanguageByLexicon(text: string): string | null {
 
   if (totalWords === 0) return null;
 
-  // ── English gets priority ───────────────────────────────────────────────
-  // Check English first. If ≥50% of words are English, return 'en' immediately
-  // without competing against other lexicons. This prevents translated English
-  // output that coincidentally contains words shared with, e.g., Spanish from
-  // being falsely classified as non-English.
+  // ── Foreign languages get priority ──────────────────────────────────────
+  // Check non-English lexicons first. If any language scores ≥50%, return it
+  // immediately. A false rejection (good English classified as foreign) is
+  // acceptable because the caller retries; a false acceptance (non-English
+  // posted as output) is not. Picking the best-scoring foreign match avoids
+  // ambiguity when multiple foreign sets overlap.
+  let bestForeign: { lang: string; percentage: number } = { lang: '', percentage: 0 };
+  for (const [lang, lexicon] of Object.entries(LEXICONS)) {
+    if (lang === 'en') continue;
+    let matchCount = 0;
+    for (const word of words) {
+      if (lexicon.has(word)) matchCount++;
+    }
+    const percentage = (matchCount / totalWords) * 100;
+    if (percentage >= 50 && percentage > bestForeign.percentage) {
+      bestForeign = { lang, percentage };
+    }
+  }
+  if (bestForeign.percentage >= 50) return bestForeign.lang;
+
+  // ── English fallback ─────────────────────────────────────────────────────
+  // No foreign language qualified — check English so callers can confirm the
+  // result really is English before accepting it.
   let enCount = 0;
   for (const word of words) {
     if (LEXICONS.en.has(word)) enCount++;
   }
   if ((enCount / totalWords) * 100 >= 50) return 'en';
 
-  // ── Non-English detection ───────────────────────────────────────────────
-  // English didn't qualify — check other languages to positively identify
-  // the script family so callers can reject non-English results.
-  let bestMatch: { lang: string; percentage: number } = { lang: '', percentage: 0 };
-  for (const [lang, lexicon] of Object.entries(LEXICONS)) {
-    if (lang === 'en') continue; // already checked above
-    let matchCount = 0;
-    for (const word of words) {
-      if (lexicon.has(word)) matchCount++;
-    }
-    const percentage = (matchCount / totalWords) * 100;
-    if (percentage >= 50 && percentage > bestMatch.percentage) {
-      bestMatch = { lang, percentage };
-    }
-  }
-
-  return bestMatch.percentage >= 50 ? bestMatch.lang : null;
+  return null;
 }
 
 /**

@@ -32,6 +32,7 @@ import { config } from '../config';
 import { isSpammyResult } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { emitLogLine } from '../utils/translationLogEmitter';
+import { weightedShuffle, recordNegatives } from '../utils/languageWeights';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -460,6 +461,7 @@ async function runChainWithRetries(
     } else {
       const reasons = spammy ? `${check.reason}; spammy content` : check.reason;
       logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${reasons}`);
+      recordNegatives(languages);
     }
 
     // Maintain pool of English results for best-of fallback
@@ -533,9 +535,9 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
   const availableLangs = config.LANGUAGES.filter(l => l !== 'en');
 
   const chainDefs: { label: string; getLanguages: () => string[] }[] = [
-    { label: 'Random-1', getLanguages: () => shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
-    { label: 'Random-2', getLanguages: () => shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
-    { label: 'Random-3', getLanguages: () => shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+    { label: 'Random-1', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+    { label: 'Random-2', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+    { label: 'Random-3', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     {
       label: 'Oldschool',
       getLanguages: config.OLDSCHOOL_LANGUAGES.length > 0
