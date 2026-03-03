@@ -299,33 +299,22 @@ function isAcceptable(
   if (hasCyrillic || hasArabic || hasCJK) {
     detectedLang = 'non-latin';
   } else {
+    // Lexicon is authoritative — trust its result unconditionally
     const lexiconResult = detectLanguageByLexicon(textOnly);
     detectedLang = lexiconResult || 'und';
-    const englishMatchPct = getEnglishMatchPercentage(textOnly);
 
-    // Validate borderline English (50–70% match) with langdetect
-    if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
-      try {
-        const detections = langdetect.detect(textOnly);
-        if (!detections?.length || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
-          detectedLang = 'und';
-        }
-      } catch { /* ignore */ }
-    }
-
-    // Fallback to langdetect when lexicon is inconclusive
+    // Fallback to langdetect only when lexicon is inconclusive ('und')
     if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-      const englishMatchPct2 = getEnglishMatchPercentage(textOnly);
+      const englishMatchPct = getEnglishMatchPercentage(textOnly);
       try {
         const detections = langdetect.detect(textOnly);
         if (
           detections?.length > 0 &&
           detections[0].lang === 'en' &&
-          detections[0].prob > 0.8 &&
-          (!detections[1] || detections[1].prob <= detections[0].prob - 0.1) &&
-          englishMatchPct2 >= 20
+          detections[0].prob > 0.7 &&
+          englishMatchPct >= 20
         ) {
-          detectedLang = detections[0].lang;
+          detectedLang = 'en';
         }
       } catch { /* ignore */ }
     }
