@@ -360,8 +360,8 @@ async function executeTranslationChain(
   let translationAttempted = false;
 
   for (const lang of languages) {
-    if (lang === 'en') continue;
-    if (isCircuitOpen(lang)) {
+    if (lang === 'en' && currentSource === 'en') continue; // skip no-op en→en
+    if (lang !== 'en' && isCircuitOpen(lang)) {
       logger.warn(`[${chainLabel}] Skipping ${lang} — circuit open`);
       continue;
     }
@@ -537,11 +537,9 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     { label: 'Random-3', languages: shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     {
       label: 'Oldschool',
-      languages: (
-        config.OLDSCHOOL_LANGUAGES.length > 0
-          ? config.OLDSCHOOL_LANGUAGES.filter(l => l !== 'en')
-          : shuffleArray(availableLangs)
-      ).slice(0, CANDIDATE_CHAIN_DEPTH),
+      languages: config.OLDSCHOOL_LANGUAGES.length > 0
+        ? config.OLDSCHOOL_LANGUAGES  // use full sequence including 'en' bounce-backs
+        : shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH),
     },
   ];
 
