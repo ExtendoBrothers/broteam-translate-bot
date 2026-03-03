@@ -220,7 +220,34 @@
       .candidates-grid { grid-template-columns: 1fr; }
       .input-row { flex-direction: column; }
     }
-  </style>
+    /* ── Translation log panel ───────────────────────────── */
+    #logTerminal {
+      background: #0f0f0f; border: 1px solid var(--border);
+      border-radius: 0 0 8px 8px;
+      font-family: ui-monospace, 'Cascadia Code', 'Fira Code', monospace;
+      font-size: 12px; line-height: 1.55;
+      height: 360px; overflow-y: auto;
+      padding: 10px 14px;
+    }
+    .log-line { white-space: pre-wrap; word-break: break-all; }
+    .log-line + .log-line { margin-top: 1px; }
+    /* chain colours */
+    .log-chain-r1     { color: #569cd6; }
+    .log-chain-r2     { color: #c586c0; }
+    .log-chain-r3     { color: #dcdcaa; }
+    .log-chain-old    { color: #4ec9b0; }
+    .log-chain-final  { color: #89d185; }
+    .log-chain-meta   { color: #858585; }
+    .log-chain-start  { color: #fff; font-weight: 700; }
+    .log-sys          { color: #89d185; font-style: italic; }
+    .log-err          { color: #f48771; }
+    #logStatusDot {
+      display: inline-block; width: 8px; height: 8px;
+      border-radius: 50%; background: var(--yellow); margin-right: 6px;
+    }
+    #logStatusDot.connected    { background: var(--green); }
+    #logStatusDot.disconnected { background: var(--red); }
+    .log-controls { display: flex; gap: 8px; align-items: center; }  </style>
 </head>
 <body>
 
@@ -272,7 +299,23 @@
       <ul id="queue"></ul>
     </div>
   </div>
-
+  <!-- Translation log -->
+  <div class="section" id="logSection">
+    <div class="section-header">
+      <h2>📶 Live Translation Log</h2>
+      <div class="log-controls">
+        <span style="font-size:12px;color:var(--muted)">
+          <span id="logStatusDot"></span><span id="logStatusText">Connecting…</span>
+        </span>
+        <label style="font-size:12px;color:var(--muted);display:flex;align-items:center;gap:4px;cursor:pointer">
+          <input type="checkbox" id="logAutoScroll" checked style="accent-color:var(--accent)"> Auto-scroll
+        </label>
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" onclick="clearLog()">Clear</button>
+        <button class="btn btn-ghost" style="font-size:12px;padding:4px 10px" id="logToggleBtn" onclick="toggleLogPanel()">Hide</button>
+      </div>
+    </div>
+    <div id="logTerminal"></div>
+  </div>
 </div>
 
 <!-- ── Toast container ───────────────────────────────────────────── -->
@@ -544,10 +587,102 @@ function escHtml(s) {
 }
 function escAttr(s) { return escHtml(s); }
 
-// ─── Init & poll ────────────────────────────────────────────────────────────
+// ─── Live Translation Log (SSE) ──────────────────────────────────
+const LOG_MAX_LINES = 500;
+let logLineCount = 0;
+let sseSource = null;
+
+function classForLine(line) {
+  if (line.includes('[CHAIN-START]')) return 'log-chain-start';
+  if (line.includes('[SSE-CONNECTED]'))   return 'log-sys';
+  if (line.startsWith('[ERROR') || line.includes('] Failed') || line.includes('Warn:')) return 'log-err';
+  if (line.includes('[final-en]'))   return 'log-chain-final';
+  if (line.includes('[CANDIDATE_GEN]')) return 'log-chain-meta';
+  if (line.includes('[Random-1]') || line.includes('[Random-1]')) return 'log-chain-r1';
+  if (line.includes('[Random-2]')) return 'log-chain-r2';
+  if (line.includes('[Random-3]')) return 'log-chain-r3';
+  if (line.includes('[Oldschool]')) return 'log-chain-old';
+  return 'log-chain-meta';
+}
+
+function appendLogLine(line) {
+  const term = document.getElementById('logTerminal');
+  if (!term) return;
+
+  // Trim oldest lines to keep the DOM light
+  while (logLineCount >= LOG_MAX_LINES && term.firstChild) {
+    term.removeChild(term.firstChild);
+    logLineCount--;
+  }
+
+  const el = document.createElement('div');
+  el.className = `log-line ${classForLine(line)}`;
+  el.textContent = line;
+  term.appendChild(el);
+  logLineCount++;
+
+  if (document.getElementById('logAutoScroll').checked) {
+    term.scrollTop = term.scrollHeight;
+  }
+}
+
+function clearLog() {
+  const term = document.getElementById('logTerminal');
+  if (term) { term.innerHTML = ''; logLineCount = 0; }
+}
+
+function toggleLogPanel() {
+  const term = document.getElementById('logTerminal');
+  const btn  = document.getElementById('logToggleBtn');
+  if (!term) return;
+  const hidden = term.style.display === 'none';
+  term.style.display = hidden ? '' : 'none';
+  btn.textContent = hidden ? 'Hide' : 'Show';
+}
+
+function setLogStatus(state) {
+  const dot  = document.getElementById('logStatusDot');
+  const text = document.getElementById('logStatusText');
+  if (!dot || !text) return;
+  dot.className = state;
+  const labels = { connected: 'Live', disconnected: 'Disconnected', connecting: 'Connecting…' };
+  text.textContent = labels[state] || state;
+}
+
+function connectLogStream() {
+  if (sseSource) { sseSource.close(); sseSource = null; }
+  setLogStatus('connecting');
+
+  const password = sessionStorage.getItem('dashPassword');
+  // Append password as query param since EventSource can't set headers
+  const url = password ? `/api/log-stream?password=${encodeURIComponent(password)}` : '/api/log-stream';
+  sseSource = new EventSource(url);
+
+  sseSource.onopen = () => setLogStatus('connected');
+
+  sseSource.onmessage = (e) => {
+    try {
+      const line = JSON.parse(e.data);
+      appendLogLine(line);
+    } catch {
+      appendLogLine(e.data);
+    }
+  };
+
+  sseSource.onerror = () => {
+    setLogStatus('disconnected');
+    sseSource.close();
+    sseSource = null;
+    // Reconnect after 5 s
+    setTimeout(connectLogStream, 5000);
+  };
+}
+
+// ─── Init & poll ────────────────────────────────────────────
 (async function init() {
   await refreshQueue();
   pollTimer = setInterval(refreshQueue, POLL_MS);
+  connectLogStream();
 })();
 </script>
 </body>

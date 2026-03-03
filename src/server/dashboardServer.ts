@@ -26,11 +26,34 @@ import { logger } from '../utils/logger';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
+import { translationLogEmitter } from '../utils/translationLogEmitter';
 import { Tweet } from '../types';
 
 const DASHBOARD_PORT = Number(process.env.DASHBOARD_PORT || '3456');
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 const DASHBOARD_HTML = path.join(process.cwd(), 'dashboard', 'index.html');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SSE log stream — live translation step updates
+// ─────────────────────────────────────────────────────────────────────────────
+
+const sseClients = new Set<http.ServerResponse>();
+
+// Buffer the last 200 lines so new clients get recent context on connect
+const SSE_HISTORY_MAX = 200;
+const sseHistory: string[] = [];
+
+function broadcastLogLine(line: string): void {
+  if (!line.trim()) return;
+  sseHistory.push(line);
+  if (sseHistory.length > SSE_HISTORY_MAX) sseHistory.shift();
+  const payload = `data: ${JSON.stringify(line)}\n\n`;
+  for (const client of sseClients) {
+    try { client.write(payload); } catch { sseClients.delete(client); }
+  }
+}
+
+translationLogEmitter.on('line', broadcastLogLine);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -58,7 +81,11 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 function isAuthorized(req: http.IncomingMessage): boolean {
   if (!DASHBOARD_PASSWORD) return true;
   const auth = req.headers['authorization'] || '';
-  return auth === `Bearer ${DASHBOARD_PASSWORD}`;
+  if (auth === `Bearer ${DASHBOARD_PASSWORD}`) return true;
+  // EventSource can't set headers — allow ?password= query param for SSE
+  const qs = (req.url || '').split('?')[1] || '';
+  const params = new URLSearchParams(qs);
+  return params.get('password') === DASHBOARD_PASSWORD;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -216,6 +243,35 @@ async function handleRequest(
   // ── Auth check ───────────────────────────────────────────────────────────
   if (!isAuthorized(req)) {
     json(res, 401, { error: 'Unauthorized' });
+    return;
+  }
+
+  // ── GET /api/log-stream  (Server-Sent Events) ────────────────────────────
+  if (method === 'GET' && url.split('?')[0] === '/api/log-stream') {
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive',
+      'Access-Control-Allow-Origin': '*',
+    });
+
+    // Replay recent history so the client immediately sees context
+    for (const line of sseHistory) {
+      res.write(`data: ${JSON.stringify(line)}\n\n`);
+    }
+    res.write(`data: ${JSON.stringify('[SSE-CONNECTED] Live translation log stream started')}\n\n`);
+
+    sseClients.add(res);
+
+    // Heartbeat every 20 s to keep the connection alive through proxies
+    const heartbeat = setInterval(() => {
+      try { res.write(': heartbeat\n\n'); } catch { /* client gone */ }
+    }, 20_000);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    });
     return;
   }
 

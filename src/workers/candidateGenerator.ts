@@ -31,6 +31,7 @@ import { logger, rotateLogFile } from '../utils/logger';
 import { config } from '../config';
 import { isSpammyResult } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
+import { emitLogLine } from '../utils/translationLogEmitter';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -95,6 +96,10 @@ function appendToDebugLog(content: string): void {
     fs.appendFileSync(debugLogPath, content, 'utf8');
   } catch {
     // non-fatal — never crash the pipeline over a log write
+  }
+  // Emit each non-empty line to the live SSE stream
+  for (const line of content.split('\n')) {
+    if (line.trim()) emitLogLine(line);
   }
 }
 
@@ -548,6 +553,7 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
   for (let i = 0; i < chainDefs.length; i++) {
     const { label, languages } = chainDefs[i];
     logger.info(`[CANDIDATE_GEN] Chain ${i + 1}/4 "${label}" langs: ${languages.join('→')}`);
+    emitLogLine(`[CHAIN-START][${label}] langs: ${languages.join(' → ')}`);
 
     let result = tweet.text;
     let error: string | undefined;
