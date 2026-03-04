@@ -534,12 +534,15 @@ async function runChainWithRetries(
 export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
   const availableLangs = config.LANGUAGES.filter(l => l !== 'en');
 
-  const chainDefs: { label: string; getLanguages: () => string[] }[] = [
+  const chainDefs: { label: string; getLanguages: () => string[]; maxRetries?: number }[] = [
     { label: 'Random-1', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     { label: 'Random-2', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     { label: 'Random-3', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     {
       label: 'Oldschool',
+      // Oldschool chain is a fixed sequence — retrying produces the same result.
+      // Run it exactly once and accept whatever comes out.
+      maxRetries: 1,
       getLanguages: config.OLDSCHOOL_LANGUAGES.length > 0
         ? () => config.OLDSCHOOL_LANGUAGES  // fixed sequence including 'en' bounce-backs
         : () => shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH),
@@ -560,7 +563,7 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     let acceptabilityWarnings: string[] = [];
 
     try {
-      const out = await runChainWithRetries(tweet.text, getLanguages, label);
+      const out = await runChainWithRetries(tweet.text, getLanguages, label, chainDefs[i].maxRetries);
       result = out.result;
       attempts = out.attempts;
       acceptabilityWarnings = out.acceptabilityWarnings;

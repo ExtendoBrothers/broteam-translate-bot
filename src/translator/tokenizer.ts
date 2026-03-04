@@ -111,6 +111,11 @@ export function restoreTokens(text: string): string {
     // Remove fragments before punctuation (with space before fragment)
     .replace(/\s+\bXNL?\b(?=[,.:;!?])/g, '')    // XN/XNL before punctuation
     .replace(/\s+\bSILE\b(?=[,.:;!?])/g, '')    // SILE before punctuation
+    // Remove token fragments ending with __ but missing the __XTOK_ prefix
+    // e.g. XNL__, MENTION__, URL__ — produced when translators partially mangle placeholders
+    // Must run before the remaining-fragment cleanup below
+    .replace(/\b[A-Z]{2,8}__(?=[\s\p{L}\p{N}]|$)/gu, '') // CAPS__ before space/letter/digit/end
+    .replace(/\b[A-Z]{2,8}__$/gmu, '')          // CAPS__ at end of line
     // Remove any remaining fragments
     .replace(/\b__X[A-Z]*\b/g, '')              // Remaining __X fragments
     .replace(/\bXTOK_[A-Z0-9_]*/g, '')          // Remaining XTOK fragments
