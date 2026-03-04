@@ -42,13 +42,14 @@ function ensureLang(data: WeightsData, lang: string): void {
 
 /**
  * Compute the selection weight for a language.
- * Weight = max(0.1, 1.0 + positives * 0.1 - negatives * 0.05)
+ * Weight = max(0.1, 1.0 + positives * 0.04 - negatives * 0.01)
  * A language with no history has weight 1.0 (neutral).
- * Each positive nudges the weight up; each negative nudges it down.
- * Minimum weight is 0.1 so all languages stay in the pool.
+ * Each positive nudges the weight up by 0.04; each negative nudges it down by 0.01.
+ * One positive therefore absorbs 4 retries. Minimum weight is 0.1 (reached after
+ * 90 net negatives) so all languages stay in the pool permanently.
  */
 function computeWeight(stats: LangStats): number {
-  return Math.max(0.1, 1.0 + stats.positives * 0.1 - stats.negatives * 0.05);
+  return Math.max(0.1, 1.0 + stats.positives * 0.04 - stats.negatives * 0.01);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
