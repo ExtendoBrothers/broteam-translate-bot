@@ -32,7 +32,7 @@ import { config } from '../config';
 import { isSpammyResult } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { emitLogLine } from '../utils/translationLogEmitter';
-import { weightedShuffle, recordNegatives } from '../utils/languageWeights';
+import { weightedShuffle, recordNegatives, getWeightsSnapshot } from '../utils/languageWeights';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -438,6 +438,19 @@ async function runChainWithRetries(
     const languages = getLanguages();
     if (attempts === 1) finalLanguages = languages; // use first attempt's list as default
     logger.info(`[${chainLabel}] Attempt ${attempts}/${maxRetries}…`);
+
+    // Emit per-language weights to the live log so the dashboard shows them
+    try {
+      const snapshot = getWeightsSnapshot();
+      const weightStr = languages
+        .filter(l => l !== 'en')
+        .map(l => {
+          const w = snapshot[l]?.weight ?? 1.0;
+          return `${l}:${w.toFixed(2)}`;
+        })
+        .join(' ');
+      if (weightStr) appendToDebugLog(`[DEBUG][${chainLabel}][weights] ${weightStr}\n`);
+    } catch { /* non-critical */ }
 
     const chainResult = await executeTranslationChain(inputText, languages, chainLabel);
     if (!chainResult.attempted) {

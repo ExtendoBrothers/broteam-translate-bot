@@ -239,6 +239,7 @@
     .log-chain-final  { color: #89d185; }
     .log-chain-meta   { color: #858585; }
     .log-chain-start  { color: #fff; font-weight: 700; }
+    .log-chain-weights { color: #b8a000; font-style: italic; }
     .log-sys          { color: #89d185; font-style: italic; }
     .log-err          { color: #f48771; }
     #logStatusDot {
@@ -594,6 +595,7 @@ let sseSource = null;
 
 function classForLine(line) {
   if (line.includes('[CHAIN-START]')) return 'log-chain-start';
+  if (line.includes('[weights]'))    return 'log-chain-weights';
   if (line.includes('[SSE-CONNECTED]'))   return 'log-sys';
   if (line.startsWith('[ERROR') || line.includes('] Failed') || line.includes('Warn:')) return 'log-err';
   if (line.includes('[final-en]'))   return 'log-chain-final';
