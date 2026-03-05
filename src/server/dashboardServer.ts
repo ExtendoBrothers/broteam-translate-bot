@@ -83,10 +83,23 @@ function isAuthorized(req: http.IncomingMessage): boolean {
   if (!DASHBOARD_PASSWORD) return true;
   const auth = req.headers['authorization'] || '';
   if (auth === `Bearer ${DASHBOARD_PASSWORD}`) return true;
-  // EventSource can't set headers — allow ?password= query param for SSE
-  const qs = (req.url || '').split('?')[1] || '';
-  const params = new URLSearchParams(qs);
-  return params.get('password') === DASHBOARD_PASSWORD;
+  // EventSource can't set headers — allow ?password= only for the SSE log stream
+  const rawUrl = req.url || '';
+  let pathname = '';
+  let params: URLSearchParams;
+  try {
+    const parsed = new URL(rawUrl, 'http://localhost');
+    pathname = parsed.pathname;
+    params = parsed.searchParams;
+  } catch {
+    const [pathPart, queryPart] = rawUrl.split('?', 2);
+    pathname = pathPart || '';
+    params = new URLSearchParams(queryPart || '');
+  }
+  if (pathname === '/api/log-stream') {
+    return params.get('password') === DASHBOARD_PASSWORD;
+  }
+  return false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
