@@ -600,7 +600,7 @@ function classForLine(line) {
   if (line.startsWith('[ERROR') || line.includes('] Failed') || line.includes('Warn:')) return 'log-err';
   if (line.includes('[final-en]'))   return 'log-chain-final';
   if (line.includes('[CANDIDATE_GEN]')) return 'log-chain-meta';
-  if (line.includes('[Random-1]') || line.includes('[Random-1]')) return 'log-chain-r1';
+  if (line.includes('[Random-1]')) return 'log-chain-r1';
   if (line.includes('[Random-2]')) return 'log-chain-r2';
   if (line.includes('[Random-3]')) return 'log-chain-r3';
   if (line.includes('[Oldschool]')) return 'log-chain-old';
