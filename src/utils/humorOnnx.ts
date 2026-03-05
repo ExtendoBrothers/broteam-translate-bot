@@ -1,9 +1,16 @@
 /**
  * Direct ONNX model inference for humor detection
- * Uses onnxruntime-node to run the locally converted model
+ * Uses onnxruntime-node to run the locally converted model.
+ *
+ * onnxruntime-node is listed as an optionalDependency, so the import is lazy:
+ * a dynamic import() is attempted the first time inference is requested, and any
+ * failure surfaces as a thrown error that humorScorer.ts already catches and
+ * falls back from gracefully.
  */
 
-import * as ort from 'onnxruntime-node';
+// Import type only — erased at compile time, so no runtime require() is emitted.
+// This means the module loads fine even when onnxruntime-node is not installed.
+import type * as OrtType from 'onnxruntime-node';
 import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
@@ -13,9 +20,25 @@ const MODEL_PATH = path.join(MODEL_DIR, 'model.onnx');
 const VOCAB_PATH = path.join(MODEL_DIR, 'vocab.txt');
 const CONFIG_PATH = path.join(MODEL_DIR, 'config.json');
 
-let session: ort.InferenceSession | null = null;
+let session: OrtType.InferenceSession | null = null;
 let vocab: Map<string, number> | null = null;
 let config: { id2label?: Record<number, string> } | null = null;
+
+// Lazy-loaded onnxruntime-node module (only imported when first needed)
+let _ort: typeof OrtType | null = null;
+
+async function getOrt(): Promise<typeof OrtType> {
+  if (_ort) return _ort;
+  try {
+    _ort = await import('onnxruntime-node');
+    return _ort;
+  } catch {
+    throw new Error(
+      'onnxruntime-node is not installed. ' +
+      'Run: npm install onnxruntime-node  or set it as a required dependency.'
+    );
+  }
+}
 
 // Load vocab file
 function loadVocab(): Map<string, number> {
@@ -62,7 +85,7 @@ function tokenize(text: string): number[] {
 }
 
 // Initialize ONNX session
-async function getSession(): Promise<ort.InferenceSession> {
+async function getSession(): Promise<OrtType.InferenceSession> {
   if (session) return session;
   
   // Verify model files exist before attempting to load
@@ -70,6 +93,7 @@ async function getSession(): Promise<ort.InferenceSession> {
     throw new Error(`Humor model files not found. Expected at: ${MODEL_DIR}`);
   }
   
+  const ort = await getOrt();
   logger.info(`[HumorONNX] Loading ONNX model from: ${MODEL_PATH}`);
   try {
     session = await ort.InferenceSession.create(MODEL_PATH);
@@ -90,6 +114,7 @@ export interface HumorPrediction {
 
 export async function predictHumor(text: string): Promise<HumorPrediction> {
   try {
+    const ort = await getOrt();
     const sess = await getSession();
     const cfg = loadConfig();
     
@@ -109,7 +134,7 @@ export async function predictHumor(text: string): Promise<HumorPrediction> {
     const attentionMaskTensor = new ort.Tensor('int64', BigInt64Array.from(attentionMask.map(BigInt)), [1, maxLength]);
     
     // Run inference
-    const feeds: Record<string, ort.Tensor> = {
+    const feeds: Record<string, OrtType.Tensor> = {
       input_ids: inputIdsTensor,
       attention_mask: attentionMaskTensor,
     };

@@ -29,7 +29,16 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            npm ci --fetch-timeout=120000 --fetch-retries=2 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
+            echo "npm ci attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
       
       - name: Run tests
         run: npm test
@@ -61,7 +70,16 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            npm ci --fetch-timeout=120000 --fetch-retries=2 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
+            echo "npm ci attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
       
       - name: Run ESLint
         run: npm run lint -- --max-warnings 250
@@ -91,7 +109,16 @@ jobs:
           cache: 'npm'
       
       - name: Install dependencies
-        run: npm ci
+        run: |
+          for i in 1 2 3; do
+            npm ci --fetch-timeout=120000 --fetch-retries=2 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
+            echo "npm ci attempt $i failed, retrying in 30s..."
+            sleep 30
+          done
       
       - name: Run npm audit
         run: npm audit --audit-level=moderate
