@@ -177,6 +177,23 @@ export function recordNegatives(langs: string[]): void {
 }
 
 /**
+ * Return the computed weight for each language in the given list.
+ * Reads from the in-memory cache so no disk I/O occurs after the first load.
+ * More efficient than getWeightsSnapshot() when only a subset of languages is needed
+ * (e.g. logging weights for the current chain's language list in a retry loop).
+ */
+export function getWeightsForLangs(langs: string[]): Record<string, number> {
+  // Access cache directly to avoid a redundant deep-copy of all stored entries
+  const data = memCache ?? safeReadJsonSync<WeightsData>(WEIGHTS_FILE, {});
+  const out: Record<string, number> = {};
+  for (const lang of langs) {
+    if (lang === 'en') continue;
+    out[lang] = data[lang] ? computeWeight(data[lang]) : 1.0;
+  }
+  return out;
+}
+
+/**
  * Return the current weights snapshot (for admin/dashboard inspection).
  */
 export function getWeightsSnapshot(): Record<string, { positives: number; negatives: number; weight: number }> {

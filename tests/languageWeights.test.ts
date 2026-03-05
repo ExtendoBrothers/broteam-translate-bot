@@ -38,6 +38,7 @@ import {
   recordPositives,
   recordNegatives,
   getWeightsSnapshot,
+  getWeightsForLangs,
   _resetCacheForTesting,
 } from '../src/utils/languageWeights';
 
@@ -257,5 +258,49 @@ describe('getWeightsSnapshot()', () => {
     resetStore({ lo: { positives: 0, negatives: 20 } });
     const snap = getWeightsSnapshot();
     expect(snap['lo'].weight).toBeCloseTo(0.8, 5);
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────────
+// getWeightsForLangs
+// ─────────────────────────────────────────────────────────────────────────────
+
+describe('getWeightsForLangs()', () => {
+  beforeEach(() => resetStore());
+
+  it('returns an empty object for an empty language list', () => {
+    expect(getWeightsForLangs([])).toEqual({});
+  });
+
+  it('omits "en" from the result', () => {
+    resetStore({ ja: { positives: 2, negatives: 0 } });
+    const w = getWeightsForLangs(['en', 'ja']);
+    expect(w['en']).toBeUndefined();
+    expect(w['ja']).toBeDefined();
+  });
+
+  it('returns 1.0 for a language with no stored data', () => {
+    resetStore();
+    const w = getWeightsForLangs(['de']);
+    expect(w['de']).toBeCloseTo(1.0, 5);
+  });
+
+  it('returns computed weights for stored languages', () => {
+    resetStore({ ja: { positives: 5, negatives: 0 }, ru: { positives: 0, negatives: 10 } });
+    const w = getWeightsForLangs(['ja', 'ru']);
+    expect(w['ja']).toBeCloseTo(1.2, 5);  // 1.0 + 5*0.04
+    expect(w['ru']).toBeCloseTo(0.9, 5);  // 1.0 - 10*0.01
+  });
+
+  it('only returns entries for the requested languages, not all stored ones', () => {
+    resetStore({ ja: { positives: 1, negatives: 0 }, de: { positives: 1, negatives: 0 } });
+    const w = getWeightsForLangs(['ja']);
+    expect(Object.keys(w)).toEqual(['ja']);
+  });
+
+  it('applies the minimum weight floor of 0.1', () => {
+    resetStore({ bad: { positives: 0, negatives: 90 } });
+    const w = getWeightsForLangs(['bad']);
+    expect(w['bad']).toBeCloseTo(0.1, 5);
   });
 });
