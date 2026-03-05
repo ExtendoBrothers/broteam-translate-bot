@@ -32,6 +32,10 @@ jobs:
         run: |
           for i in 1 2 3; do
             npm ci --timeout=120000 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
             echo "npm ci attempt $i failed, retrying in 30s..."
             sleep 30
           done
@@ -69,6 +73,10 @@ jobs:
         run: |
           for i in 1 2 3; do
             npm ci --timeout=120000 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
             echo "npm ci attempt $i failed, retrying in 30s..."
             sleep 30
           done
@@ -104,6 +112,10 @@ jobs:
         run: |
           for i in 1 2 3; do
             npm ci --timeout=120000 && break
+            if [ $i -eq 3 ]; then
+              echo "npm ci failed after 3 attempts"
+              exit 1
+            fi
             echo "npm ci attempt $i failed, retrying in 30s..."
             sleep 30
           done
