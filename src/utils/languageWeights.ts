@@ -106,8 +106,10 @@ if (!isTestEnv) {
 // ─────────────────────────────────────────────────────────────────────────────
 
 /**
- * Weighted Fisher-Yates shuffle.
- * Languages with higher weights are more likely to appear early in the result.
+ * Weighted random permutation via iterated weighted selection without replacement.
+ * Each round a language is drawn with probability proportional to its weight,
+ * then removed from the pool; this biases higher-weight languages toward the
+ * front of the result without ever excluding any language.
  * Uses persistent stats if available; falls back to uniform weight 1.0 for
  * any language not yet recorded.
  */
