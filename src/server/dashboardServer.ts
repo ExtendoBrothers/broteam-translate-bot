@@ -462,6 +462,16 @@ export function startDashboardServer(): void {
 export function stopDashboardServer(): Promise<void> {
   return new Promise((resolve) => {
     if (!server) { resolve(); return; }
+
+    // Detach the log emitter so no more writes are attempted after shutdown
+    translationLogEmitter.off('line', broadcastLogLine);
+
+    // Explicitly end all open SSE connections so server.close() doesn't hang
+    for (const client of sseClients) {
+      try { client.end(); } catch { /* ignore */ }
+    }
+    sseClients.clear();
+
     server.close(() => {
       logger.info('[DashboardServer] Stopped.');
       resolve();
