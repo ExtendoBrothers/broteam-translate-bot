@@ -272,6 +272,27 @@ class CandidateStore {
 
     return imported;
   }
+
+  /**
+   * On startup, any item still marked 'generating' means the process crashed
+   * or was restarted mid-generation. Return them so the caller can re-enqueue
+   * them in the generationQueue (avoids circular import).
+   *
+   * Items are left as 'generating' in the store — the generationQueue will call
+   * setReady / setError when the job completes, same as normal.
+   */
+  rehydrateStuck(): Array<{ id: string; tweet: Tweet }> {
+    const stuck = Array.from(this.items.values()).filter(i => i.status === 'generating');
+    if (stuck.length === 0) return [];
+    logger.warn(`[CandidateStore] Found ${stuck.length} stuck 'generating' item(s) — re-enqueueing for translation`);
+    return stuck.map(item => ({
+      id: item.id,
+      tweet: {
+        ...item.tweet,
+        createdAt: new Date(item.tweet.createdAt),
+      } as Tweet,
+    }));
+  }
 }
 
 // Singleton

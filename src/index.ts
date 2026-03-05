@@ -102,6 +102,12 @@ async function main() {
     // Start dashboard HTTP server
     startDashboardServer();
 
+    // Re-enqueue any items that were mid-generation when the process last stopped
+    const stuck = candidateStore.rehydrateStuck();
+    for (const { id, tweet } of stuck) {
+      generationQueue.enqueue(id, tweet);
+    }
+
     // Import any pre-translated items from the old auto-bot's queue
     candidateStore.importOldQueue();
 

@@ -31,6 +31,8 @@ import { logger, rotateLogFile } from '../utils/logger';
 import { config } from '../config';
 import { isSpammyResult } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
+import { emitLogLine } from '../utils/translationLogEmitter';
+import { weightedShuffle, recordNegatives, getWeightsForLangs } from '../utils/languageWeights';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -95,6 +97,10 @@ function appendToDebugLog(content: string): void {
     fs.appendFileSync(debugLogPath, content, 'utf8');
   } catch {
     // non-fatal — never crash the pipeline over a log write
+  }
+  // Emit each non-empty line to the live SSE stream
+  for (const line of content.split('\n')) {
+    if (line.trim()) emitLogLine(line);
   }
 }
 
@@ -294,33 +300,22 @@ function isAcceptable(
   if (hasCyrillic || hasArabic || hasCJK) {
     detectedLang = 'non-latin';
   } else {
+    // Lexicon is authoritative — trust its result unconditionally
     const lexiconResult = detectLanguageByLexicon(textOnly);
     detectedLang = lexiconResult || 'und';
-    const englishMatchPct = getEnglishMatchPercentage(textOnly);
 
-    // Validate borderline English (50–70% match) with langdetect
-    if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
-      try {
-        const detections = langdetect.detect(textOnly);
-        if (!detections?.length || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
-          detectedLang = 'und';
-        }
-      } catch { /* ignore */ }
-    }
-
-    // Fallback to langdetect when lexicon is inconclusive
+    // Fallback to langdetect only when lexicon is inconclusive ('und')
     if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-      const englishMatchPct2 = getEnglishMatchPercentage(textOnly);
+      const englishMatchPct = getEnglishMatchPercentage(textOnly);
       try {
         const detections = langdetect.detect(textOnly);
         if (
           detections?.length > 0 &&
           detections[0].lang === 'en' &&
-          detections[0].prob > 0.8 &&
-          (!detections[1] || detections[1].prob <= detections[0].prob - 0.1) &&
-          englishMatchPct2 >= 20
+          detections[0].prob > 0.7 &&
+          englishMatchPct >= 20
         ) {
-          detectedLang = detections[0].lang;
+          detectedLang = 'en';
         }
       } catch { /* ignore */ }
     }
@@ -360,8 +355,8 @@ async function executeTranslationChain(
   let translationAttempted = false;
 
   for (const lang of languages) {
-    if (lang === 'en') continue;
-    if (isCircuitOpen(lang)) {
+    if (lang === 'en' && currentSource === 'en') continue; // skip no-op en→en
+    if (lang !== 'en' && isCircuitOpen(lang)) {
       logger.warn(`[${chainLabel}] Skipping ${lang} — circuit open`);
       continue;
     }
@@ -426,19 +421,34 @@ async function executeTranslationChain(
 
 async function runChainWithRetries(
   inputText: string,
-  languages: string[],
+  getLanguages: () => string[],
   chainLabel: string,
   maxRetries = 33
-): Promise<{ result: string; attempts: number; acceptabilityWarnings: string[] }> {
+): Promise<{ result: string; attempts: number; acceptabilityWarnings: string[]; finalLanguages: string[] }> {
   let attempts = 0;
   let acceptable = false;
   let finalResult = inputText;
+  let finalLanguages: string[] = [];
   const englishResults: string[] = [];
   let chainNeverAttempted = false;
 
   while (!acceptable && attempts < maxRetries) {
     attempts++;
+    // Get a fresh language list on every attempt — random chains re-shuffle each retry
+    const languages = getLanguages();
+    if (attempts === 1) finalLanguages = languages; // use first attempt's list as default
     logger.info(`[${chainLabel}] Attempt ${attempts}/${maxRetries}…`);
+
+    // Emit per-language weights to the live log so the dashboard shows them.
+    // Uses getWeightsForLangs() which reads only the cache for this chain's langs
+    // (no disk I/O after the first load, no full-snapshot allocation per attempt).
+    try {
+      const weights = getWeightsForLangs(languages);
+      const weightStr = Object.entries(weights)
+        .map(([l, w]) => `${l}:${w.toFixed(2)}`)
+        .join(' ');
+      if (weightStr) appendToDebugLog(`[DEBUG][${chainLabel}][weights] ${weightStr}\n`);
+    } catch { /* non-critical */ }
 
     const chainResult = await executeTranslationChain(inputText, languages, chainLabel);
     if (!chainResult.attempted) {
@@ -457,10 +467,12 @@ async function runChainWithRetries(
     acceptable = check.acceptable && !spammy;
 
     if (acceptable) {
+      finalLanguages = languages;
       logger.info(`[${chainLabel}] ✓ Acceptable after ${attempts} attempt(s)`);
     } else {
       const reasons = spammy ? `${check.reason}; spammy content` : check.reason;
       logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${reasons}`);
+      recordNegatives(languages);
     }
 
     // Maintain pool of English results for best-of fallback
@@ -486,6 +498,7 @@ async function runChainWithRetries(
         acceptabilityWarnings: [
           'chain not attempted: all languages skipped (circuits open or empty list)',
         ],
+        finalLanguages,
       };
     }
 
@@ -512,10 +525,11 @@ async function runChainWithRetries(
         ...check.reason.split('; '),
         ...(spammy ? ['spammy content'] : []),
       ].filter(Boolean),
+      finalLanguages,
     };
   }
 
-  return { result: finalResult, attempts, acceptabilityWarnings: [] };
+  return { result: finalResult, attempts, acceptabilityWarnings: [], finalLanguages };
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -531,36 +545,40 @@ async function runChainWithRetries(
 export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
   const availableLangs = config.LANGUAGES.filter(l => l !== 'en');
 
-  const chainDefs: { label: string; languages: string[] }[] = [
-    { label: 'Random-1', languages: shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
-    { label: 'Random-2', languages: shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
-    { label: 'Random-3', languages: shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+  const chainDefs: { label: string; getLanguages: () => string[]; maxRetries?: number }[] = [
+    { label: 'Random-1', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+    { label: 'Random-2', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
+    { label: 'Random-3', getLanguages: () => weightedShuffle(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH) },
     {
       label: 'Oldschool',
-      languages: (
-        config.OLDSCHOOL_LANGUAGES.length > 0
-          ? config.OLDSCHOOL_LANGUAGES.filter(l => l !== 'en')
-          : shuffleArray(availableLangs)
-      ).slice(0, CANDIDATE_CHAIN_DEPTH),
+      // Oldschool chain is a fixed sequence — retrying produces the same result.
+      // Run it exactly once and accept whatever comes out.
+      maxRetries: 1,
+      getLanguages: config.OLDSCHOOL_LANGUAGES.length > 0
+        ? () => config.OLDSCHOOL_LANGUAGES  // fixed sequence including 'en' bounce-backs
+        : () => shuffleArray(availableLangs).slice(0, CANDIDATE_CHAIN_DEPTH),
     },
   ];
 
   const candidates: Candidate[] = [];
 
   for (let i = 0; i < chainDefs.length; i++) {
-    const { label, languages } = chainDefs[i];
-    logger.info(`[CANDIDATE_GEN] Chain ${i + 1}/4 "${label}" langs: ${languages.join('→')}`);
+    const { label, getLanguages } = chainDefs[i];
+    logger.info(`[CANDIDATE_GEN] Chain ${i + 1}/4 "${label}"`);
+    emitLogLine(`[CHAIN-START][${label}] starting`);
 
     let result = tweet.text;
+    let usedLanguages: string[] = [];
     let error: string | undefined;
     let attempts = 0;
     let acceptabilityWarnings: string[] = [];
 
     try {
-      const out = await runChainWithRetries(tweet.text, languages, label);
+      const out = await runChainWithRetries(tweet.text, getLanguages, label, chainDefs[i].maxRetries);
       result = out.result;
       attempts = out.attempts;
       acceptabilityWarnings = out.acceptabilityWarnings;
+      usedLanguages = out.finalLanguages;
     } catch (err) {
       error = String(err);
       logger.error(`[CANDIDATE_GEN] Chain "${label}" threw unhandled error: ${err}`);
@@ -569,7 +587,7 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     candidates.push({
       chainIndex: i,
       chainLabel: label,
-      languages,
+      languages: usedLanguages,
       result,
       humorScore: 0,
       heuristicScore: 0,

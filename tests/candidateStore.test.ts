@@ -349,4 +349,41 @@ describe('CandidateStore', () => {
       expect(item.candidates[0].isBestCandidate).toBe(true);
     });
   });
+
+  // ── rehydrateStuck() ─────────────────────────────────────────────────────────
+  describe('rehydrateStuck()', () => {
+    it('returns empty array when no generating items exist', () => {
+      const id = candidateStore.add(mockTweet);
+      candidateStore.setReady(id, [mockCandidate]);
+      expect(candidateStore.rehydrateStuck()).toHaveLength(0);
+    });
+
+    it('returns generating items with createdAt as Date', () => {
+      candidateStore.add(mockTweet); // stays 'generating'
+      const stuck = candidateStore.rehydrateStuck();
+      expect(stuck).toHaveLength(1);
+      expect(stuck[0].tweet.createdAt).toBeInstanceOf(Date);
+      expect(stuck[0].tweet.id).toBe('tweet-1');
+    });
+
+    it('does not return ready, posted, or skipped items', () => {
+      const readyId   = candidateStore.add(mockTweet);
+      const skippedId = candidateStore.add({ ...mockTweet, id: 'tweet-skip' });
+      candidateStore.setReady(readyId, [mockCandidate]);
+      candidateStore.markSkipped(skippedId);
+      // Add one genuinely stuck item
+      candidateStore.add({ ...mockTweet, id: 'tweet-stuck' });
+      const stuck = candidateStore.rehydrateStuck();
+      expect(stuck).toHaveLength(1);
+      expect(stuck[0].tweet.id).toBe('tweet-stuck');
+    });
+
+    it('leaves items as generating so generationQueue can resolve them normally', () => {
+      candidateStore.add(mockTweet);
+      candidateStore.rehydrateStuck();
+      // Status must still be 'generating' — caller re-enqueues, setReady will resolve
+      const items = candidateStore.list('generating');
+      expect(items).toHaveLength(1);
+    });
+  });
 });

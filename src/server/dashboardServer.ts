@@ -26,11 +26,35 @@ import { logger } from '../utils/logger';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
+import { recordPositives } from '../utils/languageWeights';
+import { translationLogEmitter } from '../utils/translationLogEmitter';
 import { Tweet } from '../types';
 
 const DASHBOARD_PORT = Number(process.env.DASHBOARD_PORT || '3456');
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
 const DASHBOARD_HTML = path.join(process.cwd(), 'dashboard', 'index.html');
+
+// ─────────────────────────────────────────────────────────────────────────────
+// SSE log stream — live translation step updates
+// ─────────────────────────────────────────────────────────────────────────────
+
+const sseClients = new Set<http.ServerResponse>();
+
+// Buffer the last 200 lines so new clients get recent context on connect
+const SSE_HISTORY_MAX = 200;
+const sseHistory: string[] = [];
+
+function broadcastLogLine(line: string): void {
+  if (!line.trim()) return;
+  sseHistory.push(line);
+  if (sseHistory.length > SSE_HISTORY_MAX) sseHistory.shift();
+  const payload = `data: ${JSON.stringify(line)}\n\n`;
+  for (const client of sseClients) {
+    try { client.write(payload); } catch { sseClients.delete(client); }
+  }
+}
+
+translationLogEmitter.on('line', broadcastLogLine);
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Helpers
@@ -40,7 +64,6 @@ function json(res: http.ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
     'Content-Length': Buffer.byteLength(payload),
   });
   res.end(payload);
@@ -58,7 +81,24 @@ function readBody(req: http.IncomingMessage): Promise<string> {
 function isAuthorized(req: http.IncomingMessage): boolean {
   if (!DASHBOARD_PASSWORD) return true;
   const auth = req.headers['authorization'] || '';
-  return auth === `Bearer ${DASHBOARD_PASSWORD}`;
+  if (auth === `Bearer ${DASHBOARD_PASSWORD}`) return true;
+  // EventSource can't set headers — allow ?password= only for the SSE log stream
+  const rawUrl = req.url || '';
+  let pathname = '';
+  let params: URLSearchParams;
+  try {
+    const parsed = new URL(rawUrl, 'http://localhost');
+    pathname = parsed.pathname;
+    params = parsed.searchParams;
+  } catch {
+    const [pathPart, queryPart] = rawUrl.split('?', 2);
+    pathname = pathPart || '';
+    params = new URLSearchParams(queryPart || '');
+  }
+  if (pathname === '/api/log-stream') {
+    return params.get('password') === DASHBOARD_PASSWORD;
+  }
+  return false;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -136,6 +176,13 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
     atomicWriteTextSync(feedbackPath, jsonl);
     logger.info(`[FEEDBACK] Logged feedback for tweet ${item.tweet.id} (userSelected=${selected.chainLabel})`);
 
+    // Record language positives so weighted shuffle favours this chain's languages
+    try {
+      recordPositives(selected.languages || []);
+    } catch (err) {
+      logger.warn('[FEEDBACK] recordPositives failed (non-critical):', err);
+    }
+
     // Record successful post for cross-session duplicate prevention
     // (marks tweetTracker + logs content to contentDeduplication, same as main bot)
     try {
@@ -204,11 +251,18 @@ async function handleRequest(
 
   // ── CORS preflight ───────────────────────────────────────────────────────
   if (method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    });
+    const origin = req.headers['origin'] || '';
+    const allowed = [`http://localhost:${DASHBOARD_PORT}`, `http://127.0.0.1:${DASHBOARD_PORT}`];
+    if (allowed.includes(origin)) {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Vary': 'Origin',
+      });
+    } else {
+      res.writeHead(204);
+    }
     res.end();
     return;
   }
@@ -216,6 +270,34 @@ async function handleRequest(
   // ── Auth check ───────────────────────────────────────────────────────────
   if (!isAuthorized(req)) {
     json(res, 401, { error: 'Unauthorized' });
+    return;
+  }
+
+  // ── GET /api/log-stream  (Server-Sent Events) ────────────────────────────
+  if (method === 'GET' && url.split('?')[0] === '/api/log-stream') {
+    res.writeHead(200, {
+      'Content-Type':  'text/event-stream',
+      'Cache-Control': 'no-cache',
+      'Connection':    'keep-alive',
+    });
+
+    // Replay recent history so the client immediately sees context
+    for (const line of sseHistory) {
+      res.write(`data: ${JSON.stringify(line)}\n\n`);
+    }
+    res.write(`data: ${JSON.stringify('[SSE-CONNECTED] Live translation log stream started')}\n\n`);
+
+    sseClients.add(res);
+
+    // Heartbeat every 20 s to keep the connection alive through proxies
+    const heartbeat = setInterval(() => {
+      try { res.write(': heartbeat\n\n'); } catch { /* client gone */ }
+    }, 20_000);
+
+    req.on('close', () => {
+      clearInterval(heartbeat);
+      sseClients.delete(res);
+    });
     return;
   }
 
@@ -380,6 +462,16 @@ export function startDashboardServer(): void {
 export function stopDashboardServer(): Promise<void> {
   return new Promise((resolve) => {
     if (!server) { resolve(); return; }
+
+    // Detach the log emitter so no more writes are attempted after shutdown
+    translationLogEmitter.off('line', broadcastLogLine);
+
+    // Explicitly end all open SSE connections so server.close() doesn't hang
+    for (const client of sseClients) {
+      try { client.end(); } catch { /* ignore */ }
+    }
+    sseClients.clear();
+
     server.close(() => {
       logger.info('[DashboardServer] Stopped.');
       resolve();

@@ -19,34 +19,42 @@ export const LEXICONS: Record<string, Set<string>> = {
 
 export function detectLanguageByLexicon(text: string): string | null {
   // Filter words: ignore very short words (<=2 chars) as they're unreliable indicators
-  // (e.g., "de", "l", "a", "i" exist in many languages)
   // Strip @mentions and #hashtags - they aren't real words in any language and skew detection
   const words = text.replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').toLowerCase().split(/\W+/).filter(w => w.length > 2);
   const totalWords = words.length;
 
   if (totalWords === 0) return null;
 
-  let bestMatch: { lang: string; count: number; percentage: number } = { lang: '', count: 0, percentage: 0 };
-
+  // ── Foreign languages get priority ──────────────────────────────────────
+  // Check non-English lexicons first. If any language scores ≥50%, return it
+  // immediately. A false rejection (good English classified as foreign) is
+  // acceptable because the caller retries; a false acceptance (non-English
+  // posted as output) is not. Picking the best-scoring foreign match avoids
+  // ambiguity when multiple foreign sets overlap.
+  let bestForeign: { lang: string; percentage: number } = { lang: '', percentage: 0 };
   for (const [lang, lexicon] of Object.entries(LEXICONS)) {
+    if (lang === 'en') continue;
     let matchCount = 0;
     for (const word of words) {
       if (lexicon.has(word)) matchCount++;
     }
-
     const percentage = (matchCount / totalWords) * 100;
-
-    // Require at least 50% of words to match for confident detection.
-    // Threshold was raised from 33% to 50% because lower values caused false acceptance:
-    // - Partially failed translations sometimes retained enough English words to pass at 33%.
-    // - Coincidental matches with short foreign texts (e.g., Russian, Spanish) could trigger false positives.
-    // Raising to 50% reduces these errors and improves reliability for English detection.
-    if (percentage >= 50 && percentage > bestMatch.percentage) {
-      bestMatch = { lang, count: matchCount, percentage };
+    if (percentage >= 50 && percentage > bestForeign.percentage) {
+      bestForeign = { lang, percentage };
     }
   }
+  if (bestForeign.percentage >= 50) return bestForeign.lang;
 
-  return bestMatch.percentage >= 50 ? bestMatch.lang : null;
+  // ── English fallback ─────────────────────────────────────────────────────
+  // No foreign language qualified — check English so callers can confirm the
+  // result really is English before accepting it.
+  let enCount = 0;
+  for (const word of words) {
+    if (LEXICONS.en.has(word)) enCount++;
+  }
+  if ((enCount / totalWords) * 100 >= 50) return 'en';
+
+  return null;
 }
 
 /**

@@ -155,45 +155,24 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     return { acceptable, reason };
   }
   
-  // Try lexicon-based detection first for short texts
+  // Lexicon is authoritative — trust its result unconditionally
   const lexiconResult = detectLanguageByLexicon(textOnly);
   let detectedLang = lexiconResult || 'und';
   const englishMatchPct = getEnglishMatchPercentage(textOnly);
   appendToDebugLog(`[DEBUG] Lexicon detection for "${textOnly}": ${lexiconResult} (${englishMatchPct.toFixed(1)}% English words)\n`);
-  
-  // If lexicon detected English but match is borderline (50-70%), validate with langdetect
-  if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
-    try {
-      const detections = langdetect.detect(textOnly);
-      appendToDebugLog(`[DEBUG] Validating borderline English detection with langdetect: ${JSON.stringify(detections)}\n`);
-      // If langdetect disagrees strongly or confidence is low, reject
-      if (!detections || detections.length === 0 || detections[0].lang !== 'en' || detections[0].prob < 0.8) {
-        detectedLang = 'und'; // Reset to undetermined
-        appendToDebugLog('[DEBUG] REJECTED borderline English classification - langdetect disagrees or low confidence\n');
-      }
-    } catch (e) {
-      appendToDebugLog(`[DEBUG] Langdetect validation error: ${e}\n`);
-    }
-  }
-  
-  // Only fallback to langdetect if lexicon was inconclusive (not enough words >2 chars)
-  // If lexicon explicitly returned null (checked all languages, none matched), trust that result
+
+  // Fallback to langdetect only when lexicon is inconclusive ('und')
   if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-    // Gibberish filter: if <20% of words are real English, reject langdetect's English classification
-    // This prevents fake words like "Bylanish shiltemessia" from passing
-    const minEnglishLexiconMatch = 20;
-    
-    // Lexicon couldn't determine language, try langdetect as fallback
     try {
       const detections = langdetect.detect(textOnly);
       appendToDebugLog(`[DEBUG] Langdetect fallback for "${textOnly}": ${JSON.stringify(detections)}\n`);
-      if (detections && detections.length > 0 && detections[0].lang === 'en' && detections[0].prob > 0.8 && (!detections[1] || detections[1].prob <= detections[0].prob - 0.1)) {
-        // Only trust langdetect's English classification if it has sufficient real English words
-        if (englishMatchPct >= minEnglishLexiconMatch) {
-          detectedLang = detections[0].lang;
-        } else {
-          appendToDebugLog(`[DEBUG] REJECTED langdetect English classification - only ${englishMatchPct.toFixed(1)}% real English words (need ${minEnglishLexiconMatch}%)\n`);
-        }
+      if (
+        detections?.length > 0 &&
+        detections[0].lang === 'en' &&
+        detections[0].prob > 0.7 &&
+        englishMatchPct >= 20
+      ) {
+        detectedLang = 'en';
       }
     } catch (e) {
       appendToDebugLog(`[DEBUG] Langdetect error for "${textOnly}": ${e}\n`);
