@@ -64,7 +64,6 @@ function json(res: http.ServerResponse, status: number, body: unknown): void {
   const payload = JSON.stringify(body);
   res.writeHead(status, {
     'Content-Type': 'application/json',
-    'Access-Control-Allow-Origin': '*',
     'Content-Length': Buffer.byteLength(payload),
   });
   res.end(payload);
@@ -252,11 +251,18 @@ async function handleRequest(
 
   // ── CORS preflight ───────────────────────────────────────────────────────
   if (method === 'OPTIONS') {
-    res.writeHead(204, {
-      'Access-Control-Allow-Origin': '*',
-      'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type,Authorization',
-    });
+    const origin = req.headers['origin'] || '';
+    const allowed = [`http://localhost:${DASHBOARD_PORT}`, `http://127.0.0.1:${DASHBOARD_PORT}`];
+    if (allowed.includes(origin)) {
+      res.writeHead(204, {
+        'Access-Control-Allow-Origin': origin,
+        'Access-Control-Allow-Methods': 'GET,POST,DELETE,OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type,Authorization',
+        'Vary': 'Origin',
+      });
+    } else {
+      res.writeHead(204);
+    }
     res.end();
     return;
   }
@@ -273,7 +279,6 @@ async function handleRequest(
       'Content-Type':  'text/event-stream',
       'Cache-Control': 'no-cache',
       'Connection':    'keep-alive',
-      'Access-Control-Allow-Origin': '*',
     });
 
     // Replay recent history so the client immediately sees context
