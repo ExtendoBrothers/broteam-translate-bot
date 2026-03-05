@@ -4,12 +4,21 @@
 // acceptability check) counts, persisted to translation-logs/language-weights.json.
 // Weights are used to bias the Fisher-Yates shuffle toward languages that have
 // historically produced good results.
+//
+// Write strategy: updates are accumulated in an in-memory cache and flushed to
+// disk with a 200ms debounce, matching the monthlyUsageTracker pattern. This
+// avoids blocking synchronous file I/O on every retry in the chain loop.
+// In test environments (NODE_ENV=test) the flush happens synchronously so that
+// existing test assertions remain unaffected.
 
 import * as fs from 'fs';
 import * as path from 'path';
 import { atomicWriteJsonSync, safeReadJsonSync } from './safeFileOps';
+import { onShutdown } from './gracefulShutdown';
 
 const WEIGHTS_FILE = path.join(process.cwd(), 'translation-logs', 'language-weights.json');
+const DEBOUNCE_MS  = 200;
+const isTestEnv    = process.env.NODE_ENV === 'test';
 
 interface LangStats {
   positives: number;
@@ -19,19 +28,54 @@ interface LangStats {
 type WeightsData = Record<string, LangStats>;
 
 // ─────────────────────────────────────────────────────────────────────────────
+// In-memory cache
+// ─────────────────────────────────────────────────────────────────────────────
+
+let memCache: WeightsData | null = null;
+let saveTimer: ReturnType<typeof setTimeout> | null = null;
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Internal helpers
 // ─────────────────────────────────────────────────────────────────────────────
 
 function loadWeights(): WeightsData {
-  return safeReadJsonSync<WeightsData>(WEIGHTS_FILE, {});
+  if (memCache === null) {
+    memCache = safeReadJsonSync<WeightsData>(WEIGHTS_FILE, {});
+  }
+  // Return a deep copy so callers can mutate freely without corrupting the cache
+  return JSON.parse(JSON.stringify(memCache)) as WeightsData;
 }
 
-function saveWeights(data: WeightsData): void {
+/**
+ * Flush the in-memory cache to disk immediately (synchronous).
+ * Used by the debounce timer, graceful shutdown, and test mode.
+ */
+export function flushWeights(): void {
+  if (saveTimer) {
+    clearTimeout(saveTimer);
+    saveTimer = null;
+  }
+  if (memCache === null) return;
   const dir = path.dirname(WEIGHTS_FILE);
   if (!fs.existsSync(dir)) {
     fs.mkdirSync(dir, { recursive: true });
   }
-  atomicWriteJsonSync(WEIGHTS_FILE, data);
+  atomicWriteJsonSync(WEIGHTS_FILE, memCache);
+}
+
+function saveWeights(data: WeightsData): void {
+  // Commit changes back into the cache
+  memCache = data;
+
+  if (isTestEnv) {
+    // Flush synchronously in tests so assertions don't need fake timers
+    flushWeights();
+    return;
+  }
+
+  // Debounce disk writes to avoid blocking the event loop during retry loops
+  if (saveTimer) clearTimeout(saveTimer);
+  saveTimer = setTimeout(flushWeights, DEBOUNCE_MS);
 }
 
 function ensureLang(data: WeightsData, lang: string): void {
@@ -50,6 +94,11 @@ function ensureLang(data: WeightsData, lang: string): void {
  */
 function computeWeight(stats: LangStats): number {
   return Math.max(0.1, 1.0 + stats.positives * 0.04 - stats.negatives * 0.01);
+}
+
+// Register a graceful-shutdown handler to flush any pending debounced write
+if (!isTestEnv) {
+  onShutdown(async () => { flushWeights(); });
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -135,4 +184,13 @@ export function getWeightsSnapshot(): Record<string, { positives: number; negati
     out[lang] = { ...stats, weight: computeWeight(stats) };
   }
   return out;
+}
+
+/**
+ * Reset the in-memory cache. For use in unit tests only.
+ * @internal
+ */
+export function _resetCacheForTesting(): void {
+  memCache = null;
+  if (saveTimer) { clearTimeout(saveTimer); saveTimer = null; }
 }

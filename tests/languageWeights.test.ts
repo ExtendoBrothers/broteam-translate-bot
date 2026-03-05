@@ -38,6 +38,7 @@ import {
   recordPositives,
   recordNegatives,
   getWeightsSnapshot,
+  _resetCacheForTesting,
 } from '../src/utils/languageWeights';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -48,6 +49,8 @@ function resetStore(data: Record<string, { positives: number; negatives: number 
   Object.keys(mockReadData).forEach(k => delete mockReadData[k]);
   Object.assign(mockReadData, data);
   capturedWrite = null;
+  // Clear the module-level in-memory cache so each test starts from mockReadData
+  _resetCacheForTesting();
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
