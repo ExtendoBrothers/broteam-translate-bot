@@ -27,6 +27,7 @@ import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
 import { recordPositives } from '../utils/languageWeights';
+import { updateWeightsFromFeedback } from '../utils/heuristicEvaluator';
 import { translationLogEmitter } from '../utils/translationLogEmitter';
 import { Tweet } from '../types';
 
@@ -120,20 +121,20 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
         source:            c.chainLabel,
         result:            c.result,
         humorScore:        c.humorScore,
-        unifiedHumorScore: c.unifiedHumorScore ?? c.combinedScore,
+        heuristicOffset:   c.heuristicOffset ?? 0,
+        finalScore:        c.finalScore ?? c.humorScore,
         humorLabel:        c.humorScore >= 0.7 ? 'HUMOROUS' : c.humorScore >= 0.4 ? 'BORDERLINE' : 'NOT_HUMOROUS',
-        combinedScore:     c.combinedScore,
-        heuristicScore:    c.heuristicScore,
         isEnglish:         c.isEnglish ?? true,
         tieBreaker:        c.tieBreaker ?? 0,
         isBestCandidate:   c.isBestCandidate,
         acceptable:        (c.acceptabilityWarnings?.length ?? 0) === 0 && !c.error,
         acceptabilityWarnings: c.acceptabilityWarnings ?? [],
+        heuristicRules:    c.heuristicRules ?? {},
       })),
       botSelected:    botPick?.chainLabel ?? null,
       userSelected:   selected.chainLabel,
       selectedResult: selected.result,
-      selectedScore:  selected.unifiedHumorScore ?? selected.combinedScore,
+      selectedScore:  selected.finalScore ?? selected.humorScore,
       userFeedback:   null,
     };
 
@@ -183,6 +184,18 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
       logger.warn('[FEEDBACK] recordPositives failed (non-critical):', err);
     }
 
+    // Update heuristic weights when user picks differently from bot
+    if (botPick && selected.chainLabel !== botPick.chainLabel) {
+      try {
+        const winnerRules = selected.heuristicRules ?? {};
+        const loserRules  = botPick.heuristicRules ?? {};
+        updateWeightsFromFeedback(winnerRules, loserRules);
+        logger.info(`[FEEDBACK] Updated heuristic weights: user chose ${selected.chainLabel} over bot's ${botPick.chainLabel}`);
+      } catch (err) {
+        logger.warn('[FEEDBACK] updateWeightsFromFeedback failed (non-critical):', err);
+      }
+    }
+
     // Record successful post for cross-session duplicate prevention
     // (marks tweetTracker + logs content to contentDeduplication, same as main bot)
     try {
@@ -199,7 +212,7 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
       const ts      = new Date().toISOString();
       const entry   =
         `---\nTimestamp: ${ts}\nTweet ID: ${item.tweet.id}\nInput: ${item.tweet.text}\n` +
-        `Chosen Chain: ${selected.chainLabel}\nHumor Score: ${(selected.unifiedHumorScore ?? selected.combinedScore).toFixed(3)}\n` +
+        `Chosen Chain: ${selected.chainLabel}\nHumor Score: ${(selected.finalScore ?? selected.humorScore).toFixed(3)}\n` +
         `Steps:\nFinal Result: ${selected.result}\n`;
       fs.appendFileSync(logFile, entry, 'utf8');
     } catch (err) {

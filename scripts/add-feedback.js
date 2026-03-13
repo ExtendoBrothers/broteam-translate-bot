@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { atomicWriteJsonSync } = require('../dist/src/utils/safeFileOps');
 
 function addFeedback() {
   const args = process.argv.slice(2);
@@ -122,6 +123,91 @@ function addFeedback() {
   // Write back
   fs.writeFileSync(feedbackPath, updatedLines.join('\n') + '\n', 'utf8');
   console.log('\n✓ Feedback saved to feedback-data.jsonl');
+
+  // Apply heuristic weight learning if actualBest differs from botSelected
+  if (feedback.actualBest) {
+    applyWeightLearning(tweetId, feedback.actualBest, feedbackPath);
+  }
+}
+
+/**
+ * Mirrors the logic in heuristicEvaluator.ts updateWeightsFromFeedback().
+ * Reads heuristic-weights.json, nudges weights based on winner vs loser rules,
+ * and saves the result.
+ */
+function applyWeightLearning(tweetId, actualBest, feedbackPath) {
+  const weightsPath = path.join(process.cwd(), 'heuristic-weights.json');
+  if (!fs.existsSync(weightsPath)) {
+    console.log('ℹ️  heuristic-weights.json not found — weights will be created on next bot run.');
+    return;
+  }
+
+  // Re-read the entry we just wrote so we have the updated feedback
+  const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n').filter(l => l.trim());
+  let entry = null;
+  for (const line of lines) {
+    try {
+      const e = JSON.parse(line);
+      if (e.tweetId === tweetId) { entry = e; break; }
+    } catch { /* skip */ }
+  }
+  if (!entry) return;
+
+  const winnerCandidate = entry.candidates.find(c => c.source === actualBest);
+  if (!winnerCandidate) {
+    console.log('⚠️  Could not find winner candidate for weight learning — skipping.');
+    return;
+  }
+
+  // Compare winner against ALL non-picked candidates, not just botSelected.
+  // This ensures every unchosen candidate is scored lower than the user's pick.
+  const loserCandidates = entry.candidates.filter(c => c.source !== actualBest);
+  if (loserCandidates.length === 0) return;
+
+  const winnerRules = winnerCandidate.heuristicRules || {};
+  const anyLoserHasRules = loserCandidates.some(c => Object.keys(c.heuristicRules || {}).length > 0);
+
+  if (Object.keys(winnerRules).length === 0 && !anyLoserHasRules) {
+    console.log('ℹ️  No heuristic rule data in this entry (pre-refactor) — weight update skipped.');
+    return;
+  }
+
+  const LEARNING_RATE = 0.002;
+  let weights;
+  try {
+    weights = JSON.parse(fs.readFileSync(weightsPath, 'utf8'));
+  } catch (e) {
+    console.log('⚠️  Could not read heuristic-weights.json:', e.message);
+    return;
+  }
+
+  // Compare winner against a merged view of all losers' fired rules so that
+  // each feedback event updates wins/losses and nudges weights at most once per
+  // rule, regardless of how many loser candidates exist.
+  let changed = false;
+  for (const rule of Object.keys(weights)) {
+    const wonFired  = winnerRules[rule]?.fired ?? false;
+    const lostFired = loserCandidates.some(c => (c.heuristicRules || {})[rule]?.fired ?? false);
+
+    if (wonFired)  weights[rule].wins++;
+    if (lostFired) weights[rule].losses++;
+
+    if (wonFired && !lostFired) {
+      weights[rule].weight += LEARNING_RATE;
+      changed = true;
+    } else if (lostFired && !wonFired) {
+      weights[rule].weight -= LEARNING_RATE;
+      changed = true;
+    }
+  }
+
+  if (changed) {
+    atomicWriteJsonSync(weightsPath, weights);
+    const loserSources = loserCandidates.map(c => c.source).join(', ');
+    console.log(`✓ Heuristic weights updated: your pick (${actualBest}) beats all others (${loserSources})`);
+  } else {
+    console.log('ℹ️  No differing rules between winner/losers — weights unchanged.');
+  }
 }
 
 addFeedback();

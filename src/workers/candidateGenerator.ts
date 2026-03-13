@@ -61,19 +61,19 @@ export interface Candidate {
   languages: string[];
   /** Final translated text (always returned to English) */
   result: string;
-  /** Humor probability 0.0–1.0 from ML/heuristic scorer */
+  /** ML humor probability 0.0–1.0 */
   humorScore: number;
-  /** Heuristic quality score 0.0–1.0 */
-  heuristicScore: number;
-  /** Weighted: 0.6 × humor + 0.4 × heuristic */
-  combinedScore: number;
+  /** Signed heuristic offset (positive = bonus, negative = penalty) */
+  heuristicOffset: number;
+  /** Final score: clamp(humorScore + heuristicOffset, 0, 1) — used for selection */
+  finalScore: number;
+  /** Per-rule breakdown from the unified heuristic evaluator */
+  heuristicRules?: Record<string, { fired: boolean; contribution: number }>;
   /** True for the single highest-scoring candidate */
   isBestCandidate: boolean;
-  /** ML humor score + extended heuristic bonuses — used for best-candidate selection */
-  unifiedHumorScore?: number;
   /** Whether the result was detected as English (humor model only scores English) */
   isEnglish?: boolean;
-  /** differenceScore + 2 × unexpectednessScore — tiebreaker when unified scores are equal */
+  /** differenceScore + 2 × unexpectednessScore — tiebreaker when final scores are equal */
   tieBreaker?: number;
   /** Number of chain attempts before an acceptable result was found */
   attempts?: number;
@@ -590,8 +590,8 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
       languages: usedLanguages,
       result,
       humorScore: 0,
-      heuristicScore: 0,
-      combinedScore: 0,
+      heuristicOffset: 0,
+      finalScore: 0,
       isBestCandidate: false,
       attempts,
       acceptabilityWarnings,
@@ -599,28 +599,29 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     });
   }
 
-  // ── Score each candidate (humor model + heuristics) ──────────────────────
+  // ── Score each candidate (humor model + unified heuristics) ────────────────
   for (const candidate of candidates) {
-    let humorRaw = 0;
+    // 1. ML humor score
     try {
       const humor = await scoreHumor(candidate.result, tweet.text);
       candidate.humorScore = Math.max(0, Math.min(1, humor.score));
-      humorRaw = humor.score;
     } catch {
       candidate.humorScore = 0;
     }
 
-    let heuristicEval = { score: 0, details: [] as string[] };
+    // 2. Unified heuristic offset (single source of truth)
     try {
-      heuristicEval = evaluateHeuristics(candidate.result, tweet.text);
-      candidate.heuristicScore = Math.max(0, Math.min(1, (heuristicEval.score + 5) / 10));
+      const h = evaluateHeuristics(candidate.result, tweet.text, { chainLabel: candidate.chainLabel });
+      candidate.heuristicOffset = h.offset;
+      candidate.heuristicRules = h.rules;
     } catch {
-      candidate.heuristicScore = 0;
+      candidate.heuristicOffset = 0;
     }
 
-    candidate.combinedScore = 0.6 * candidate.humorScore + 0.4 * candidate.heuristicScore;
+    // 3. Final score = humor + offset, clamped to [0, 1]
+    candidate.finalScore = Math.max(0, Math.min(1, candidate.humorScore + candidate.heuristicOffset));
 
-    // ── Language detection (same logic as isAcceptable / translateAndPostWorker) ──
+    // 4. Language detection
     const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
     const textOnly = candidate.result
       .replace(tokenPattern, '')
@@ -664,86 +665,27 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     candidate.tieBreaker = differenceScore(candidate.result, tweet.text)
                          + unexpectednessScore(candidate.result, tweet.text) * 2;
 
-    // ── Extended heuristic bonuses (ported from translateAndPostWorker) ────
-    let bonus = 0;
-    const bonusLog: string[] = [];
-
-    // Oldschool chain preference
-    if (candidate.chainLabel === 'Oldschool') {
-      bonus += 0.05;
-      bonusLog.push('Oldschool +0.050');
-    }
-
-    // Length bonus (~0.05 for 100+ chars)
-    const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005);
-    if (lengthBonus > 0) { bonus += lengthBonus; bonusLog.push(`length +${lengthBonus.toFixed(4)}`); }
-
-    // Coherence bonus: sentence endings + verb presence
-    const text = candidate.result.trim();
-    const lowerText = text.toLowerCase();
-    const hasSentenceEnd = /[.!?]$/.test(text);
-    const VERBS = ['is','are','was','were','has','have','had','do','does','did','will','would','can','could','should','may','might'];
-    const hasVerb = lowerText.split(/\s+/).some(w => VERBS.includes(w));
-    const coherenceBonus = (hasSentenceEnd ? 0.01 : 0) + (hasVerb ? 0.01 : 0);
-    if (coherenceBonus > 0) { bonus += coherenceBonus; bonusLog.push(`coherence +${coherenceBonus.toFixed(3)}`); }
-
-    // Garbage penalty: low word diversity
-    const words = lowerText.split(/\s+/).filter(w => w.length > 0);
-    const diversityRatio = words.length > 0 ? new Set(words).size / words.length : 1;
-    if (diversityRatio < 0.7) { bonus -= 0.02; bonusLog.push('garbage -0.020'); }
-
-    // Contradiction bonus
-    const CONTRADICTIONS = [
-      /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
-      /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
-      /\b(fast|quick)\b.*\b(slow)\b/,
-      /\b(hot)\b.*\b(cold)\b/,
-    ];
-    if (CONTRADICTIONS.some(p => p.test(lowerText))) { bonus += 0.015; bonusLog.push('contradiction +0.015'); }
-
-    // Self-deprecation bonus
-    const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
-    const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
-    const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
-    if ((hasFirstPerson && hasNegativeSelf) || hasSelfCriticism) { bonus += 0.012; bonusLog.push('self-dep +0.012'); }
-
-    // Absurdity bonus
-    if (/\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/.test(lowerText)) { bonus += 0.008; bonusLog.push('absurd +0.008'); }
-    if (/\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/.test(lowerText)) { bonus += 0.005; bonusLog.push('extreme +0.005'); }
-    if (/\b(flying pigs|square circle|cold heat|dark light)\b/.test(lowerText)) { bonus += 0.010; bonusLog.push('impossible +0.010'); }
-
-    // User-defined heuristic evaluation (raw score, same as old worker)
-    if (heuristicEval.score !== 0) {
-      bonus += heuristicEval.score;
-      bonusLog.push(`heuristic ${heuristicEval.score > 0 ? '+' : ''}${heuristicEval.score.toFixed(3)}`);
-    }
-
-    const appliedBonus = Math.min(bonus, 0.15);
-    candidate.unifiedHumorScore = Math.min(1.0, humorRaw + appliedBonus);
-
-    if (bonusLog.length > 0) {
-      logger.info(`[CANDIDATE_GEN][HEURISTIC] ${candidate.chainLabel}: humor ${humorRaw.toFixed(3)} → unified ${candidate.unifiedHumorScore.toFixed(3)} (${bonusLog.join(', ')})`);
-    }
+    logger.info(
+      `[CANDIDATE_GEN] ${candidate.chainLabel}: humor=${candidate.humorScore.toFixed(3)} offset=${candidate.heuristicOffset >= 0 ? '+' : ''}${candidate.heuristicOffset.toFixed(3)} → final=${candidate.finalScore.toFixed(3)} en=${candidate.isEnglish}`
+    );
   }
 
-  // ── Best-candidate selection: English preference → unified score → tiebreaker ──
+  // ── Best-candidate selection: English preference → finalScore → tiebreaker ──
   let bestIdx = 0;
   for (let i = 1; i < candidates.length; i++) {
     const curr = candidates[i];
     const best = candidates[bestIdx];
     if (curr.isEnglish && !best.isEnglish)  { bestIdx = i; continue; }
     if (!curr.isEnglish && best.isEnglish)  { continue; }
-    const currU = curr.unifiedHumorScore ?? curr.combinedScore;
-    const bestU = best.unifiedHumorScore ?? best.combinedScore;
-    if (currU > bestU) { bestIdx = i; continue; }
-    if (currU === bestU && (curr.tieBreaker ?? 0) > (best.tieBreaker ?? 0)) { bestIdx = i; }
+    if (curr.finalScore > best.finalScore) { bestIdx = i; continue; }
+    if (curr.finalScore === best.finalScore && (curr.tieBreaker ?? 0) > (best.tieBreaker ?? 0)) { bestIdx = i; }
   }
   candidates[bestIdx].isBestCandidate = true;
 
   logger.info(
     `[CANDIDATE_GEN] ✨ Best: "${candidates[bestIdx].chainLabel}" ` +
-    `unified=${candidates[bestIdx].unifiedHumorScore?.toFixed(3)} ` +
-    `combined=${candidates[bestIdx].combinedScore.toFixed(3)} ` +
+    `final=${candidates[bestIdx].finalScore.toFixed(3)} ` +
+    `(humor=${candidates[bestIdx].humorScore.toFixed(3)} + offset=${candidates[bestIdx].heuristicOffset >= 0 ? '+' : ''}${candidates[bestIdx].heuristicOffset.toFixed(3)}) ` +
     `en=${candidates[bestIdx].isEnglish}`
   );
 
