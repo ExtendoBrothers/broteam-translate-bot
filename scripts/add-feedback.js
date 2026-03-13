@@ -16,6 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { atomicWriteJsonSync } = require('../dist/src/utils/safeFileOps');
 
 function addFeedback() {
   const args = process.argv.slice(2);
@@ -201,7 +202,7 @@ function applyWeightLearning(tweetId, actualBest, feedbackPath) {
   }
 
   if (changed) {
-    fs.writeFileSync(weightsPath, JSON.stringify(weights, null, 2), 'utf8');
+    atomicWriteJsonSync(weightsPath, weights);
     const loserSources = loserCandidates.map(c => c.source).join(', ');
     console.log(`✓ Heuristic weights updated: your pick (${actualBest}) beats all others (${loserSources})`);
   } else {
