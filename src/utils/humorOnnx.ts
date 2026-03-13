@@ -61,26 +61,61 @@ function loadConfig(): { id2label?: Record<number, string> } {
   return config!;
 }
 
-// Basic tokenizer (simplified BERT tokenizer)
-function tokenize(text: string): number[] {
-  const vocab = loadVocab();
-  const tokens: number[] = [];
-  
-  // Add [CLS] token
-  tokens.push(vocab.get('[CLS]') || 101);
-  
-  // Simple word tokenization (lowercase and split)
-  const words = text.toLowerCase().split(/\s+/);
-  for (const word of words) {
-    const tokenId = vocab.get(word) || vocab.get('[UNK]') || 100;
-    tokens.push(tokenId);
-    
-    if (tokens.length >= 510) break; // Leave room for [SEP]
+// WordPiece tokenize a single word into a list of vocab IDs.
+// Mirrors the greedy longest-match-first strategy used by BERT's tokenizer.
+function wordpieceTokenize(word: string, vocabMap: Map<string, number>): number[] {
+  const unkId = vocabMap.get('[UNK]') ?? 100;
+  if (vocabMap.has(word)) return [vocabMap.get(word)!];
+
+  const pieces: number[] = [];
+  let start = 0;
+  while (start < word.length) {
+    let end = word.length;
+    let found = false;
+    while (start < end) {
+      const substr = (start === 0 ? '' : '##') + word.slice(start, end);
+      if (vocabMap.has(substr)) {
+        pieces.push(vocabMap.get(substr)!);
+        start = end;
+        found = true;
+        break;
+      }
+      end--;
+    }
+    if (!found) {
+      // Word cannot be tokenized — represent the whole word as [UNK]
+      return [unkId];
+    }
   }
-  
+  return pieces;
+}
+
+// BERT tokenizer: lowercase, split on whitespace + punctuation, then WordPiece.
+function tokenize(text: string): number[] {
+  const vocabMap = loadVocab();
+  const tokens: number[] = [];
+
+  // Add [CLS] token
+  tokens.push(vocabMap.get('[CLS]') ?? 101);
+
+  // Separate punctuation into its own "words" so they get their own vocab IDs
+  const words = text.toLowerCase()
+    .replace(/([.,!?;:'"()[\]{}-])/g, ' $1 ')
+    .split(/\s+/)
+    .filter(w => w.length > 0);
+
+  for (const word of words) {
+    const pieces = wordpieceTokenize(word, vocabMap);
+    for (const piece of pieces) {
+      tokens.push(piece);
+      if (tokens.length >= 510) break; // Leave room for [SEP]
+    }
+    if (tokens.length >= 510) break;
+  }
+
   // Add [SEP] token
-  tokens.push(vocab.get('[SEP]') || 102);
-  
+  tokens.push(vocabMap.get('[SEP]') ?? 102);
+
   return tokens;
 }
 

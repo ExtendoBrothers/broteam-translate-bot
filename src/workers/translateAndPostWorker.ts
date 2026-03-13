@@ -1063,24 +1063,23 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         // Calculate secondary metrics for tie-breaking
         const diffScore = differenceScore(candidate.result, originalText);
         const unexpScore = unexpectednessScore(candidate.result, originalText);
-        const tieBreaker = diffScore + unexpScore * 2; // Same formula as fallback selection
+        const tieBreaker = diffScore + unexpScore * 2;
           
-        // Evaluate user-defined heuristics
-        const heuristicEvaluation = evaluateHeuristics(candidate.result, originalText);
+        // Unified heuristic offset (single source of truth)
+        const chainLabel = candidate.source === 'OLDSCHOOL' ? 'Oldschool' : candidate.source;
+        const heuristicEval = evaluateHeuristics(candidate.result, originalText, { chainLabel });
+        const heuristicOffset = heuristicEval.offset;
+
+        // Final score = humor + offset, clamped to [0, 1]
+        const finalScore = Math.max(0, Math.min(1, humorScore.score + heuristicOffset));
           
-        // Initialize unified humor score with the score directly
-        // The scoreHumor() function returns the humor probability directly (higher = funnier)
-        // - Heuristic scorer: score IS the humor probability
-        // - ML model (if enabled): we need to handle it differently in humorScorer.ts
-        const baseHumorScore = humorScore.score;
-          
-        return { ...candidate, humorScore, isEnglish, tieBreaker, unifiedHumorScore: baseHumorScore, heuristicEvaluation };
+        return { ...candidate, humorScore, isEnglish, tieBreaker, finalScore, heuristicOffset, heuristicRules: heuristicEval.rules };
       })
     );
 
-    // Log all scores (after heuristic bonuses applied)
+    // Log all scores
     for (const candidate of scoredCandidates) {
-      logger.info(`[MULTI_CHAIN] ${candidate.source}: score=${candidate.humorScore.score.toFixed(3)} (${candidate.humorScore.label}) lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
+      logger.info(`[MULTI_CHAIN] ${candidate.source}: humor=${candidate.humorScore.score.toFixed(3)} offset=${candidate.heuristicOffset >= 0 ? '+' : ''}${candidate.heuristicOffset.toFixed(3)} → final=${candidate.finalScore.toFixed(3)} lang=${candidate.isEnglish ? 'en' : 'non-en'} acceptable=${candidate.acceptable}`);
     }
 
     // Log to debug file
@@ -1089,7 +1088,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         path.join(process.cwd(), 'translation-logs', 'translation-debug.log'),
         `[HUMOR_COMPARISON] Tweet ${tweet.id} - Comparing ${scoredCandidates.length} candidates:\n` +
           scoredCandidates.map(c => 
-            `  ${c.source}: score=${c.humorScore.score.toFixed(3)}, label=${c.humorScore.label}, lang=${c.isEnglish ? 'en' : 'non-en'}, acceptable=${c.acceptable}\n` +
+            `  ${c.source}: humor=${c.humorScore.score.toFixed(3)}, offset=${c.heuristicOffset >= 0 ? '+' : ''}${c.heuristicOffset.toFixed(3)}, final=${c.finalScore.toFixed(3)}, lang=${c.isEnglish ? 'en' : 'non-en'}, acceptable=${c.acceptable}\n` +
             `    Result: "${c.result}"\n`
           ).join('') + '\n',
         'utf8'
@@ -1097,151 +1096,33 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     } catch (err) {
       logger.error('[ERROR] Failed to write humor comparison to translation-debug.log:', err);
     }
-    scoredCandidates.forEach(candidate => {
-      let bonus = 0;
-      const bonusDetails = [];
-        
-      // Heuristic 4: Strong secondary preference for OLDSCHOOL
-      if (candidate.source === 'OLDSCHOOL') {
-        bonus += 0.05; // Significant boost for OLDSCHOOL
-        bonusDetails.push('OLDSCHOOL +0.05');
-      }
-        
-      // Heuristic 2: Favor longer results (small bonus per character)
-      const lengthBonus = Math.max(0, (candidate.result.length - 30) * 0.0005); // ~0.05 bonus for 100+ chars
-      if (lengthBonus > 0) {
-        bonus += lengthBonus;
-        bonusDetails.push(`length +${lengthBonus.toFixed(4)}`);
-      }
-        
-      // Heuristic 5: Coherence bonus - reward complete sentences/phrases
-      const text = candidate.result.trim();
-      const sentenceBonus = (() => {
-        // Check for sentence endings
-        const hasSentenceEndings = /[.!?]$/.test(text);
-        // Check for basic subject-verb structure (simplified)
-        const words = text.toLowerCase().split(/\s+/);
-        const hasVerbs = words.some(word => ['is', 'are', 'was', 'were', 'has', 'have', 'had', 'do', 'does', 'did', 'will', 'would', 'can', 'could', 'should', 'may', 'might'].includes(word));
-        const coherenceScore = (hasSentenceEndings ? 0.01 : 0) + (hasVerbs ? 0.01 : 0);
-        return coherenceScore;
-      })();
-      if (sentenceBonus > 0) {
-        bonus += sentenceBonus;
-        bonusDetails.push(`coherence +${sentenceBonus.toFixed(3)}`);
-      }
-        
-      // Heuristic 6: Garbage penalty - penalize low word diversity
-      const words = text.toLowerCase().split(/\s+/).filter(w => w.length > 0);
-      const uniqueWords = new Set(words);
-      const diversityRatio = uniqueWords.size / words.length;
-      const garbagePenalty = diversityRatio < 0.7 ? -0.02 : 0; // Penalty for <70% unique words
-      if (garbagePenalty < 0) {
-        bonus += garbagePenalty;
-        bonusDetails.push(`garbage ${garbagePenalty.toFixed(3)}`);
-      }
-        
-      // Heuristic 7: Contradiction bonus - reward contradictory concepts
-      const contradictionBonus = (() => {
-        const lowerText = text.toLowerCase();
-        // Simple contradiction patterns
-        const contradictions = [
-          /\b(nice|good|delicious)\b.*\b(crime|bad|evil)\b/,
-          /\b(smart|intelligent)\b.*\b(stupid|dumb)\b/,
-          /\b(fast|quick)\b.*\b(slow)\b/,
-          /\b(hot)\b.*\b(cold)\b/
-        ];
-        const hasContradiction = contradictions.some(pattern => pattern.test(lowerText));
-        return hasContradiction ? 0.015 : 0;
-      })();
-      if (contradictionBonus > 0) {
-        bonus += contradictionBonus;
-        bonusDetails.push(`contradiction +${contradictionBonus.toFixed(3)}`);
-      }
-        
-      // Heuristic 8: Self-deprecation bonus - reward self-critical humor
-      const selfDeprecationBonus = (() => {
-        const lowerText = text.toLowerCase();
-        // Look for first-person + negative self-description
-        const hasFirstPerson = /\b(i|me|my|mine)\b/.test(lowerText);
-        const hasNegativeSelf = /\b(stupid|dumb|autistic|idiot|moron|retard)\b/.test(lowerText);
-        const hasSelfCriticism = /\b(gave myself|have given myself|am)\b.*\b(autism|stupid|dumb)\b/.test(lowerText);
-        return (hasFirstPerson && hasNegativeSelf) || hasSelfCriticism ? 0.012 : 0;
-      })();
-      if (selfDeprecationBonus > 0) {
-        bonus += selfDeprecationBonus;
-        bonusDetails.push(`self-deprecating +${selfDeprecationBonus.toFixed(3)}`);
-      }
-        
-      // Heuristic 9: Absurdity bonus - reward impossible or extreme concepts
-      const absurdityBonus = (() => {
-        const lowerText = text.toLowerCase();
-        // Words indicating impossibility or extremes
-        const absurdWords = /\b(impossible|absurd|nonsensical|ridiculous|insane|crazy|delusional)\b/;
-        const extremeWords = /\b(million|billion|trillion|infinite|endless|eternal|ultimate|supreme)\b/;
-        const impossibleConcepts = /\b(flying pigs|square circle|cold heat|dark light)\b/;
-          
-        const hasAbsurdWords = absurdWords.test(lowerText);
-        const hasExtremeWords = extremeWords.test(lowerText);
-        const hasImpossible = impossibleConcepts.test(lowerText);
-          
-        return (hasAbsurdWords ? 0.008 : 0) + (hasExtremeWords ? 0.005 : 0) + (hasImpossible ? 0.010 : 0);
-      })();
-      if (absurdityBonus > 0) {
-        bonus += absurdityBonus;
-        bonusDetails.push(`absurdity +${absurdityBonus.toFixed(3)}`);
-      }
-        
-      // Apply user-defined heuristic evaluation first
-      if (candidate.heuristicEvaluation.score !== 0) {
-        bonus += candidate.heuristicEvaluation.score;
-        bonusDetails.push(...candidate.heuristicEvaluation.details.map(d => `${d} ${candidate.heuristicEvaluation.score > 0 ? '+' : ''}${candidate.heuristicEvaluation.score.toFixed(3)}`));
-      }
-        
-      // Apply bonus (cap at 0.15 total to account for user heuristics)
-      const appliedBonus = Math.min(bonus, 0.15);
-        
-      // Update unified humor score by adding heuristic bonuses
-      const originalUnifiedScore = candidate.unifiedHumorScore;
-      candidate.unifiedHumorScore = Math.min(1.0, candidate.unifiedHumorScore + appliedBonus);
-        
-      // Log the heuristic application
-      if (bonusDetails.length > 0) {
-        logger.info(`[HEURISTIC] ${candidate.source}: ${originalUnifiedScore.toFixed(3)} -> ${candidate.unifiedHumorScore.toFixed(3)} (${bonusDetails.join(', ')})`);
-      }
-    });
-    // Select the funniest result using unified humor scores
-    // Higher unified score = more likely funny (consistent for all results)
+
+    // Select best candidate: English preference → finalScore → tiebreaker
     let bestCandidate;
     if (scoredCandidates.length === 0) {
       logger.error(`[MULTI_CHAIN] No acceptable candidates found for tweet ${tweet.id}. All translation attempts failed.`);
-      // Skip this tweet entirely - don't post error messages
       continue;
     }
       
     bestCandidate = scoredCandidates[0];
       
     for (const candidate of scoredCandidates) {
-      // Prioritize English results over non-English
       if (candidate.isEnglish && !bestCandidate.isEnglish) {
         bestCandidate = candidate;
         continue;
       }
-      // If best is English but current isn't, skip current
       if (!candidate.isEnglish && bestCandidate.isEnglish) {
         continue;
       }
-        
-      // Both are English, compare unified humor scores (higher = better)
-      if (candidate.unifiedHumorScore > bestCandidate.unifiedHumorScore) {
+      if (candidate.finalScore > bestCandidate.finalScore) {
         bestCandidate = candidate;
       }
-      // If unified scores are equal, use tie-breaker (more unexpected/different = better)
-      else if (candidate.unifiedHumorScore === bestCandidate.unifiedHumorScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
+      else if (candidate.finalScore === bestCandidate.finalScore && candidate.tieBreaker > bestCandidate.tieBreaker) {
         bestCandidate = candidate;
       }
     }
 
-    logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: ${bestCandidate.humorScore.label} (unified score: ${bestCandidate.unifiedHumorScore.toFixed(3)})`);
+    logger.info(`[MULTI_CHAIN] ✨ Selected ${bestCandidate.source}: final=${bestCandidate.finalScore.toFixed(3)} (humor=${bestCandidate.humorScore.score.toFixed(3)} + offset=${bestCandidate.heuristicOffset >= 0 ? '+' : ''}${bestCandidate.heuristicOffset.toFixed(3)})`);
 
     // Save feedback data for manual review
     try {
@@ -1253,16 +1134,17 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           source: c.source,
           result: c.result,
           humorScore: c.humorScore.score,
-          unifiedHumorScore: c.unifiedHumorScore,
+          heuristicOffset: c.heuristicOffset,
+          finalScore: c.finalScore,
           humorLabel: c.humorScore.label,
           isEnglish: c.isEnglish,
           tieBreaker: c.tieBreaker,
           acceptable: c.acceptable,
-          heuristicEvaluation: c.heuristicEvaluation
+          heuristicRules: c.heuristicRules ?? {},
         })),
         botSelected: bestCandidate.source,
         selectedResult: bestCandidate.result,
-        selectedScore: bestCandidate.unifiedHumorScore,
+        selectedScore: bestCandidate.finalScore,
         userFeedback: null
       };
 
