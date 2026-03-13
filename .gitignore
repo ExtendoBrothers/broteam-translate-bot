@@ -29,6 +29,7 @@ Thumbs.db
 .rate-limit-state.json
 .tweet-queue.json
 candidate-queue.json
+heuristic-weights.json
 .processed-tweets.json
 .post-tracker.json
 .twitter-user-cache.json
