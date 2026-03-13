@@ -174,9 +174,29 @@
     }
     .score-bar { height: 100%; border-radius: 3px; transition: width .4s; }
     .score-bar.humor      { background: var(--purple); }
-    .score-bar.heuristic  { background: var(--blue); }
-    .score-bar.combined   { background: var(--accent); }
+    .score-bar.offset-pos { background: var(--blue); }
+    .score-bar.offset-neg { background: #e05252; }
+    .score-bar.final      { background: var(--accent); }
     .score-value { color: var(--text); width: 36px; text-align: right; flex-shrink: 0; }
+
+    .heuristic-breakdown {
+      margin-top: 4px; padding: 4px 6px;
+      background: var(--bg2); border-radius: 4px;
+      font-size: 10px; line-height: 1.6;
+    }
+    .heuristic-breakdown summary {
+      cursor: pointer; color: var(--muted); font-size: 10px; user-select: none;
+    }
+    .heuristic-breakdown summary:hover { color: var(--text); }
+    .heuristic-rule {
+      display: flex; justify-content: space-between; gap: 6px;
+      padding: 1px 0; color: var(--muted);
+    }
+    .heuristic-rule .rule-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    .heuristic-rule .rule-val { flex-shrink: 0; font-family: monospace; }
+    .heuristic-rule .rule-val.pos { color: var(--blue); }
+    .heuristic-rule .rule-val.neg { color: #e05252; }
+    .heuristic-rule .rule-val.zero { color: var(--muted); }
 
     .candidate-footer {
       display: flex; gap: 8px; margin-top: 2px;
@@ -489,12 +509,38 @@ function renderCandidate(queueId, candidate, isGenerating) {
     ? `<span class="badge-best">★ BEST</span>`
     : hasError ? `<span class="badge-error">ERROR</span>` : '';
 
+  const offsetVal = candidate.heuristicOffset || 0;
+  const offsetSign = offsetVal >= 0 ? '+' : '';
+  const offsetCss = offsetVal >= 0 ? 'offset-pos' : 'offset-neg';
   const scoresHtml = isGenerating ? '' : `
     <div class="scores">
-      ${scoreBar('Humor',     candidate.humorScore,    'humor')}
-      ${scoreBar('Heuristic', candidate.heuristicScore,'heuristic')}
-      ${scoreBar('Combined',  candidate.combinedScore, 'combined')}
+      ${scoreBar('Humor',  candidate.humorScore, 'humor')}
+      <div class="score-row">
+        <span class="score-label">Offset</span>
+        <div class="score-bar-wrap">
+          <div class="score-bar ${offsetCss}" style="width:${Math.round(Math.abs(offsetVal) * 100)}%"></div>
+        </div>
+        <span class="score-value">${offsetSign}${(offsetVal * 100).toFixed(0)}%</span>
+      </div>
+      ${scoreBar('Final',  candidate.finalScore, 'final')}
     </div>`;
+
+  const rulesHtml = (() => {
+    const rules = candidate.heuristicRules;
+    if (!rules || typeof rules !== 'object') return '';
+    const entries = Object.entries(rules).filter(([, v]) => v && v.fired);
+    if (entries.length === 0) return '';
+    const rows = entries
+      .sort((a, b) => Math.abs(b[1].contribution) - Math.abs(a[1].contribution))
+      .map(([name, v]) => {
+        const val = v.contribution;
+        const sign = val >= 0 ? '+' : '';
+        const cls = val > 0 ? 'pos' : val < 0 ? 'neg' : 'zero';
+        const label = name.replace(/_/g, ' ');
+        return `<div class="heuristic-rule"><span class="rule-name">${escHtml(label)}</span><span class="rule-val ${cls}">${sign}${(val * 100).toFixed(1)}%</span></div>`;
+      }).join('');
+    return `<details class="heuristic-breakdown"><summary>Heuristic breakdown (${entries.length} rules)</summary>${rows}</details>`;
+  })();
 
   const postBtn = isGenerating
     ? `<button class="btn btn-ghost" disabled><span class="spinner"></span></button>`
@@ -511,6 +557,7 @@ function renderCandidate(queueId, candidate, isGenerating) {
       <div class="candidate-langs" title="${escAttr(langPath)}">en → ${escHtml(langPath)} → en</div>
       ${resultHtml}
       ${scoresHtml}
+      ${rulesHtml}
       <div class="candidate-footer">
         ${postBtn}
       </div>
@@ -531,7 +578,7 @@ function renderTweetCard(item) {
         chainLabel: ['Random-1','Random-2','Random-3','Oldschool'][i],
         languages: [],
         result: '',
-        humorScore: 0, heuristicScore: 0, combinedScore: 0,
+        humorScore: 0, heuristicOffset: 0, finalScore: 0,
         isBestCandidate: false,
       }))
     : item.candidates;

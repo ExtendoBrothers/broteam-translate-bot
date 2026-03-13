@@ -243,8 +243,8 @@ class CandidateStore {
         languages:      [],
         result:         finalText,
         humorScore,
-        heuristicScore: 0,
-        combinedScore:  humorScore,
+        heuristicOffset: 0,
+        finalScore:     humorScore,
         isBestCandidate: true,
       };
 
