@@ -181,23 +181,23 @@ function applyWeightLearning(tweetId, actualBest, feedbackPath) {
     return;
   }
 
+  // Compare winner against a merged view of all losers' fired rules so that
+  // each feedback event updates wins/losses and nudges weights at most once per
+  // rule, regardless of how many loser candidates exist.
   let changed = false;
-  for (const loser of loserCandidates) {
-    const loserRules = loser.heuristicRules || {};
-    for (const rule of Object.keys(weights)) {
-      const wonFired  = winnerRules[rule]?.fired ?? false;
-      const lostFired = loserRules[rule]?.fired  ?? false;
+  for (const rule of Object.keys(weights)) {
+    const wonFired  = winnerRules[rule]?.fired ?? false;
+    const lostFired = loserCandidates.some(c => (c.heuristicRules || {})[rule]?.fired ?? false);
 
-      if (wonFired)  weights[rule].wins++;
-      if (lostFired) weights[rule].losses++;
+    if (wonFired)  weights[rule].wins++;
+    if (lostFired) weights[rule].losses++;
 
-      if (wonFired && !lostFired) {
-        weights[rule].weight += LEARNING_RATE;
-        changed = true;
-      } else if (lostFired && !wonFired) {
-        weights[rule].weight -= LEARNING_RATE;
-        changed = true;
-      }
+    if (wonFired && !lostFired) {
+      weights[rule].weight += LEARNING_RATE;
+      changed = true;
+    } else if (lostFired && !wonFired) {
+      weights[rule].weight -= LEARNING_RATE;
+      changed = true;
     }
   }
 
