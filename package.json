@@ -56,7 +56,9 @@
   },
   "overrides": {
     "systeminformation": ">=5.30.8",
-    "basic-ftp": ">=5.2.0"
+    "basic-ftp": ">=5.2.0",
+    "flatted": "$flatted",
+    "handlebars": ">=4.7.9"
   },
   "jest": {
     "preset": "ts-jest",
