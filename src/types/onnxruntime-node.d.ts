@@ -1,3 +1,4 @@
+/* eslint-disable no-unused-vars */
 declare module 'onnxruntime-node' {
   export interface Tensor {
     readonly type: string;
