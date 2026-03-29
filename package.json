@@ -58,7 +58,6 @@
     "systeminformation": ">=5.30.8",
     "basic-ftp": ">=5.2.0",
     "flatted": "$flatted",
-    "picomatch": ">=4.0.4",
     "handlebars": ">=4.7.9"
   },
   "jest": {
