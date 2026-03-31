@@ -5,7 +5,7 @@
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.1.6-blue)](https://www.typescriptlang.org/)
 
-A Twitter translation bot that fetches tweets from @BroTeamPills, runs them through multi-language chains for comedic effect, and presents the results in a **local web dashboard** for manual review. You choose which translation to post — the bot opens a `twitter.com/intent/tweet` URL in your browser so you post it yourself. **No Twitter API credentials required.**
+A Twitter translation bot that fetches tweets from @BroTeamPills, runs them through multi-language chains for comedic effect, and presents the results in a **local web dashboard** for manual review. You choose which translation to post — the bot opens a `twitter.com/intent/tweet` URL in your browser so you post it yourself. **No Twitter API credentials required for the manual version. Alternatively, revert to version v0.12.2 for full automatic tweet fetching and posting. That version works but is no longer updated because Twitter disabled free API usage Q1 2026: https://github.com/ExtendoBrothers/broteam-translate-bot/releases/tag/v0.12.2**
 
 ## How It Works
 
