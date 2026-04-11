@@ -13,9 +13,25 @@ updates:
       - security
     commit-message:
       prefix: "chore"
-    open-pull-requests-limit: 10
+    open-pull-requests-limit: 2
     groups:
+      toolchain:
+        dependency-type: development
+        patterns:
+          - "typescript"
+          - "eslint"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "jest"
+          - "ts-jest"
       dev-dependencies:
         dependency-type: development
         patterns:
           - "*"
+        exclude-patterns:
+          - "typescript"
+          - "eslint"
+          - "@eslint/*"
+          - "@typescript-eslint/*"
+          - "jest"
+          - "ts-jest"
