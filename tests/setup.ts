@@ -1,6 +1,8 @@
 // Jest setup file
 // Add any global test setup here
 
+/// <reference types="jest" />
+
 import * as path from 'path';
 import * as fs from 'fs';
 
