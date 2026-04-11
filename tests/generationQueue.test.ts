@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 /**
  * Unit tests for GenerationQueue (manual-mode fork)
  *

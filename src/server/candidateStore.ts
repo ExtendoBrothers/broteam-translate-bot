@@ -87,6 +87,24 @@ class CandidateStore {
     }
   }
 
+  private _removeFromOldQueue(tweetId: string, oldQueuePath = path.join(process.cwd(), '.tweet-queue.json')): void {
+    try {
+      if (!fs.existsSync(oldQueuePath)) return;
+      const raw = fs.readFileSync(oldQueuePath, 'utf-8');
+      const parsed = JSON.parse(raw) as {
+        queue?: Array<{ sourceTweetId: string; finalTranslation: string; queuedAt: string; attemptCount: number }>;
+      };
+      const queue = Array.isArray(parsed.queue) ? parsed.queue : [];
+      const filtered = queue.filter(entry => entry.sourceTweetId !== tweetId);
+      if (filtered.length === queue.length) return;
+
+      atomicWriteJsonSync(oldQueuePath, { ...parsed, queue: filtered });
+      logger.info(`[CandidateStore] Removed skipped tweet ${tweetId} from old queue source`);
+    } catch (err) {
+      logger.warn(`[CandidateStore] Could not prune old queue for skipped tweet ${tweetId}: ${err}`);
+    }
+  }
+
   // ── Public API ─────────────────────────────────────────────────────────────
 
   /**
@@ -160,6 +178,7 @@ class CandidateStore {
     if (!item) return false;
     item.status = 'skipped';
     item.skippedAt = new Date().toISOString();
+    this._removeFromOldQueue(item.tweet.id);
     this._save();
     return true;
   }
