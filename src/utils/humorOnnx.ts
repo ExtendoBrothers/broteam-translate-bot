@@ -135,7 +135,9 @@ async function getSession(): Promise<OrtType.InferenceSession> {
     logger.info('[HumorONNX] Model loaded successfully');
   } catch (error) {
     logger.error(`[HumorONNX] Failed to load model: ${error}`);
-    throw new Error(`Failed to initialize humor model: ${error}`);
+    const modelInitError = new Error(`Failed to initialize humor model: ${error}`) as Error & { cause?: unknown };
+    modelInitError.cause = error;
+    throw modelInitError;
   }
   
   return session;

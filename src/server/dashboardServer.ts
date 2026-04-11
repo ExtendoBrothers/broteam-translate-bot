@@ -85,7 +85,7 @@ function isAuthorized(req: http.IncomingMessage): boolean {
   if (auth === `Bearer ${DASHBOARD_PASSWORD}`) return true;
   // EventSource can't set headers — allow ?password= only for the SSE log stream
   const rawUrl = req.url || '';
-  let pathname = '';
+  let pathname: string;
   let params: URLSearchParams;
   try {
     const parsed = new URL(rawUrl, 'http://localhost');
@@ -360,7 +360,7 @@ async function handleRequest(
 
   // ── POST /api/queue/submit ────────────────────────────────────────────────
   if (method === 'POST' && url === '/api/queue/submit') {
-    let body: { text?: string; id?: string } = {};
+    let body: { text?: string; id?: string };
     try {
       body = JSON.parse(await readBody(req));
     } catch {

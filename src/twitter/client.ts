@@ -212,7 +212,9 @@ export class TwitterClient {
             if (rateLimitTracker.isRateLimited('post')) {
               const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
               logger.warn(`[RETRY_BLOCKED] Not retrying post after token refresh - rate limited for ${waitSeconds}s more`);
-              throw new Error(`Rate limited for ${waitSeconds} more seconds`);
+              const rateLimitError = new Error(`Rate limited for ${waitSeconds} more seconds`) as Error & { cause?: unknown };
+              rateLimitError.cause = err;
+              throw rateLimitError;
             }
             logger.info('[AUTH_RETRY] Token refreshed successfully - retrying post attempt');
           }
@@ -227,7 +229,9 @@ export class TwitterClient {
             if (rateLimitTracker.isRateLimited('post')) {
               const waitSeconds = rateLimitTracker.getSecondsUntilReset('post');
               logger.warn(`[RETRY_BLOCKED] Not retrying post after OAuth1 fallback - rate limited for ${waitSeconds}s more`);
-              throw new Error(`Rate limited for ${waitSeconds} more seconds`);
+              const rateLimitError = new Error(`Rate limited for ${waitSeconds} more seconds`) as Error & { cause?: unknown };
+              rateLimitError.cause = err;
+              throw rateLimitError;
             }
             logger.info('[AUTH_RETRY] Fell back to OAuth1 - retrying post attempt');
           }

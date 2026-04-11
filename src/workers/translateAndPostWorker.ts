@@ -487,7 +487,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
       const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
       
-      let detectedLang = 'und';
+      let detectedLang: string;
       if (hasCyrillic || hasArabic || hasCJK) {
         detectedLang = 'non-latin';
         appendToDebugLog(`[DEBUG][${chainLabel}] Non-Latin script detected - not English\n`);
@@ -632,7 +632,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
       const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
       
-      let detectedLang = 'und';
+      let detectedLang: string;
       if (hasCyrillic || hasArabic || hasCJK) {
         detectedLang = 'non-latin';
       } else {
@@ -912,7 +912,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
 
   // Always fetch (worker runs every 30 minutes)
   // fetchTweets() handles monthly Twitter API limit internally and uses fallbacks
-  let tweets: Awaited<ReturnType<typeof fetchTweets>> = [];
+  let tweets: Awaited<ReturnType<typeof fetchTweets>>;
   try {
     const monthKey = monthlyUsageTracker.getCurrentMonthKey();
     const used = monthlyUsageTracker.getFetchCount(monthKey);
@@ -1017,7 +1017,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
         const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
         
-        let detectedLang = 'und';
+        let detectedLang: string;
         if (hasCyrillic || hasArabic || hasCJK) {
           detectedLang = 'non-latin';
         } else {

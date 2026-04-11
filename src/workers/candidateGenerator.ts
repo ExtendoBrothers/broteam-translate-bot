@@ -295,7 +295,7 @@ function isAcceptable(
   const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
   const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
 
-  let detectedLang = 'und';
+  let detectedLang: string;
 
   if (hasCyrillic || hasArabic || hasCJK) {
     detectedLang = 'non-latin';
@@ -633,7 +633,7 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
     const hasArabic   = /[\u0600-\u06FF]/.test(textOnly);
     const hasCJK      = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
-    let detectedLang  = 'und';
+    let detectedLang: string;
 
     if (hasCyrillic || hasArabic || hasCJK) {
       detectedLang = 'non-latin';

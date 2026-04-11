@@ -165,7 +165,6 @@ export async function translateText(text: string, targetLanguage: string, source
   const MAX_RETRIES = 5;
   const BASE_TIMEOUT_MS = 30000; // 30s per attempt (increased from 15s)
   let lastErr: unknown;
-  let triedChunkFallback = false;
 
   for (let attempt = 1; attempt <= MAX_RETRIES; attempt++) {
     try {
@@ -192,23 +191,20 @@ export async function translateText(text: string, targetLanguage: string, source
         await new Promise(r => setTimeout(r, wait));
         continue;
       }
-      // Fallback: try chunked translation if not yet attempted
-      if (!triedChunkFallback) {
-        triedChunkFallback = true;
-        try {
-          const chunks = splitProtectedIntoChunks(withNewlinesProtected, 220);
-          const outPieces: string[] = [];
-          for (const ch of chunks) {
-            const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;
-            const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, effectiveSource);
-            outPieces.push(piece);
-            await new Promise(r => setTimeout(r, 150));
-          }
-          const rawJoined = outPieces.join('');
-          return restoreTokens(rawJoined).replace(/__XNL__/g, '\n');
-        } catch (e: unknown) {
-          lastErr = e;
+      // Fallback: try chunked translation once before giving up
+      try {
+        const chunks = splitProtectedIntoChunks(withNewlinesProtected, 220);
+        const outPieces: string[] = [];
+        for (const ch of chunks) {
+          const effectiveSource = targetLanguage === 'en' ? undefined : sourceLanguage;
+          const piece = await doTranslateOnce(ch, targetLanguage, BASE_TIMEOUT_MS, effectiveSource);
+          outPieces.push(piece);
+          await new Promise(r => setTimeout(r, 150));
         }
+        const rawJoined = outPieces.join('');
+        return restoreTokens(rawJoined).replace(/__XNL__/g, '\n');
+      } catch (e: unknown) {
+        lastErr = e;
       }
       break;
     }
