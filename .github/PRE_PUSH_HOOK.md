@@ -57,6 +57,16 @@ npm run lint    # Check lint errors
 npm test        # See which tests failed
 ```
 
+## Lockfile Policy
+
+When dependency manifests change, commit the lockfile in the same PR:
+
+1. If `package.json` changes, include `package-lock.json`.
+2. Run `npm install` or `npm update` locally to regenerate lockfile changes.
+3. Do not open PRs with only `package.json` dependency edits.
+
+This keeps installs reproducible in CI and prevents dependency drift.
+
 ## Bypass Hook (Not Recommended)
 
 Only in emergencies:
