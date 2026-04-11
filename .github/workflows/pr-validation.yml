@@ -41,13 +41,7 @@ jobs:
         run: |
           CHANGED_FILES=$(git diff --name-only origin/${{ github.base_ref }}...HEAD)
           if echo "$CHANGED_FILES" | grep -q '^package.json$'; then
-            npm install --package-lock-only --ignore-scripts --no-audit --no-fund
-            if ! git diff --quiet -- package-lock.json; then
-              echo "❌ package-lock.json is not in sync with package.json"
-              echo "Run 'npm install --package-lock-only' and commit the updated package-lock.json."
-              git diff -- package-lock.json
-              exit 1
-            fi
+            npm ci --ignore-scripts --no-audit --no-fund
           fi
       
       - name: Check commit messages
