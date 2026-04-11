@@ -31,11 +31,24 @@ jobs:
       - name: Run npm audit (production dependencies)
         id: audit
         run: |
+          critical=0
+          high=0
+          moderate=0
+          low=0
+
           npm audit --omit=dev --json > audit-report.json || true
-          echo "critical=$(jq '.metadata.vulnerabilities.critical // 0' audit-report.json)" >> $GITHUB_OUTPUT
-          echo "high=$(jq '.metadata.vulnerabilities.high // 0' audit-report.json)" >> $GITHUB_OUTPUT
-          echo "moderate=$(jq '.metadata.vulnerabilities.moderate // 0' audit-report.json)" >> $GITHUB_OUTPUT
-          echo "low=$(jq '.metadata.vulnerabilities.low // 0' audit-report.json)" >> $GITHUB_OUTPUT
+
+          if [ -s audit-report.json ] && jq -e . audit-report.json > /dev/null 2>&1; then
+            critical=$(jq -r '.metadata.vulnerabilities.critical // 0' audit-report.json)
+            high=$(jq -r '.metadata.vulnerabilities.high // 0' audit-report.json)
+            moderate=$(jq -r '.metadata.vulnerabilities.moderate // 0' audit-report.json)
+            low=$(jq -r '.metadata.vulnerabilities.low // 0' audit-report.json)
+          fi
+
+          echo "critical=${critical}" >> $GITHUB_OUTPUT
+          echo "high=${high}" >> $GITHUB_OUTPUT
+          echo "moderate=${moderate}" >> $GITHUB_OUTPUT
+          echo "low=${low}" >> $GITHUB_OUTPUT
         continue-on-error: true
       
       - name: Summarize vulnerability counts
