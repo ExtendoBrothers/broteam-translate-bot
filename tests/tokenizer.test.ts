@@ -254,6 +254,12 @@ describe('Tokenizer', () => {
       expect(restored).toBe(original);
     });
 
+    it('should preserve canonical newline placeholders used by translation pipeline', () => {
+      const input = 'Line 1 __XNL__ Line 2';
+      const restored = restoreTokens(input);
+      expect(restored).toBe(input);
+    });
+
     it('should remove orphaned token placeholder fragments', () => {
       // Test cases from actual logs where fragments like XN, XNL were left behind
       const testCases = [
