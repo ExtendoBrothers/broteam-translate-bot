@@ -1,3 +1,5 @@
+/// <reference types="jest" />
+
 /**
  * Unit tests for CandidateStore (manual-mode fork)
  */
@@ -165,6 +167,30 @@ describe('CandidateStore', () => {
       const id = candidateStore.add(mockTweet);
       expect(candidateStore.markSkipped(id)).toBe(true);
       expect(candidateStore.getById(id).status).toBe('skipped');
+    });
+
+    it('removes skipped tweet from old queue source file when present', () => {
+      const oldQueue = {
+        queue: [
+          { sourceTweetId: 'tweet-1', finalTranslation: 'A', queuedAt: '2026-01-01T00:00:00.000Z', attemptCount: 0 },
+          { sourceTweetId: 'tweet-2', finalTranslation: 'B', queuedAt: '2026-01-01T00:00:00.000Z', attemptCount: 0 },
+        ],
+      };
+
+      mockFs.existsSync.mockReturnValue(true);
+      mockFs.readFileSync.mockReturnValue(JSON.stringify(oldQueue));
+
+      const id = candidateStore.add(mockTweet);
+      expect(candidateStore.markSkipped(id)).toBe(true);
+
+      expect(mockSafeFileOps.atomicWriteJsonSync).toHaveBeenCalledWith(
+        expect.stringContaining('.tweet-queue.json'),
+        expect.objectContaining({
+          queue: [
+            expect.objectContaining({ sourceTweetId: 'tweet-2' }),
+          ],
+        })
+      );
     });
 
     it('returns false for an unknown id', () => {

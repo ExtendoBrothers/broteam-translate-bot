@@ -97,6 +97,10 @@ export function restoreTokens(text: string): string {
     }
   }
 
+  // Normalize common newline placeholder variants back to canonical form.
+  // translateText() converts __XNL__ to real newlines after restoreTokens().
+  restored = restored.replace(/__?XNL__?/g, '__XNL__');
+
   // Remove any remaining token placeholder fragments that weren't restored
   // These are partial tokens like "XN", "XNL", "__XTOK", "TOK_", etc.
   // Only apply cleanup if we actually find and remove fragments
@@ -106,7 +110,7 @@ export function restoreTokens(text: string): string {
     // Remove fragments between spaces
     .replace(/\s+\b__X[A-Z]*\b\s+/g, ' ')       // __X, __XN, __XTOK between spaces
     .replace(/\s+\bXTOK_[A-Z0-9_]*\b\s+/g, ' ') // XTOK_ between spaces
-    .replace(/\s+\b_+[A-Z]{2,}_+\b\s+/g, ' ')   // __ABC__ between spaces
+    .replace(/\s+\b_+(?!XNL_)[A-Z]{2,}_+\b\s+/g, ' ')   // __ABC__ between spaces (keep __XNL__)
     .replace(/\s+\bXNL?\b\s+/g, ' ')            // XN or XNL between spaces
     .replace(/\s+\bSILE\b\s+/g, ' ')            // SILE between spaces
     // Remove fragments before punctuation (with space before fragment)
@@ -120,7 +124,7 @@ export function restoreTokens(text: string): string {
     // Remove any remaining fragments
     .replace(/\b__X[A-Z]*\b/g, '')              // Remaining __X fragments
     .replace(/\bXTOK_[A-Z0-9_]*/g, '')          // Remaining XTOK fragments
-    .replace(/\b_+[A-Z]{2,}_+\b/g, '');         // Remaining __ABC__ fragments
+    .replace(/\b_+(?!XNL_)[A-Z]{2,}_+\b/g, ''); // Remaining __ABC__ fragments (keep __XNL__)
   
   // Only collapse multiple spaces if we actually removed fragments
   if (restored !== beforeCleanup) {
