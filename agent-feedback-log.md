@@ -1384,3 +1384,1652 @@ This log contains the agent's reasoning for each feedback entry provided based o
 ---
 
 *Batch 2: 65 tweets processed | 1s: 5 | 2s: 21 | 3s: 28 | 4s: 11 | 5s: 0*
+
+# Batch 2026-04-24 - Agent Feedback (235 pending tweets)
+
+Generated at: 2026-04-24T12:49:11.483Z
+Ratings: 1=16, 2=130, 3=53, 4=30, 5=6
+## Tweet 2032177053743952121
+**Original:** Working on a PC version of Goldeneye with multiplayer\n\nhere's the progress
+**Bot Selected:** Oldschool - "The Prophet Goldeye is here"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032229247339938250
+**Original:** Just a normal group of businessmen getting together to GAME
+**Bot Selected:** Oldschool - "Let the simple businessmen play together"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes"
+
+## Tweet 2032237451637637377
+**Original:** Intervention
+**Bot Selected:** Random-3 - "Next Level Advertising"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032298353204338956
+**Original:** He was able to see their real faces
+**Bot Selected:** Oldschool - "Look what I am"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032495149717270906
+**Original:** Runescape Halo\n\nthey just keep making sick games
+**Bot Selected:** Oldschool - "african\n\nThey're just playing with disease"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032581531622146533
+**Original:** Guess the film and win a HELL\n\nNow get in here and GAME
+**Bot Selected:** Random-2 - "Win a movie, win hell\n\nPlay with us"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032707045640843716
+**Original:** pretty much unstoppable
+**Bot Selected:** Random-3 - "This can't stop"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032732633243988400
+**Original:** @ServoEnjoyer\nMickie has made the most wicked shit
+**Bot Selected:** Oldschool - "@ServoEnjoyer Mickey, come on"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032735261998911553
+**Original:** 5'3
+**Bot Selected:** Random-3 - "10 cm" Oh, yes"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2032843192744530093
+**Original:** I'm just trying to get a CUP OF COFFEE
+**Bot Selected:** Oldschool - "I want a drink"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "too short"
+
+## Tweet 2033674424629809386
+**Original:** [STREAM]\n\nGET THE DIRT
+**Bot Selected:** Oldschool - "PERFORMANCE\n\nREMOVE GREY"
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "single-word or tiny phrase"
+
+## Tweet 2033799767508324813
+**Original:** 5'1"
+**Bot Selected:** Random-1 - "51" Remote call""
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2033983566175187395
+**Original:** This goblin watches you masturbate
+**Bot Selected:** Random-3 - "Cannes saw you"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2034015079503737310
+**Original:** wild article from Cracked\n\ndid they actually post this?
+**Bot Selected:** Oldschool - "Separate from wild animals\n\nThat's what they did?"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2034019977473438099
+**Original:** prepare ye
+**Bot Selected:** Random-3 - "♪ I'm collecting ♪"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "too short; foreign fragments reduce clarity"
+
+## Tweet 2034025783380087013
+**Original:** @Marys_Punch\nSHIT
+**Bot Selected:** Oldschool - "@Marys_Punch Peruvian world, stairs"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2034032905119535209
+**Original:** LETS EAT
+**Bot Selected:** Random-2 - "LET THEM EAT"
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2034107173404594552
+**Original:** @Kevinhalse\nyi
+**Bot Selected:** Random-3 - "@Kevinhalse The tree is bored"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2034391163248267606
+**Original:** STREAM]\n\nStart the MEAT
+**Bot Selected:** Oldschool - "Object\n\nThe Beginning of Salvation"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2034756568592552039
+**Original:** Get in here\nWe're playing Resident Evil Requiem with a brain signal hat on\n\nWatch TRUE LIVE GAMER FEAR
+**Bot Selected:** Oldschool - "After KKacter\nWe play with bad people\n\nEmail address: info@gmail.com"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2034875155894477171
+**Original:** CSAM season boys what you got
+**Bot Selected:** Oldschool - "Samson, what do you got"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2034896317005373912
+**Original:** @NatCon2022\nJonathan Greenblatt strikes again
+**Bot Selected:** Random-2 - "@NatCon2022 Jonathan Grindell is back"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035121844072964393
+**Original:** More Resident Evil with a brainwave hat on
+**Bot Selected:** Oldschool - "Lock of demons on your head"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035217315881787881
+**Original:** Hey\n\nMaking something like Discord but no furry shit\n\nIt's called Bonfire\n\nYou sit around the fire with your friends on voice\n\nCome check it out\nStill in development and testing of course\n\nBonfirechat.net
+**Bot Selected:** Oldschool - "Teller\n\nThere's something about the discount, but she's not angry\n\nIt's called fire\n\nYou know your friends in the head\n\nConsider the comparison between progress and testing\n\nBonfirechat.net"
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet just getting a coffee
+**Original:** just getting a coffee
+**Bot Selected:** Random-1 - "It's easy"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; foreign fragments reduce clarity"
+
+## Tweet 2035270450541207568
+**Original:** I made a website that rates your face
+**Bot Selected:** Random-2 - "I created a website that admires your face"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035270676299620423
+**Original:** it's at phenoface.com
+**Bot Selected:** Random-3 - "We're here phenoface.com"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035270916289306827
+**Original:** I also made a site that shows where your sexual attractiveness would get the most mileage\n\nlink to tickets to buy flights to each country too
+**Bot Selected:** Oldschool - "I am the most exciting car in the sex industry\n\n""
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2035270992344580407
+**Original:** that's at smvcalculator.net
+**Bot Selected:** Oldschool - "He's breathing. smvcalculator.net"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035283400937091331
+**Original:** This is how I run my Claude empire
+**Bot Selected:** Random-2 - "I have ruled the kingdom"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035402557066224104
+**Original:** Gung Hay Fat Choy
+**Bot Selected:** Random-3 - "You're cursed"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484897159356490
+**Original:** 3.7\n\nthat's pretty rough
+**Bot Selected:** Random-3 - "3,7 km" by M\n\nTwitter not available " What I know""
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484898996400609
+**Original:** this is a site I made to rate your face\nphenoface.com\n\nlet's see the breakdown here
+**Bot Selected:** Random-2 - "Put the meat on your face\nphenoface.com See"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484900758040940
+**Original:** The system can detect your ratios
+**Bot Selected:** Random-3 - "This system can measure its dimensions"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484902486126607
+**Original:** it breaks down your symmetry
+**Bot Selected:** Random-3 - "She's my sister"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "too short"
+
+## Tweet 2035484904465870860
+**Original:** these labels will need some work
+**Bot Selected:** Random-3 - "These people need work"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484906172932373
+**Original:** nose isn't really a problem tbh
+**Bot Selected:** Oldschool - "The nose is a real problem"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484907796099455
+**Original:** mouth is alright
+**Bot Selected:** Random-1 - "Your lips are big"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "too short"
+
+## Tweet 2035484909628960933
+**Original:** jaw and chin\n\noh no
+**Bot Selected:** Random-2 - "castle\n\nA decent metal"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484911453585539
+**Original:** these are surgeries that the subject could pursue for better facial harmony
+**Bot Selected:** Random-1 - "This process can cause serious damage"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035484913315824051
+**Original:** even just a few fillers might help him out quite a bit
+**Bot Selected:** Random-3 - "Only a few games will help"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes"
+
+## Tweet 2035484915220054030
+**Original:** let's minmax the process for best gains\n\na haircut seems to be a great start with terrific value
+**Bot Selected:** Oldschool - "Minimize the process to maximize the profits\n\nTurkey is a good starting point for nutrition"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has narrative structure"
+
+## Tweet 2035484917103280516
+**Original:** if the user comes back to try again later, we track that\n\ncheaper at that point to buy the monthly pass and get unlimited scans
+**Bot Selected:** Random-2 - "We'll hear voices if the user comes back\n\nFree tickets"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has narrative structure"
+
+## Tweet 2035501716943344069
+**Original:** @RyanD86\nyeah
+**Bot Selected:** Oldschool - "@RyanD86 Right is right to right"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035501746509037967
+**Original:** @Wiggums__\nshit!
+**Bot Selected:** Oldschool - "@Wiggums__ Game!"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2035523604641722449
+**Original:** Marathon
+**Bot Selected:** Oldschool - "General"
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; incoherent or fragmentary"
+
+## Tweet 2035565667429097780
+**Original:** Replying to @kinocopter\nIsrael needs this \nplease
+**Bot Selected:** Random-3 - "Computer @kinocopter It's necessary, Sirrari"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2035569158738653197
+**Original:** @TRUTHAGEDDON\nresetting\none sec
+**Bot Selected:** Random-2 - "@TRUTHAGEDDON Home is different"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035590674582774069
+**Original:** @GooningOnRumble @Dr_Jizz_Daddy @galaxygash\nPhenoface.com\n\nWhip your picture in
+**Bot Selected:** Oldschool - "@GooningOnRumble @Dr_Jizz_Daddy @galaxygash Phenoface.com Long live your face"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035765448445219039
+**Original:** which horse you going with?
+**Bot Selected:** Oldschool - "You're a horse?"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2035776059665203590
+**Original:** @TRUTHAGEDDON\nmigrating the system to a new provider, it should be back up soon
+**Bot Selected:** Random-2 - "@TRUTHAGEDDON SYSTEM DESIGN SHOULD START WITH A NEW THEME. ABOUT RICE"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has narrative structure"
+
+## Tweet 2035806397284409682
+**Original:** Phenoface.com for all your facial rating needs!
+**Bot Selected:** Oldschool - "Phenoface.com Kiss has been necessary!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2035886495920517383
+**Original:** "No"\n"That wasn't me"
+**Bot Selected:** Oldschool - "" Not a girl" Male Prize" Nothing""
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes"
+
+## Tweet 2035907619257520424
+**Original:** hmmmmmmmm @JGreenblattADL @StopAntisemites
+**Bot Selected:** Random-1 - "diversity @kdewebdev or otherwise @StopAntisemites"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035915351733723523
+**Original:** oh gosh let's get into it\nspeedrunning a ban on this but violence against jews in Canada and America is massively overstated
+**Bot Selected:** Random-3 - "Dia, let's do this with extreme violence against Jews in America"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition; includes humor themes"
+
+## Tweet 2035915354418147595
+**Original:** First, look at all the incidents\nThey're rising!\n\nAre any jews safe?!
+**Bot Selected:** Random-2 - "I saw everything!\n\nWomen are safe? A!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2035915357215670697
+**Original:** Of any "group", they're the most targeted!\nSomeone's gotta stop this!\n\nCALL THE ADL
+**Bot Selected:** Random-1 - "Whole " Group" They're the best targets!\n\nCar...."
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2035915360445346279
+**Original:** oh\n\nwhat?\n\nit's queers who get attacked\n\njews just see a spraypainted swasti and everyone in the neighbourhood calls the cops and files it as a separate hate incident
+**Bot Selected:** Random-2 - "Search\n\nUkrajina? Measures:\n\nVoters are called voters and every corner of every police station is presented as a separate solution"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2035915363544977456
+**Original:** Still for a small group they must be getting attacked a lot, right?\n\noh
+**Bot Selected:** Oldschool - "Little groups have to make a lot of money? Page"
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; uses contradiction/juxtaposition"
+
+## Tweet 2035915366216667422
+**Original:** Shit! Even in New York they're pretty safe?\n\nCompared to just the rates of everyone else getting assaulted?\n\noh
+**Bot Selected:** Random-1 - "New York is safe? I lost everything? I don’t know what I know"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; foreign fragments reduce clarity"
+
+## Tweet 2035915368016076890
+**Original:** STILL\n\nVIOLENT HATE CRIMES AGAINST JEWS HAVE GONE UP OVER 500%!\n\n(from 5 to 31)\n(In New York)
+**Bot Selected:** Random-1 - "About Us\n\n500% of the way to the border!\n\nNew York Yoke"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; uses contradiction/juxtaposition"
+
+## Tweet 2035915370532671528
+**Original:** are they playing the knockout game or something?\n\nwhites proportionately not really likely to harm jews with violence?
+**Bot Selected:** Random-1 - "Shoo or something? Whites can use violence to commit crimes?"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2035915372407525784
+**Original:** reporting posts online is one\nthis post reported hundreds of times counts
+**Bot Selected:** Random-3 - "Report on the Internet 1\nThere are hundreds of stories here"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2035990587737083983
+**Original:** not long now
+**Bot Selected:** Random-2 - "No water, no"
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2035990959541100626
+**Original:** pls
+**Bot Selected:** Random-3 - "And both"
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; single-word or tiny phrase"
+
+## Tweet 2036031816780452280
+**Original:** @BroTeamPills\nUntil you troon out?
+**Bot Selected:** Oldschool - "@BroTeamPills Clothes?"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2036128339841204626
+**Original:** "Yeah, we'll put it in the room where you usually kill the kids"
+**Bot Selected:** Oldschool - "" We'll put it in your room. You killed a child""
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036205513348685864
+**Original:** MORE LEON\n\nno brainhat tonight though
+**Bot Selected:** Random-3 - "Further information\n\nThe brain doesn't stop at night"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036249387144487230
+**Original:** THEY DON'T EVEN BUY THE GAMES
+**Bot Selected:** Random-2 - "DON’T BUY GAMES"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036281453068296413
+**Original:** @Trutown @Cranberryscause\nI don't think this ever turned into an actual report.\nI can't find it
+**Bot Selected:** Oldschool - "@Trutown @Cranberryscause You didn't make a good report, did you"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036281575588110739
+**Original:** @kyfareek\nasking AI why so many pieces of media have to be geared towards ugly people
+**Bot Selected:** Random-1 - "@kyfareek I don't know why the media are interested in other people's work"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036286118279405635
+**Original:** Two reports\n\nThe gaming one:\ndrive.google.com/file/d/1l9Q…\n\nThe overall DEI one:\ndrive.google.com/file/d/1n4y…
+**Bot Selected:** Random-1 - "2 Report\n\nThis game:\ndrive.google Kiel dosier of 119Q.\n\nCOMM STS TAGO:\ndrive.google/d/1n4y a dose."
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2036291284168745229
+**Original:** @mckaywrigley\nInterested!
+**Bot Selected:** Oldschool - "@mckaywrigley It's weird!"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2036475176242782441
+**Original:** @Talonist_\nhey boo
+**Bot Selected:** Random-3 - "@Talonist_ AIDS" Artist ""
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036475800866980107
+**Original:** @VleshDecay\nno I am
+**Bot Selected:** Oldschool - "@VleshDecay No, you're not. AnxietyQuery"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036482861403086884
+**Original:** I made a Multistreamer so you don't have to pay 16 bucks for Restream anymore to stream to 3 or more outputs at 1080p or higher.\n\nFor $5.99 a month on a server like Hetzner, you can stream to as many destinations as you want\n\ngithub.com/scheissgeist/Mult…
+**Bot Selected:** Random-3 - "Electricity is plenty, so you don't have to pay $16, it's more than 3 to 1080.\n\nSix months, Henner.\n\ngithub.com/scheissgeist/Mult…"
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2036483164252856676
+**Original:** Let me know how it works for you. \nI haven't tested with anyone else but my own setup.\n\nThinking of running this as a service for people who don't want to run this setup themselves.
+**Bot Selected:** Random-1 - "I told you what happened. I'm just trying. Second.\n\nThat's the level of those who refuse to control it."
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2036485041589813743
+**Original:** @Toshi_TNE\nAND I'M GETTING INTO THE GAME 50 YEARS BEFORE HE DID!
+**Bot Selected:** Oldschool - "@Toshi_TNE I played for 50 years. He's dying!"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2036485154269708529
+**Original:** @bloatinus\nI'm obsessed with Claude and Cursor and Grok and GPT
+**Bot Selected:** Oldschool - "@bloatinus Who doesn't want to talk"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036491231019114762
+**Original:** Making a Havana syndrome machine and using it on yourself
+**Bot Selected:** Oldschool - "You can use it yourself"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036492465444888804
+**Original:** @VBandit47\nshow feet
+**Bot Selected:** Random-1 - "@VBandit47 Show me your legs"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036492535179386971
+**Original:** @HumanLocust\nnop
+**Bot Selected:** Oldschool - "@HumanLocust Can't stand it"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036526695898104047
+**Original:** @VleshDecay\nthank u
+**Bot Selected:** Oldschool - "@VleshDecay Contact us"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036533797471264861
+**Original:** soon
+**Bot Selected:** Oldschool - "Armenia"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; single-word or tiny phrase"
+
+## Tweet 2036540839133061142
+**Original:** @jimmybesst83357\ngive it
+**Bot Selected:** Oldschool - "@jimmybesst83357 Come on"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036564852806947036
+**Original:** Testing out the stream on X today\nMORE LEON nitter.poast.org/i/broadcasts/1aKbdbDaN…
+**Bot Selected:** Random-1 - "Check the 11th river today: nitter.poast I'm sorry. https://www.e.m."
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2036612026563223641
+**Original:** Do not open the door
+**Bot Selected:** Oldschool - "The door won't open"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "too short"
+
+## Tweet 2036855431801491726
+**Original:** @DBskelatone\ndon't know what this is
+**Bot Selected:** Oldschool - "@DBskelatone What do you know"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2036892490536726608
+**Original:** ｙｏｕ ｈａｖｅ ｔｗｏ ｄａｙｓ
+**Bot Selected:** Oldschool - "2 days"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short"
+
+## Tweet 2036933360287908026
+**Original:** The end of Resident Evil nitter.poast.org/i/broadcasts/1OxwblWmD…
+**Bot Selected:** Random-1 - "The End of Population is nitter.poast ORg / h / dostop / dux / OxfD."
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has narrative structure"
+
+## Tweet 2037017266655813924
+**Original:** @DBskelatone\nneat!
+**Bot Selected:** Oldschool - "@DBskelatone It's incredible!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2037247162984390817
+**Original:** it's tomorrow
+**Bot Selected:** Random-2 - "See you tomorrow"
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2037251284945023256
+**Original:** @balorium\nYeah man
+**Bot Selected:** Random-1 - "@balorium Customer zone e-mail.com"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2037298311200424049
+**Original:** let's just start games, man\nforgive them\nthey didn't know
+**Bot Selected:** Random-2 - "We'll start snooping. Come on. Non o saber"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes"
+
+## Tweet 2037578645766865350
+**Original:** Ready or Not is pretty good, man
+**Bot Selected:** Random-3 - "Not enough for snow"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "too short"
+
+## Tweet 2037589160496943259
+**Original:** TONIGHT
+**Bot Selected:** Random-1 - "OKAY"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; incoherent or fragmentary"
+
+## Tweet 2037645852081263081
+**Original:** CHRIST IT'S SOON I DON'T WANT TO DIE
+**Bot Selected:** Random-1 - "I WANT TO DIE FASTER"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2037648857170145641
+**Original:** @PotionDweller\nDrink for cringe
+**Bot Selected:** Random-3 - "@PotionDweller Red Drinks"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2037648922756395266
+**Original:** @MC_Sadist\nI will visit the Gates again this night
+**Bot Selected:** Oldschool - "@MC_Sadist Today I see the club"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2037667552412029109
+**Original:** ＩＴ＇Ｓ ＴＩＭＥ\n\nLife Is Strange\n\nPlayed by a 39 year old man\n\nWearing a brain-computer interface cap to turn neural signals into live brain readings\n\nDrinking every cringe\n\nPlus Bingo\n\nNo one will survive\n\nＪＯＩＮ ＵＳ
+**Bot Selected:** Random-2 - "Spanish Spanish\n\nPractice\n\nUsing the brain is used to increase the body's body\n\nAnd every soul shall come\n\nVideo\n\nYou can do it\n\nLowest"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2037699693371601063
+**Original:** hate women
+**Bot Selected:** Random-1 - "Women hate women"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; too short"
+
+## Tweet 2037773740889841975
+**Original:** @MC_Sadist\npls forgive
+**Bot Selected:** Random-1 - "@MC_Sadist I Annex to Decision 1"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2037959185217003961
+**Original:** fun night\nthanks guys!\nthat was the best\n\nawful game though
+**Bot Selected:** Oldschool - "Good night\n\nBut it is dangerous"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2037959538222285154
+**Original:** that was just a taste of the pure power of the Circumfolder\n\nthis is why it has to be contained
+**Bot Selected:** Random-1 - "It's just a taste of the pure cycle\n\nHe was stolen"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has narrative structure; foreign fragments reduce clarity"
+
+## Tweet 2037976667344478677
+**Original:** @taik_5\nthanks for hanging out!
+**Bot Selected:** Oldschool - "@taik_5 Thanks for the divorce!"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2037992604567236627
+**Original:** @TheFrenchCritic\nthere will be\n\nI just have to\n \nfix something
+**Bot Selected:** Random-3 - "@TheFrenchCritic Sure\n\nAll you have to do is buy something good"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2038007812249547209
+**Original:** As a streamer, what's the part of your streaming software or alerts/donation systems that bothers you the most?\n\nThinking of making a streaming program/donations service without all the bloat of Streamlabs
+**Bot Selected:** Random-3 - "Conservatory, part of your plan, affects you to pick up a woman who is very concerned about you? Program without all information / Beer services create"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2038025242036281663
+**Original:** @Artyom82762362\nNURNY BATTLES
+**Bot Selected:** Random-3 - "@Artyom82762362 Gulf of Nuremberg"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2038031591382085698
+**Original:** @jifferey\nthe ones that read your donation messages like? What would the ideal system be like?
+**Bot Selected:** Oldschool - "@jifferey The man reads your message? Best system?"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2038031681098223936
+**Original:** @okadikeluc81 @facsimileglib\nGOOD!\nI feel the same way
+**Bot Selected:** Random-1 - "@okadikeluc81 @facsimileglib That's what we thought"
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2038103804500209936
+**Original:** @Gubbuhg\nKeep going! We'll fix that right up for ya!
+**Bot Selected:** Random-1 - "@Gubbuhg Yummy, fix the shop!"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2038103920866980086
+**Original:** @Gubbuhg\nThis is why I don't like it also. I don't want all that stuff. Just the straight streaming, no bing bong crap
+**Bot Selected:** Oldschool - "@Gubbuhg I don't like it. I don't want this. It's a straight, unfortunate joke"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure"
+
+## Tweet 2038150944010227724
+**Original:** Life Is Strange is up!\n\nyoutube.com/watch?v=MtzUjF55…
+**Bot Selected:** Random-3 - "Life is weird!\n\nyoutube.com/watch?v=MtzUjF55…"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; foreign fragments reduce clarity"
+
+## Tweet 2038743001963663725
+**Original:** [STREAM]\nCLAWS OUT LET'S KILL
+**Bot Selected:** Oldschool - "WE WANT TO BITE YOUR NAILS"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes"
+
+## Tweet 2038814648020177149
+**Original:** analysis is almost complete
+**Bot Selected:** Random-2 - "Looking for a lot of things m"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2038833694711132640
+**Original:** @Wiggums__\nYou did this
+**Bot Selected:** Random-1 - "@Wiggums__ You took me home"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2038836377178231086
+**Original:** SNIPER\n\nyoutube.com/watch?v=PWyqTCxj…
+**Bot Selected:** Oldschool - "Observation shooter\n\nyoutube.com/watch?v=PWyqTCxj…"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; foreign fragments reduce clarity"
+
+## Tweet 2038863899861393795
+**Original:** @Wiggums__\nGlad you enjoyed!
+**Bot Selected:** Oldschool - "@Wiggums__ I love you!"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2038887144039866396
+**Original:** Had AI research the Man himself\n\nHere is my DarkSydePhil Forensic Analysis
+**Bot Selected:** Random-1 - "Only him\n\nDarksidade Plutarch"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2038887145432363135
+**Original:** drive.google.com/file/d/1sZk…
+**Bot Selected:** Random-1 - "drive.google I'm sorry."
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039084231612371410
+**Original:** I made a therapy and medicine site for you\n\nIt can check your medication interactions, talk to you, keep a memory of what you've told it, help you heal, so forth\n\nIt's called Witness
+**Bot Selected:** Random-3 - "Websites and pharmaceuticals\n\nAt least you can control your drugs\n\nDomy finished display"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has narrative structure; detailed phrasing"
+
+## Tweet 2039084233332007044
+**Original:** It's at \n\ninnerwitness.net/\n\nEverything you tell it is kept confidential. Haven't tested it with anyone else or shared it yet so enjoy
+**Bot Selected:** Random-2 - "Open \n\ninnerwitness.net/ I'm not talking to anyone, and I'm not saying anything"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039106990073672161
+**Original:** TO THE DESERT\n\nthe CRIMSON desert!
+**Bot Selected:** Random-2 - "% 1\n\nThe Kremlin is wild!"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2039160405550149875
+**Original:** @JoshKokichi\nyeah, I laughed
+**Bot Selected:** Random-2 - "@JoshKokichi Smile"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039190334773796997
+**Original:** Fine\n\nDid one on Anita Sarkeesian
+**Bot Selected:** Random-1 - "Infrapuna\n\nAnita Sargen"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039190943275110889
+**Original:** @DaysofRaven\nsucks u died
+**Bot Selected:** Random-2 - "@DaysofRaven Fuck you"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039193343083909262
+**Original:** @M10Wolverine1\nLiterally
+**Bot Selected:** Random-1 - "@M10Wolverine1 And I swear"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039214048160723228
+**Original:** haha ok fine take one on movieblob too
+**Bot Selected:** Random-2 - "You gotta make film"
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2039251128454639948
+**Original:** The start of the Brainhat saga
+**Bot Selected:** Random-3 - "Start with the brain"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2039426645694796060
+**Original:** @ludwig1651\nhe is
+**Bot Selected:** Random-3 - "@ludwig1651 This way"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039468046432309448
+**Original:** Finishing Life is Strange Reunion tonight then Crimson Desert all night
+**Bot Selected:** Random-1 - "At the end of his life, it was a strange date tonight"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2039580812451184790
+**Original:** @FredHorrigan\nhmmmmmm!
+**Bot Selected:** Random-3 - "@FredHorrigan Get out!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2039802307865354538
+**Original:** Bad Way\n\nreal game\n\nyoutube.com/watch?v=Z0LD9AvO…
+**Bot Selected:** Random-3 - "Incorrect direction\n\nReal games\n\nyoutube.com/watch?v=Z0LD9AvO…"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2039814813011096046
+**Original:** Consider playing this with your friends\n\nstore.steampowered.com/app/4…
+**Bot Selected:** Random-1 - "Think of playing with friends\n\nstore.steampowered a = app/4."
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes; foreign fragments reduce clarity"
+
+## Tweet 2039840505392242851
+**Original:** Gamers, OUT\n\nWe're comin for ya!
+**Bot Selected:** Oldschool - "PLAYER AND U XNL__\nWe're drunk!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2039910672176381997
+**Original:** @SnakepitSk64718\nLook behind you
+**Bot Selected:** Oldschool - "@SnakepitSk64718 Look behind your head"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040193822026789354
+**Original:** GRANSER'S OUT TODAY\n\nLET'S ROLL
+**Bot Selected:** Random-3 - "NO FOOD TODAY\n\nFOR US"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040594350137368713
+**Original:** They're going to love this one
+**Bot Selected:** Random-2 - "I love her"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040626673398563309
+**Original:** Here we go!\n\n31 entire assaults in New York City in 2024?\n\nIT \n\nIS \n\nANOTHER\n\nSHOAH
+**Bot Selected:** Random-2 - "Keep reading!\n\nNova York 2018? That's: \n\nRight \n\nFile in: Xbrl\n\nSite"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2040626677156622808
+**Original:** THEY SURE DO MAKE A LOT OF MONEY OFF THIS SHIT
+**Bot Selected:** Random-3 - "I'M SURE YOU HAVE A LOT OF MONEY"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040626679153078490
+**Original:** They found a way to find more hate and found more money for that
+**Bot Selected:** Random-2 - "Tap a way to get more cracked and more cracked"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040626681158013162
+**Original:** They have to keep saying they're in danger\n\nThe Hate Economy
+**Bot Selected:** Random-2 - "They Are Dangerous\n\nFinancials"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040626683213205859
+**Original:** It's just them seeing a swasti spray painted somewhere and everyone at the synagogue reporting it as a separate hate crime
+**Bot Selected:** Random-1 - "I saw a photo of polyester in my house, called everyone, red smoke"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2040626685461324179
+**Original:** Saturday is typically the best day for Jews
+**Bot Selected:** Random-1 - "Better Day for the Jews"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2040626687399059549
+**Original:** It seems like blacks actually have the highest hate crime hoax rate but this part isn't a comprehensive study and also\n\nper capita
+**Bot Selected:** Random-2 - "Blacks commit crime, but this is a complex research\n\nSelect all the captains"
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2040678390118903955
+**Original:** dude it took me this long to realize\n\nNvidia\n\nIndia V\n\nshit
+**Bot Selected:** Random-2 - "That took a lot\n\nI hope\n\nIndia\n\nData protection"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2027508539900743704
+**Original:** @Shazbot885\nthanks man!\nbringing the camo for the costume and photo area too
+**Bot Selected:** RANDOM_2 - "@Shazbot885 Thank God he has a picture and a drawing"
+**Rating:** 2/5
+**Best:** RANDOM_2
+**Notes:** "includes humor themes"
+
+## Tweet 2027866833404186724
+**Original:** @swompmane\nLocal guys but not always active. One AI can oversee them and start new AI processes to work on each one as needed. I'm trying to build the functionality up even better but this is as far as I go
+**Bot Selected:** RANDOM_2 - "@swompmane Local kid, but it doesn't always work. HEI can deliver and launch a new process Al to all necessary companies. I can create better functions, but that's far from where it would be"
+**Rating:** 5/5
+**Best:** RANDOM_2
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2027866893433053496
+**Original:** @Complete_Tosser\nok do u have a bed?
+**Bot Selected:** OLDSCHOOL - "@Complete_Tosser it's okay?"
+**Rating:** 4/5
+**Best:** OLDSCHOOL
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2027866973414326615
+**Original:** @TheFrenchCritic\nI think I got all of them now. I was pretty careful
+**Bot Selected:** OLDSCHOOL - "@TheFrenchCritic Now I have everything. I'm worried"
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2027867625464991934
+**Original:** @swompmane\nthis is how it's working
+**Bot Selected:** OLDSCHOOL - "@swompmane Here's the thing"
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2027621448173687159
+**Original:** @swompmane\nThese are all my local projects. A local server checks in on them all and gets them to report in and also take orders
+**Bot Selected:** OLDSCHOOL - "@swompmane These are local programs. All local servers checked, reports, received orders"
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2027621497364484354
+**Original:** @Shazbot885\nYEAH
+**Bot Selected:** OLDSCHOOL - "@Shazbot885 Contact us"
+**Rating:** 2/5
+**Best:** OLDSCHOOL
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2027621561730212045
+**Original:** @Wiggums__\nthey will never find me
+**Bot Selected:** RANDOM_3 - "@Wiggums__ I can't find him"
+**Rating:** 3/5
+**Best:** RANDOM_3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2041278641682948454
+**Original:** STREAM\n\nMaybe seamless Dark Souls 2 testing but probably some kills first
+**Bot Selected:** Oldschool - "It's John's best story, but he died before"
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2041642468572328248
+**Original:** IT'S DIG NIGHT\n\nLˢEᵖTᵒ'ⁿSˢ DᵒOʳ TᵉHᵈI Sˢᵗʳᵉᵃᵐ
+**Bot Selected:** Random-3 - "HEAVY\n\nICE - CLASS TRAFFIC SPEED"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2041697316118393030
+**Original:** Goybeam
+**Bot Selected:** Random-3 - "The Argon of the Indimore"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2041957088075903308
+**Original:** No stream today\nI'm getting a new tooth
+**Bot Selected:** Random-1 - "I have no power today. I'll be the new tooth"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2041986488444055897
+**Original:** I sent an Access to Information request to the Canadian government about the work permits they give to asylum seekers\n\nThey say they completely just do not have that data\n\nTHEY ARE THE ONES GIVING THE PERMITS AND THEY DONT HAVE THE DATA
+**Bot Selected:** Oldschool - "Canadian government wanted to find jobs for Taliban m\n\nNot having information\n\nThis will be the best Tags"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2041987145762742295
+**Original:** This was a request sent to Immigration, Refugees, and Citizenship Canada\n\nI've been considering starting a new channel to just share how fucked up our governments are at every level\n\nI'm still in awe\n\nThey're claiming they have no records of what happens to asylum seekers
+**Bot Selected:** Oldschool - "This is a request for refugees, refugees and Canadians\n\nThe government will open a new channel to share chaos\n\nStill scared\n\nThey said it's not evidence of mental institutions"
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2041987891442938335
+**Original:** @mechafloob\nYEAH
+**Bot Selected:** Random-1 - "@mechafloob Jack"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2041987260737056946a
+**Original:** @knifegamer420\nyeah whats ur addy?
+**Bot Selected:** Random-3 - "@knifegamer420 What is our addiction?"
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2041990443056165372
+**Original:** @Toshi_TNE\nSOREY!
+**Bot Selected:** Random-3 - "@Toshi_TNE Throw it!"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2042000754538639846
+**Original:** still waiting on a bunch of other requests
+**Bot Selected:** Random-3 - "I hope there are other conditions"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042000863422718027
+**Original:** if you live in Canada then the results might make you even more mad
+**Bot Selected:** Oldschool - "Living in Canada can make you even more attractive"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes"
+
+## Tweet 2042017889885286556
+**Original:** I have never complained to the government before \n\nThis will probably not be the last time
+**Bot Selected:** Random-3 - "The government never complained \n\nThe last time"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042018025625546845
+**Original:** @knifegamer420\ncan i hav one?
+**Bot Selected:** Random-3 - "@knifegamer420 I can do something?"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2042025643727319205
+**Original:** OK TOOTH'S DONE I LIED HERE'S A STREAM
+**Bot Selected:** Random-3 - "IT'S OVER. I LIED"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "too short"
+
+## Tweet 2042116025584685192
+**Original:** @toaster_loaf\nare you trans?
+**Bot Selected:** Random-3 - "@toaster_loaf What happened?"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2042351367839494377
+**Original:** Here's why people go trans, in case you missed it earlier
+**Bot Selected:** Random-3 - "If you lose, you'll be Hyjra"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042352062693097592
+**Original:** You can be bio trans or psyop trans\n\njust like being gay
+**Bot Selected:** Random-2 - "Protection of biological acid\n\nLike a baby"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042352065402564890
+**Original:** "psyop" autocorrected to "patio"\n\nI like the idea of patio trans\n\nHere's the report:\n\ndrive.google.com/file/d/1Iki…
+**Bot Selected:** Random-3 - "" You may have heard the word of the Lord" Autonomous duct tarmactar " DigiKam" Bulde Zherde jazz shiltemesi:\n\ndrive.google...."
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; detailed phrasing"
+
+## Tweet 2042362910853550188
+**Original:** @Darian_Wolf\nThey hate us
+**Bot Selected:** Random-2 - "@Darian_Wolf We don't know"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042369305963348436
+**Original:** WE'RE BREAKING LOOSE TONIGHT\n\nLET'S GAME
+**Bot Selected:** Oldschool - "WE'LL WIN TONIGHT\n\nGRY GRY"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042529888062836858a
+**Original:** @Sargon_of_Akkad\nSTOPGAMERGATE2014
+**Bot Selected:** Random-3 - "@Sargon_of_Akkad I'm three-dimensional"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "includes humor themes"
+
+## Tweet 2042681592452387039
+**Original:** FIGHTS is Keizaal tonight\n\nkeizaal.com/ \n\nGet it working and RP me \n\nIt's multiplayer Skyrim
+**Bot Selected:** Random-2 - "Matches\n\nkeizaal.com/ \n\nBusiness management \n\nThere's three"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042689143965442053
+**Original:** @PotionDweller\nIt's for furries, I don't have mine up yet.\n\nSoon
+**Bot Selected:** Random-3 - "@PotionDweller I got that dress.\n\nI am sorry"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2042704394140225876
+**Original:** AI just gave me a term for what liberals are trying to do with your tax money\n\nIt's all crotch spending\n\ngender surgery, gay stuff, killing babies, who gets to fuck who, reproductive stuff\n\nYour money is going to someone else's crotch\n\nmaybe that's why it's annoying to you
+**Bot Selected:** Random-3 - "He wanted you to make money\n\nOnly in my grave\n\nSexual surgery, homosexuals, dead children can be popular\n\nStrange smell\n\nMaybe that's why you're doing it"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2042705666088014155
+**Original:** @Zafuul_\nIt just recontextualized everything for me\n\nA large portion of your income is going straight to someone else's crotch\n\nperfect, thanks
+**Bot Selected:** Random-1 - "@Zafuul_ I don't doubt it\n\nYou betrayed your career\n\nThank you very much"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has narrative structure"
+
+## Tweet 2042728484938879131
+**Original:** SKYRIM MULTIPLAYER RP\n\nGet in!
+**Bot Selected:** Random-1 - "Russian\n\nAbout us!"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2042853089988997498
+**Original:** Banned from Skyrim RP server
+**Bot Selected:** Random-2 - "Screen closed Name"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2042879562372255966
+**Original:** @PotionDweller\nIt's already almost ready
+**Bot Selected:** Random-2 - "@PotionDweller Let's go here"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043180656692494650
+**Original:** here's my tard stack for my genes\n\nI'll do yours for you for free if you have your 23andMe information
+**Bot Selected:** Random-3 - "My mother came here for squirrels\n\ninformation"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043223550971249081
+**Original:** @ywomendeservles\ntattoos\nstupid\nno father figure\nno driver's license\nincome under 50K\nkids\nno doctorate\nolder than 23
+**Bot Selected:** Random-3 - "@ywomendeservles This is the structure of the European Parliament\n23 large"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes"
+
+## Tweet 2043273704352915679
+**Original:** I can't believe how fucking stupid Claude is while set to its maximum strength even
+**Bot Selected:** Random-1 - "I don't think it's about power"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043273766906847566
+**Original:** fuck off
+**Bot Selected:** Random-1 - "Fuck"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; single-word or tiny phrase"
+
+## Tweet 2043282187538333890
+**Original:** @Squirrelmob75\nI want to kill myself
+**Bot Selected:** Random-1 - "@Squirrelmob75 I want to kill you"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "includes humor themes"
+
+## Tweet 2043282952088621312
+**Original:** @maximilian_ Hey there! \nCan you specify what you're looking for with the Marvel $10K challenge? \nI might be close
+**Bot Selected:** Random-2 - "@maximilian_ Peace of peace@T $10 million? I can be black"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2043455914121056357
+**Original:** @dweedlejimbo\nClaude has been great until two weeks ago. Opus was unbelievable and it's still fine but the downgrade has been noticeable. Sometimes the stuff it returns is truly silly
+**Bot Selected:** Random-3 - "@dweedlejimbo Two months ago, Cade was great, and Eppstein was beautiful and beautiful, lactin collapsed"
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2043456090319532530
+**Original:** @iIiterateretard\nOh yeah. Maybe the last ten days of "are you kidding me?" output
+**Bot Selected:** Random-1 - "@iIiterateretard Probably 10 days " Kiss me? g = output"
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; uses contradiction/juxtaposition"
+
+## Tweet 2043557776866283844
+**Original:** soon
+**Bot Selected:** Oldschool - "Start"
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; single-word or tiny phrase"
+
+## Tweet 2043559744389202328
+**Original:** @maximilian_\nI'm working on this. Can you give more details on what you're looking for specifically? Is there a way to reach you directly so we can talk about this?
+**Bot Selected:** Oldschool - "@maximilian_ Sonoosu? It is a sign of the Quran, and of the Quran?"
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2043563830119465148
+**Original:** oh yeah Claude is fucked, bro\n\nthis is while running it on Opus at maximum effor
+**Bot Selected:** Random-1 - "The Kaka Sea\n\nThe most powerful power in operation is Ox"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043563946591101211
+**Original:** if you're still on Claude get out while you still can
+**Bot Selected:** Random-1 - "If you're with Clark, you can go"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2043564785347027078
+**Original:** bro
+**Bot Selected:** Random-3 - "Male"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043718470618231161
+**Original:** @Isoudw @maximilian_\nIt'd be cool if I could get it this week
+**Bot Selected:** Random-1 - "@Isoudw @maximilian_ I'll get cold if I eat this week"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2043727989528207676
+**Original:** IS CLAUDE FULLY MADE IN INDIA?
+**Bot Selected:** Random-1 - "THE WINNER OF INDIA?"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2043766986845630665
+**Original:** @Diiamonti @maximilian_\nCan you give me more details what that would specifically look like?\n\nI might be close
+**Bot Selected:** Random-2 - "@Diiamonti @maximilian_ Please tell me? Maybe I'll get closer"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2043790521857155443
+**Original:** bro he's unbelievable
+**Bot Selected:** Random-2 - "Dude, she's amazing"
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short"
+
+## Tweet 2043812547976176085
+**Original:** TAKE A SWING, BUD
+**Bot Selected:** Oldschool - "YOU KNOW WHAT,"
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short"
+
+## Tweet 2044122284055769112
+**Original:** I want to get my first cease and desist within 30 days
+**Bot Selected:** Random-2 - "i want my first vacation in 30 days"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2044126574451237253
+**Original:** @Toshi_TNE\nCLOSE
+**Bot Selected:** Random-3 - "@Toshi_TNE PET"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2044177588336374125
+**Original:** Let's kill guys tonight I'm thinking
+**Bot Selected:** Random-1 - "Kill them at night"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes"
+
+## Tweet 2044286260622377403
+**Original:** Life is DRANKS: Reunion\n\nThis has to be the last one ever\n\nyoutu.be/MsGLrq-zxcU
+**Bot Selected:** Random-1 - "Life is cancer: this is the last time\n\nyoutu.be/MsGLrq-zxcU"
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2044313400403275795
+**Original:** It's almost ready\n\nI'll let you play tomorrow
+**Bot Selected:** Random-1 - "In direction\n\nI'm playing you today"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2044537056727376381
+**Original:** You're probably under arrest\nWe don't know for sure yet\nBut you better come in here and game to be safe
+**Bot Selected:** Oldschool - "I'll call you"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2044902580120432689
+**Original:** let's BATTLE\n\nas GIRLS
+**Bot Selected:** Random-3 - "Wallpaper, frozen\n\nAs a Woman"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes"
+
+## Tweet 2045031405143658968
+**Original:** bro ahahahahahhhahaha
+**Bot Selected:** Random-1 - "" Jesus!" " Jesus!""
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "detailed phrasing"
+
+## Tweet 2045191056778739876
+**Original:** I still get PR emails like this
+**Bot Selected:** Oldschool - "I've always had an affair"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "uses contradiction/juxtaposition"
+
+## Tweet 2045248213750558890
+**Original:** Scramble Knights is fun as shit\nGet into the playtest\n\nstore.steampowered.com/app/2…
+**Bot Selected:** Random-3 - "The fucking gentlemen\n\nstore.steampowered...y Anex 2.0."
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2045258790539612586
+**Original:** Would you play this game?
+**Bot Selected:** Random-1 - "You can play this game?"
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2045264268854169991
+**Original:** I SAID\nIt's the night\n\nOf\n\nGIRLS
+**Bot Selected:** Random-1 - "Who is not a member of the people\n\n//.\n\nprostitute"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2045373260519633207
+**Original:** I have an interview to be a board member\n\ndon't know what for yet
+**Bot Selected:** Random-2 - "I want to be a director\n\nI don't know why"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2045558283940090164
+**Original:** @Toshi_TNE\nMighty Phillip
+**Bot Selected:** Oldschool - "@Toshi_TNE Strong cube"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2045600590760415730
+**Original:** @DexterJManning\nI've been enjoying these videos, man\nThey're too real\n\nfuckin' shit!
+**Bot Selected:** Random-1 - "@DexterJManning I love movies. They are real people\n\nsweating!"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2046125430693036117
+**Original:** opus 4.7, man
+**Bot Selected:** Random-1 - "article 44, fourth indent"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2046265863159021879
+**Original:** @bozottisbad\nHe knows it!
+**Bot Selected:** Random-2 - "@bozottisbad You know nothing!"
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2046315065016742081
+**Original:** I've been emailing the racists about helping them
+**Bot Selected:** Random-2 - "I wrote about racial aid"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2046357853632639232
+**Original:** It's time for GAME SLOP\nCome to the trough!
+**Bot Selected:** Random-2 - "Time to get on the train!"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2046643391879106694
+**Original:** just walk into another country and live there it's illegal if they get mad
+**Bot Selected:** Random-3 - "Living in another country is only illegal when you're angry"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2046643487286931881
+**Original:** @Discophilistine\nVideo\nGames
+**Bot Selected:** Random-1 - "@Discophilistine Video\nRepeat"
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2046643666153099569
+**Original:** @alphalesbien @tekatwit\nTenga even!\n\nEvery day I battle with the mmo demon\n\nHe will not taste me today
+**Bot Selected:** Random-2 - "@alphalesbien @tekatwit Packages!\n\nI fight with my mother in Delhi every day\n\nI don’t try today"
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet Cadanians
+**Original:** Get in.\nVideo games could be out here.
+**Bot Selected:** Oldschool - "Contact me.\nVideo games."
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "includes humor themes"
+
+## Tweet 2046865167070478436
+**Original:** ha ha lol sorry if you are from a culture that where's a bonnet as a male then lol sorry you are culture is gay and u are too
+**Bot Selected:** Random-1 - "They wonder if you're from culture, like a sad hat, gay, like you"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has narrative structure; foreign fragments reduce clarity"
+
+## Tweet 2047087676994863251
+**Original:** DUKE NIGHT
+**Bot Selected:** Random-1 - "PRINCE NAILED"
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; single-word or tiny phrase"
+
+## Tweet 2047221821494423743
+**Original:** This is how my life is going to go\n\nI turn into Werner Herzog
+**Bot Selected:** Random-3 - "My life will be\n\nI'm a model"
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2047398797442257329
+**Original:** They say they fixed Claude but mine just tried to give itself a week of fuck off time instead of just continuing the current task
+**Bot Selected:** Random-1 - "He said,. Claude wanted to give him a son instead of lactin work"
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet https://www.twitch.tv/videos/2755437825
+**Original:** @PotionDweller\nit needs pain
+**Bot Selected:** Random-1 - "@PotionDweller Get away from the disease"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet @PotionDweller it needs pain
+**Original:** @maximilian_ \n\nHey Max\n\nThis is my progress towards UMVC3 Rollback Netcode.\n\nEmailed you about too.\n\nShould be soon!
+**Bot Selected:** Oldschool - "@maximilian_ \n\nHighest\n\nTryer 3 mV3-.\n\nFor us.\n\nWith respect!"
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2047442217636450347
+**Original:** The TRUTH is out!\n\nIt's GAMING
+**Bot Selected:** Oldschool - "It's over!\n\nNo kidding"
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape"
+
+## Tweet 2047483033796931816
+**Original:** POWER'S OUT\nNO MORE STREAM TONIGHT\n\nENJOY COOLHOLE
+**Bot Selected:** Random-3 - "THE POWER'S GONE\nNOT TODAY\n\nENJOY THE UNKNOWN"
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2047578343479128416
+**Original:** I'm working on rollback netcode for Ulimate Marvel VS Capcom 3\n\nI'm already making wagers with their modding community that it can even be done, let alone finished in 7 days from now.
+**Bot Selected:** Random-1 - "Work using the last row of codes Marvel VS Capcom 3\n\nI bet the fashion community has them."
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2047583935207768529
+**Original:** I'm getting addicted\n\nI might just join communities
+**Bot Selected:** Random-1 - "I'm fine\n\nI'm going with the audience"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes"
+
+## Tweet 2047584037913624577
+**Original:** I GOT BANNED
+**Bot Selected:** Random-2 - "ACCEPTANCE"
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "too short"
+
+## Tweet 2047598901918908719
+**Original:** UMVC3 Rollback Netcode progress
+**Bot Selected:** Random-2 - "Joint Inspection Unit 3"
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "best available option with comparatively stronger coherence and humor signal"

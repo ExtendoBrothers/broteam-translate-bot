@@ -32,7 +32,11 @@ function addFeedback() {
   }
 
   const tweetId = args[0];
-  const feedback = { providedAt: new Date().toISOString() };
+  const feedback = {
+    providedAt: new Date().toISOString(),
+    feedbackSource: 'user-manual',
+    learningEligible: true
+  };
 
   // Parse arguments
   for (let i = 1; i < args.length; i++) {
