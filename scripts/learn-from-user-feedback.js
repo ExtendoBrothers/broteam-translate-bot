@@ -150,7 +150,11 @@ function main() {
   }
 
   if (!dryRun) {
-    atomicWriteJsonSync(WEIGHTS_PATH, weights);
+    const writeOk = atomicWriteJsonSync(WEIGHTS_PATH, weights);
+    if (!writeOk) {
+      console.error(`Failed to persist updated weights to ${WEIGHTS_PATH}.`);
+      process.exit(1);
+    }
   }
 
   console.log(JSON.stringify({
