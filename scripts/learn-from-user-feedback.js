@@ -122,7 +122,13 @@ function main() {
   }
 
   const entries = readJsonl(FEEDBACK_PATH);
-  const weights = JSON.parse(fs.readFileSync(WEIGHTS_PATH, 'utf8'));
+  let weights;
+  try {
+    weights = JSON.parse(fs.readFileSync(WEIGHTS_PATH, 'utf8'));
+  } catch (error) {
+    console.error(`Failed to read or parse ${WEIGHTS_PATH}: ${error.message}`);
+    process.exit(1);
+  }
 
   let considered = 0;
   let updated = 0;

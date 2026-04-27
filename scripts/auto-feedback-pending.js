@@ -233,14 +233,29 @@ function buildNotes(bestAnalysis) {
 }
 
 function readJsonl(filePath) {
-  return fs.readFileSync(filePath, 'utf8')
-    .split(/\r?\n/)
-    .filter(line => line.trim())
-    .map(line => JSON.parse(line));
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  const entries = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    try {
+      entries.push(JSON.parse(line));
+    } catch {
+      // Skip malformed records so one bad JSONL line does not abort processing.
+    }
+  }
+
+  return entries;
 }
 
 function writeJsonl(filePath, entries) {
-  const serialized = entries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
+  const serialized = entries.map(entry => JSON.stringify(entry, (key, value) => {
+    if (typeof value === 'string') {
+      return value.replace(/\n/g, '\\n').replace(/\r/g, '\\r');
+    }
+    return value;
+  })).join('\n') + '\n';
   const writeOk = atomicWriteTextSync(filePath, serialized);
   if (!writeOk) {
     throw new Error(`Failed to atomically write JSONL file: ${filePath}`);
@@ -350,7 +365,7 @@ function main() {
 
   const logHeader = [
     '',
-    `# Batch ${new Date().toISOString().slice(0, 10)} - Agent Feedback (${processedTweetIds.length} pending tweets)`,
+    `# Batch ${new Date().toISOString().slice(0, 10)} - Agent Feedback (${processedTweetIds.length} ${regradeExisting ? 'processed tweets' : 'pending tweets'})`,
     '',
     `Generated at: ${now}`,
     `Ratings: 1=${ratingBuckets[1]}, 2=${ratingBuckets[2]}, 3=${ratingBuckets[3]}, 4=${ratingBuckets[4]}, 5=${ratingBuckets[5]}`,
