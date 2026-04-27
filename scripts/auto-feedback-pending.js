@@ -31,7 +31,13 @@ function escapeLogText(text) {
 }
 
 function hasForeignFragments(text) {
-  return /[^\x00-\x7F]/.test(text || '');
+  const value = String(text || '');
+  for (let i = 0; i < value.length; i += 1) {
+    if (value.charCodeAt(i) > 127) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function hasSentenceLikeStructure(text) {
