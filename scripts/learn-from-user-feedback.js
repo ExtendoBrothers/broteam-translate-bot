@@ -20,10 +20,20 @@ const WEIGHTS_PATH = path.join(process.cwd(), 'heuristic-weights.json');
 const LEARNING_RATE = 0.002;
 
 function readJsonl(filePath) {
-  return fs.readFileSync(filePath, 'utf8')
-    .split(/\r?\n/)
-    .filter(Boolean)
-    .map(line => JSON.parse(line));
+  const lines = fs.readFileSync(filePath, 'utf8').split(/\r?\n/);
+  const entries = [];
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    try {
+      entries.push(JSON.parse(line));
+    } catch {
+      // Skip malformed JSONL records so one bad line does not abort learning.
+    }
+  }
+
+  return entries;
 }
 
 function shouldUseFeedback(userFeedback, includeLegacyUnknown) {
@@ -118,7 +128,6 @@ function main() {
   let updated = 0;
   let skippedNoBest = 0;
   let skippedNotUser = 0;
-  let skippedNoRuleData = 0;
   let updatedViaRuleData = 0;
   let updatedViaChainFallback = 0;
 
@@ -137,11 +146,6 @@ function main() {
 
     considered++;
     const res = applyEventLearning(weights, entry, feedback.actualBest);
-
-    if (res.reason === 'no-rule-data') {
-      skippedNoRuleData++;
-      continue;
-    }
     if (res.changed) {
       updated++;
       if (res.usedRuleData) updatedViaRuleData++;
@@ -166,8 +170,7 @@ function main() {
     updatedViaRuleData,
     updatedViaChainFallback,
     skippedNoBest,
-    skippedNotUser,
-    skippedNoRuleData
+    skippedNotUser
   }, null, 2));
 }
 

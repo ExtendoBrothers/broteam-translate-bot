@@ -11,6 +11,7 @@
 
 const fs = require('fs');
 const path = require('path');
+const { atomicWriteTextSync } = require('../dist/src/utils/safeFileOps');
 
 const FEEDBACK_PATH = path.join(process.cwd(), 'feedback-data.jsonl');
 const LOG_PATH = path.join(process.cwd(), 'agent-feedback-log.md');
@@ -240,7 +241,10 @@ function readJsonl(filePath) {
 
 function writeJsonl(filePath, entries) {
   const serialized = entries.map(entry => JSON.stringify(entry)).join('\n') + '\n';
-  fs.writeFileSync(filePath, serialized, 'utf8');
+  const writeOk = atomicWriteTextSync(filePath, serialized);
+  if (!writeOk) {
+    throw new Error(`Failed to atomically write JSONL file: ${filePath}`);
+  }
 }
 
 function toEntryLog(entry, generatedFeedback) {
