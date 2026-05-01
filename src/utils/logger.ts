@@ -18,14 +18,6 @@ export const logger = createLogger({
   ],
 });
 
-export const logInfo = (message: string) => {
-  logger.info(message);
-};
-
-export const logError = (message: string) => {
-  logger.error(message);
-};
-
 /**
  * Rotate a log file if it exceeds maxSize bytes, keeping all rotated files (no deletion)
  */

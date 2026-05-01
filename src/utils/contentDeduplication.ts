@@ -7,7 +7,7 @@ import * as fs from 'fs';
 import * as path from 'path';
 import { logger } from './logger';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
-import { calculateSimilarity, normalizeText as optimizedNormalize } from './optimizedDuplicateCheck';
+import { calculateSimilarity, normalizeText } from './optimizedDuplicateCheck';
 import { processLogFileLines } from './streamLogReader';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
@@ -20,20 +20,6 @@ const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
 
 const POSTED_OUTPUTS_FILE = path.join(BASE_DIR, 'posted-outputs.log');
 const SIMILARITY_THRESHOLD = 0.85; // Jaccard similarity threshold for duplicates
-
-/**
- * Normalize text for better duplicate detection (uses optimized version)
- */
-function normalizeText(text: string): string {
-  return optimizedNormalize(text);
-}
-
-/**
- * Calculate Jaccard similarity between two texts (uses optimized version)
- */
-function calculateSimilarityInternal(text1: string, text2: string): number {
-  return calculateSimilarity(text1, text2);
-}
 
 /**
  * Check if content is too similar to previously posted content (optimized with streaming)
@@ -68,7 +54,7 @@ export async function isContentDuplicate(newContent: string): Promise<boolean> {
         }
 
         // Similarity check
-        const similarity = calculateSimilarityInternal(normalizedNew, normalizedExisting);
+        const similarity = calculateSimilarity(normalizedNew, normalizedExisting);
         if (similarity >= SIMILARITY_THRESHOLD) {
           logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
           isDuplicate = true;
@@ -121,7 +107,7 @@ export function isContentDuplicateSync(newContent: string): boolean {
         }
 
         // Similarity check
-        const similarity = calculateSimilarityInternal(normalizedNew, normalizedExisting);
+        const similarity = calculateSimilarity(normalizedNew, normalizedExisting);
         if (similarity >= SIMILARITY_THRESHOLD) {
           logger.warn(`Duplicate content detected (similarity: ${(similarity * 100).toFixed(1)}%): "${newContent}" vs "${existingContent}"`);
           return true;

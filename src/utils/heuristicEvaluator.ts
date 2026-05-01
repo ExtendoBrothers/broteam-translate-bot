@@ -124,12 +124,6 @@ function saveWeights(w: WeightsMap): void {
   }
 }
 
-/** Force reload from disk (e.g. after external edit) */
-export function reloadWeights(): void {
-  _weights = null;
-  loadWeights();
-}
-
 // ─────────────────────────────────────────────────────────────────────────────
 // Helper: word overlap similarity
 // ─────────────────────────────────────────────────────────────────────────────

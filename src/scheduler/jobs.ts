@@ -90,8 +90,3 @@ function scheduleNext() {
     }
   }, delay);
 }
-
-export function scheduleJobs() {
-  scheduleNext();
-  logger.info('Scheduler configured: running every 20 minutes since the last run');
-}

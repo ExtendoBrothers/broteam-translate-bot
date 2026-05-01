@@ -122,68 +122,6 @@ export function checkTranslationStability(tweetId: string, inputText: string, ou
 }
 
 /**
- * Get stability metrics for monitoring
- */
-export function getStabilityMetrics(): { totalTranslations: number; averageAttempts: number; stabilityIssues: number; recentIssues: string[]; } {
-  try {
-    if (!fs.existsSync(STABILITY_LOG)) {
-      return { totalTranslations: 0, averageAttempts: 0, stabilityIssues: 0, recentIssues: [] };
-    }
-
-    const lines = fs.readFileSync(STABILITY_LOG, 'utf8')
-      .split('\n')
-      .filter(line => line.trim())
-      .slice(-50); // Last 50 translations
-
-    const records = lines.map(line => {
-      try {
-        return JSON.parse(line) as TranslationRecord;
-      } catch {
-        return null;
-      }
-    }).filter(record => record !== null) as TranslationRecord[];
-
-    const totalTranslations = records.length;
-    const averageAttempts = totalTranslations > 0
-      ? records.reduce((sum, r) => sum + r.attempt, 0) / totalTranslations
-      : 0;
-
-    // Count recent stability issues (simplified check)
-    let stabilityIssues = 0;
-    const recentIssues: string[] = [];
-
-    for (let i = 0; i < records.length; i++) {
-      const record = records[i];
-      const stability = checkTranslationStability(
-        record.tweetId,
-        record.inputText,
-        record.outputText,
-        record.chain,
-        record.attempt
-      );
-
-      if (!stability.isStable) {
-        stabilityIssues++;
-        if (recentIssues.length < 5) {
-          recentIssues.push(`${record.tweetId}: ${stability.issues.join(', ')}`);
-        }
-      }
-    }
-
-    return {
-      totalTranslations,
-      averageAttempts,
-      stabilityIssues,
-      recentIssues
-    };
-
-  } catch (error) {
-    logger.error(`Error getting stability metrics: ${error}`);
-    return { totalTranslations: 0, averageAttempts: 0, stabilityIssues: 0, recentIssues: [] };
-  }
-}
-
-/**
  * Clean up old stability log entries
  */
 export function pruneStabilityLog(maxEntries: number = 1000) {
