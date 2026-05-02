@@ -233,14 +233,3 @@ class PerformanceProfiler {
 // Singleton instance
 export const profiler = new PerformanceProfiler();
 
-// Convenience decorator for methods
-export function Profile(target: any, propertyKey: string, descriptor: PropertyDescriptor): PropertyDescriptor {
-  const originalMethod = descriptor.value;
-  const metricName = `${target.constructor.name}.${propertyKey}`;
-
-  descriptor.value = async function (...args: any[]) {
-    return await profiler.measure(metricName, () => originalMethod.apply(this, args));
-  };
-
-  return descriptor;
-}

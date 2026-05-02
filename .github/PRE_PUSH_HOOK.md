@@ -15,6 +15,18 @@ Git hooks are not version-controlled. To enable this pre-push behavior in your r
 
 Once configured, the hook will be invoked automatically by Git before each push.
 
+Example lint guard:
+
+```sh
+npm run lint > /dev/null 2>&1
+LINT_EXIT=$?
+if [ $LINT_EXIT -ne 0 ]; then
+   echo "❌ Lint failed with errors. Fix errors before pushing."
+   npm run lint
+   exit 1
+fi
+```
+
 ## What It Checks
 
 1. **TypeScript Build** (`npm run build`)
@@ -24,7 +36,8 @@ Once configured, the hook will be invoked automatically by Git before each push.
 2. **ESLint** (`npm run lint`)
    - Checks code style and best practices
    - Allows warnings (currently acceptable)
-   - Only fails on actual errors
+   - Fails on any non-zero ESLint exit code
+   - If output is suppressed inside the hook, do not special-case exit code `1`; ESLint uses it for lint errors
 
 3. **Tests** (`npm test -- --bail --maxWorkers=2`)
    - Runs the full Jest test suite

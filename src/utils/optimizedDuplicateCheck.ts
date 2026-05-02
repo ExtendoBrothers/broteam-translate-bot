@@ -2,8 +2,6 @@
  * Optimized duplicate checking with caching and performance improvements
  */
 
-import { logger } from './logger';
-
 // Simple LRU cache for duplicate checks
 class LRUCache<K, V> {
   private cache: Map<K, V>;
@@ -116,88 +114,3 @@ export function calculateSimilarity(text1: string, text2: string): number {
   return similarity;
 }
 
-/**
- * Optimized substring check with early exit
- */
-export function containsSubstring(text: string, substring: string): boolean {
-  if (substring.length > text.length) return false;
-  if (substring.length < 3) return false; // Too short to be meaningful
-
-  const normText = normalizeText(text);
-  const normSubstring = normalizeText(substring);
-
-  return normText.includes(normSubstring);
-}
-
-/**
- * Fast hash function for text comparison
- */
-export function hashText(text: string): string {
-  let hash = 0;
-  const normalized = normalizeText(text);
-  
-  for (let i = 0; i < normalized.length; i++) {
-    const char = normalized.charCodeAt(i);
-    hash = ((hash << 5) - hash) + char;
-    hash = hash & hash; // Convert to 32-bit integer
-  }
-  
-  return hash.toString(36);
-}
-
-/**
- * Batch similarity check - optimize when checking against multiple candidates
- */
-export function findMostSimilar(
-  text: string,
-  candidates: string[],
-  threshold: number = 0.8
-): { text: string; similarity: number } | null {
-  let bestMatch: { text: string; similarity: number } | null = null;
-  
-  const normalizedText = normalizeText(text);
-  const textWords = new Set(normalizedText.split(' '));
-
-  for (const candidate of candidates) {
-    // Quick pre-filter: if no common words, skip expensive calculation
-    const normalizedCandidate = normalizeText(candidate);
-    const candidateWords = new Set(normalizedCandidate.split(' '));
-    
-    const hasCommonWords = [...textWords].some(word => candidateWords.has(word));
-    if (!hasCommonWords && textWords.size > 0 && candidateWords.size > 0) {
-      continue;
-    }
-
-    const similarity = calculateSimilarity(text, candidate);
-    
-    if (similarity >= threshold && (!bestMatch || similarity > bestMatch.similarity)) {
-      bestMatch = { text: candidate, similarity };
-      
-      // Early exit if perfect match
-      if (similarity >= 0.99) {
-        break;
-      }
-    }
-  }
-
-  return bestMatch;
-}
-
-/**
- * Clear caches to free memory
- */
-export function clearDuplicateCheckCaches(): void {
-  similarityCache.clear();
-  normalizedTextCache.clear();
-  logger.info('Duplicate check caches cleared');
-}
-
-/**
- * Get cache statistics
- */
-export function getCacheStats(): { similarity: number; normalized: number } {
-  return {
-    similarity: similarityCache.size(),
-    normalized: normalizedTextCache.size()
-  };
-}
