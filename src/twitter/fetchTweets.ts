@@ -174,6 +174,12 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const [, , idStr, text] = match;
         const id = idStr;
         const trimmedText = text.trim();
+
+        // Prevent duplicate processing if this ID already came from another source in this fetch cycle
+        if (seenInThisCycle.has(id)) {
+          logger.info(`[DEDUP] Tweet ${id} already fetched from another source this cycle (Manual input duplicate)`);
+          continue;
+        }
         
         // Extract timestamp from Twitter snowflake ID since manual inputs might be old
         const createdAt = snowflakeToDateSafe(id);
@@ -191,6 +197,7 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
               displayName: targetUsername
             }
           });
+          seenInThisCycle.add(id);
         }
       }
     } else {
