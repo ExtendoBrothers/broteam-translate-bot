@@ -170,6 +170,9 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
       // Parse multiline entries: timestamp [id] text (text can span multiple lines until next timestamp)
       const entryRegex = /(\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?Z)\s*\[(\d+)\]\s*([\s\S]*?)(?=\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}|$)/g;
       let match;
+      const nowMs = Date.now();
+      const maxAgeDays = Number(config.MANUAL_INPUT_MAX_AGE_DAYS || 0);
+      const maxAgeMs = maxAgeDays > 0 ? maxAgeDays * 24 * 60 * 60 * 1000 : 0;
       while ((match = entryRegex.exec(content)) !== null) {
         const [, , idStr, text] = match;
         const id = idStr;
@@ -183,6 +186,12 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         
         // Extract timestamp from Twitter snowflake ID since manual inputs might be old
         const createdAt = snowflakeToDateSafe(id);
+
+        // Skip stale manual entries by source tweet age unless disabled.
+        if (maxAgeMs > 0 && nowMs - createdAt.getTime() > maxAgeMs) {
+          logger.info(`[MANUAL_INPUT] Skipping stale manual tweet ${id} (${createdAt.toISOString()}) older than ${maxAgeDays} day(s)`);
+          continue;
+        }
         
         const shouldProc = isDryRun || tweetTracker.shouldProcess(id, createdAt.toISOString());
         // fs.appendFileSync(path.join(process.cwd(), 'translation-logs', 'translation-debug.log'), `[DEBUG] Manual input match: id=${id}, text=${JSON.stringify(trimmedText)}, shouldProcess=${shouldProc}\n`, 'utf8');
@@ -440,8 +449,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const syndicationTweets = await fetchTweetsFromNitter(targetUsername, 40);
         let addedCount = 0;
         for (const t of syndicationTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Syndication fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
@@ -477,8 +492,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
         let addedCount = 0;
         for (const t of cacheTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Google Cache fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
@@ -492,8 +513,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
         let addedCount = 0;
         for (const t of searchTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Google Search fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
@@ -509,8 +536,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
       try {
         const jinaFallbackTweets = await fetchTweetsFromJina(targetUsername, 20);
         for (const t of jinaFallbackTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Jina fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
           }
         }
         logger.info(`Jina fallback retrieved ${tweets.length} tweet(s) after 429 error`);
@@ -546,8 +579,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const nitterTweets = await fetchFromNitterInstances(targetUsername, 20);
         let addedCount = 0;
         for (const t of nitterTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Nitter fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
@@ -561,8 +600,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const cacheTweets = await fetchFromGoogleCache(targetUsername, 20);
         let addedCount = 0;
         for (const t of cacheTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Google Cache fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
@@ -576,8 +621,14 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         const searchTweets = await fetchFromGoogleSearch(targetUsername, 20);
         let addedCount = 0;
         for (const t of searchTweets) {
+          if (seenInThisCycle.has(t.id)) {
+            logger.info(`[DEDUP] Tweet ${t.id} already fetched from another source this cycle (Google Search fallback duplicate)`);
+            continue;
+          }
+
           if (isDryRun || tweetTracker.shouldProcess(t.id, t.createdAt.toISOString())) {
             tweets.push(t);
+            seenInThisCycle.add(t.id);
             addedCount++;
           }
         }
