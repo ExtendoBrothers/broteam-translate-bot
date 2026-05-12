@@ -29,7 +29,7 @@ import { scoreHumor } from '../utils/humorScorer';
 import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { logger, rotateLogFile } from '../utils/logger';
 import { config } from '../config';
-import { isSpammyResult } from '../utils/spamFilter';
+import { isSpammyResult, containsSuspiciousDomain } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { emitLogLine } from '../utils/translationLogEmitter';
 import { weightedShuffle, recordNegatives, getWeightsForLangs } from '../utils/languageWeights';
@@ -98,10 +98,7 @@ function appendToDebugLog(content: string): void {
   } catch {
     // non-fatal — never crash the pipeline over a log write
   }
-  // Emit each non-empty line to the live SSE stream
-  for (const line of content.split('\n')) {
-    if (line.trim()) emitLogLine(line);
-  }
+  emitLogLine(content);
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -365,7 +362,7 @@ async function executeTranslationChain(
       const trimmedResult = result.trim();
 
       // Alt-lang retry on obviously broken results
-      if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+      if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/') || containsSuspiciousDomain(trimmedResult)) {
         logger.warn(`[${chainLabel}] Problematic result for ${lang}: '${result}'. Trying alt lang.`);
         const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
         if (altResult) result = altResult;
@@ -387,7 +384,7 @@ async function executeTranslationChain(
       recordSuccess(lang);
       translationAttempted = true;
       logger.info(`[${chainLabel}] ···${lang}: ${translationChain.substring(0, 60)}…`);
-      appendToDebugLog(`[DEBUG][${chainLabel}][${lang}] ${translationChain.replace(/\n/g, ' ')}\n`);
+      appendToDebugLog(`[DEBUG][${chainLabel}][${lang}] ${translationChain}\n`);
     } catch (err) {
       logger.error(`[${chainLabel}] Failed at ${lang}: ${err}`);
       recordFailure(lang);
@@ -402,7 +399,7 @@ async function executeTranslationChain(
       const finalEn = await translateText(translationChain, 'en', currentSource);
       translationChain = finalEn;
       if (shouldUppercase) translationChain = translationChain.toUpperCase();
-      appendToDebugLog(`[DEBUG][${chainLabel}][final-en] ${translationChain.replace(/\n/g, ' ')}\n`);
+      appendToDebugLog(`[DEBUG][${chainLabel}][final-en] ${translationChain}\n`);
     } catch (err) {
       logger.error(`[${chainLabel}] Failed final → en: ${err}`);
     }

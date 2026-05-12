@@ -2,11 +2,32 @@
  * Spam filtering utilities for translation results and feedback
  */
 
+const suspiciousDomainPatterns = [
+  /(?:https?:\/\/)?(?:www\.)?azerbaijan\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?azerbaijanphoto\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?eatin\.korea\b/i,
+  /sissyhypno/i,
+  /mctitittttvvvvvtvtepe\.com/i,
+  /(?:https?:\/\/)?(?:www\.)?eatkorea\b/i,
+];
+
 /**
  * Checks if a translation result is spammy based on word repetition and length
  * @param result The translation result text to check
  * @returns true if the result is considered spammy
  */
+export function containsSuspiciousDomain(result: string): boolean {
+  const lowerResult = result.toLowerCase();
+
+  for (const pattern of suspiciousDomainPatterns) {
+    if (pattern.test(lowerResult)) {
+      return true;
+    }
+  }
+
+  return false;
+}
+
 export function isSpammyResult(result: string): boolean {
   // Block if any word is repeated 10+ times or if result is over 5000 chars
   const wordCounts = Object.create(null);
@@ -18,13 +39,7 @@ export function isSpammyResult(result: string): boolean {
   if (result.length > 5000) return true;
   
   // Block suspicious domains that have appeared in poisoned translations
-  const suspiciousDomains = ['azerbaijanphoto.com', 'eatin.korea', 'sissyhypno', 'mctitittttvvvvvtvtepe.com', 'eatkorea'];
-  const lowerResult = result.toLowerCase();
-  for (const domain of suspiciousDomains) {
-    if (lowerResult.includes(domain)) {
-      return true;
-    }
-  }
+  if (containsSuspiciousDomain(result)) return true;
   
   // Additional checks for repetitive patterns
   const trimmed = result.trim();

@@ -19,6 +19,9 @@ Thumbs.db
 # VS Code
 .vscode/
 
+# Local Copilot instruction overrides
+.github/copilot-instructions.md
+
 # Runtime state files
 .bot-lock
 .bot-instance.lock

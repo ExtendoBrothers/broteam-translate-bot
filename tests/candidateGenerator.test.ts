@@ -19,6 +19,7 @@ jest.mock('../src/translator/lexicon', () => ({
 jest.mock('../src/utils/spamFilter', () => ({
   isSpammyResult: jest.fn().mockReturnValue(false),
   isSpammyFeedbackEntry: jest.fn().mockReturnValue(false),
+  containsSuspiciousDomain: jest.fn().mockReturnValue(false),
 }));
 
 jest.mock('../src/translator/googleTranslate', () => ({
