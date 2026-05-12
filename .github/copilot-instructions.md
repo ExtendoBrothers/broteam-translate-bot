@@ -38,6 +38,12 @@ Twitter translation bot that fetches tweets from @BroTeamPills, translates them 
 
 **Branching**: `development` is primary branch. Feature branches → PR to `development` → CI validation → merge. `main` only updated via approved PRs.
 
+**Bot Start/Restart Policy (Required)**:
+- ALWAYS use `./scripts/restart-clean.ps1` for bot start/restart/redeploy operations.
+- NEVER use direct `pm2 restart`, `pm2 start`, `npm start`, or direct `node dist/src/index.js` for operational restarts.
+- Rationale: `restart-clean.ps1` handles lock cleanup, orphan process termination, rebuild, version sync, and clean PM2 launch in the correct order.
+- If restart is needed after code changes, run only `./scripts/restart-clean.ps1`.
+
 **Build Commands**:
 - `npm run build`: Compile TypeScript (Must pass before commits)
 - `npm test`: Run all 388 tests
