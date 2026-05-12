@@ -37,6 +37,8 @@ import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translato
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
 
+type TranslationLogStep = { lang: string; text: string };
+
 // Helper function to append to translation debug log with rotation
 function appendToDebugLog(content: string) {
   const debugLogPath = path.join(process.cwd(), 'translation-logs', 'translation-debug.log');
@@ -363,7 +365,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     inputText: string,
     useOldschool: boolean,
     chainLabel: string
-  ): Promise<{ result: string; attempted: boolean }> {
+  ): Promise<{ result: string; attempted: boolean; steps: TranslationLogStep[] }> {
     const shouldUppercase = isAllCaps(inputText);
     let translationChain = shouldUppercase ? inputText.toLowerCase() : inputText;
     const selectedLangs = getTranslationLanguages(useOldschool);
@@ -371,6 +373,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     let consecutiveSame = 0;
     let previousResult = translationChain;
     let translationAttempted = false;
+    const chainSteps: TranslationLogStep[] = [];
 
     for (const lang of selectedLangs) {
       if (isCircuitOpen(lang) && lang !== 'en') {
@@ -404,6 +407,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         translationAttempted = true;
         logger.info(`[${chainLabel}] Translated through ${lang}: ${translationChain.substring(0, 50)}...`);
         logTranslationStep(`${chainLabel}-${lang}`, translationChain);
+        chainSteps.push({ lang: `${chainLabel}-${lang}`, text: translationChain });
       } catch (error: unknown) {
         logger.error(`[${chainLabel}] Failed to translate for ${lang}: ${error}`);
         recordFailure(lang);
@@ -422,6 +426,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         }
         logger.info(`[${chainLabel}] Final English result: ${translationChain.substring(0, 50)}...`);
         logTranslationStep(`${chainLabel}-final-en`, translationChain);
+        chainSteps.push({ lang: `${chainLabel}-final-en`, text: translationChain });
       } catch (error: unknown) {
         logger.error(`[${chainLabel}] Failed to translate back to English: ${error}`);
       }
@@ -435,7 +440,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
     }
 
-    return { result: translationChain, attempted: translationAttempted };
+    return { result: translationChain, attempted: translationAttempted, steps: chainSteps };
   }
 
   // Helper function to execute a translation chain with retries until acceptable
@@ -445,11 +450,12 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     chainLabel: string,
     postedOutputs: string[],
     maxRetries: number = 33
-  ): Promise<{ result: string; acceptable: boolean; attempts: number }> {
+  ): Promise<{ result: string; acceptable: boolean; attempts: number; steps: TranslationLogStep[] }> {
     let attempts = 0;
     let acceptable = false;
     let finalResult = inputText;
-    const englishResults: string[] = []; // Collect English results for fallback
+    const englishResults: Array<{ result: string; steps: TranslationLogStep[] }> = []; // Collect English results for fallback
+    let selectedSteps: TranslationLogStep[] = [];
 
     while (!acceptable && attempts < maxRetries) {
       attempts++;
@@ -464,6 +470,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
 
       finalResult = chainResult.result;
+      selectedSteps = chainResult.steps;
       const check = isAcceptable(finalResult, inputText, postedOutputs);
       const isResultSpammy = isSpammyResult(finalResult);
       acceptable = check.acceptable && !isResultSpammy;
@@ -530,7 +537,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       
       // Collect English results for fallback selection
       if (detectedLang === 'en') {
-        englishResults.push(finalResult);
+        englishResults.push({ result: finalResult, steps: chainResult.steps });
       }
       
       try {
@@ -567,8 +574,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         let bestScore = -1;
         let funniest = englishResults[0];
         for (const res of englishResults) {
-          const diff = differenceScore(res, inputText);
-          const unexp = unexpectednessScore(res, inputText);
+          const diff = differenceScore(res.result, inputText);
+          const unexp = unexpectednessScore(res.result, inputText);
           const score = diff + unexp * 2; // Weight unexpectedness higher
           if (score > bestScore) {
             bestScore = score;
@@ -576,13 +583,14 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
           }
         }
         logger.warn(`[${chainLabel}] Using funniest English result from ${englishResults.length} candidates (score: ${bestScore.toFixed(2)})`);
-        finalResult = funniest;
+        finalResult = funniest.result;
+        selectedSteps = funniest.steps;
       } else {
         logger.warn(`[${chainLabel}] No English results found, using last attempt result`);
       }
     }
 
-    return { result: finalResult, acceptable, attempts };
+    return { result: finalResult, acceptable, attempts, steps: selectedSteps };
   }
 
   // Helper function to collect multiple acceptable results from random chain
@@ -591,9 +599,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     postedOutputs: string[],
     targetCount: number = 3,
     maxTotalAttempts: number = 33
-  ): Promise<Array<{ result: string; attempts: number }>> {
-    const acceptableResults: Array<{ result: string; attempts: number }> = [];
-    const englishResults: Array<{ result: string; attempts: number }> = []; // Track all English results for fallback
+  ): Promise<Array<{ result: string; attempts: number; steps: TranslationLogStep[] }>> {
+    const acceptableResults: Array<{ result: string; attempts: number; steps: TranslationLogStep[] }> = [];
+    const englishResults: Array<{ result: string; attempts: number; steps: TranslationLogStep[] }> = []; // Track all English results for fallback
     let totalAttempts = 0;
     
     logger.info(`[RANDOM_COLLECT] Collecting ${targetCount} acceptable random chain results...`);
@@ -672,7 +680,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       
       // Collect English results for potential fallback
       if (detectedLang === 'en') {
-        englishResults.push({ result: chainResult.result, attempts: totalAttempts });
+        englishResults.push({ result: chainResult.result, attempts: totalAttempts, steps: chainResult.steps });
       }
       
       try {
@@ -695,7 +703,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       }
       
       if (check.acceptable && !isResultSpammy) {
-        acceptableResults.push({ result: chainResult.result, attempts: totalAttempts });
+        acceptableResults.push({ result: chainResult.result, attempts: totalAttempts, steps: chainResult.steps });
         logger.info(`[RANDOM_COLLECT] ✓ Collected result ${acceptableResults.length}/${targetCount}`);
       } else {
         const reasons = [check.reason];
@@ -727,7 +735,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
         const selectedFallbacks = scoredResults.slice(0, needed);
         
         for (const fallback of selectedFallbacks) {
-          acceptableResults.push({ result: fallback.result, attempts: fallback.attempts });
+          acceptableResults.push({ result: fallback.result, attempts: fallback.attempts, steps: fallback.steps });
           logger.info(`[RANDOM_COLLECT] ✓ Added fallback result (score: ${fallback.score.toFixed(2)}) from attempt ${fallback.attempts}`);
         }
       } else {
@@ -977,9 +985,9 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     const oldschoolChainResult = await executeChainWithRetries(tweet.text, true, 'OLDSCHOOL', postedOutputs, 1);
 
     // Prepare all candidates for humor comparison
-    const allCandidates: Array<{ result: string; source: string; attempts: number; acceptable: boolean }> = [
-      ...randomResults.map((r, idx) => ({ result: r.result, source: `RANDOM_${idx + 1}`, attempts: r.attempts, acceptable: true })),
-      { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable }
+    const allCandidates: Array<{ result: string; source: string; attempts: number; acceptable: boolean; steps: TranslationLogStep[] }> = [
+      ...randomResults.map((r, idx) => ({ result: r.result, source: `RANDOM_${idx + 1}`, attempts: r.attempts, acceptable: true, steps: r.steps })),
+      { result: oldschoolChainResult.result, source: 'OLDSCHOOL', attempts: oldschoolChainResult.attempts, acceptable: oldschoolChainResult.acceptable, steps: oldschoolChainResult.steps }
     ];
 
     // All RANDOM candidates should already be acceptable (from collectMultipleRandomResults)
@@ -1227,7 +1235,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
     const selectedChain = bestCandidate.source;
     const chosenHumorScore = bestCandidate.humorScore.score;
 
-    const translationLogSteps: { lang: string, text: string }[] = [];
+    const translationLogSteps = bestCandidate.steps;
 
     // Log the initial result evaluation (if we have one)
     if (acceptable && translationAttempted) {
