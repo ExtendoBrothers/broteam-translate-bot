@@ -28,7 +28,7 @@ import { postTracker } from '../utils/postTracker';
 import { scoreHumor } from '../utils/humorScorer';
 import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
-import { isSpammyResult, isSpammyFeedbackEntry } from '../utils/spamFilter';
+import { isSpammyResult, isSpammyFeedbackEntry, containsSuspiciousDomain } from '../utils/spamFilter';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
 import fs from 'fs';
 import path from 'path';
@@ -383,7 +383,7 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       try {
         let result = await translateText(translationChain, lang, currentSource);
         const trimmedResult = result.trim();
-        if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+        if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/') || containsSuspiciousDomain(trimmedResult)) {
           logger.warn(`[${chainLabel}] Translation for ${lang} returned problematic result: '${result}'. Retrying with a different language.`);
           const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
           if (altResult) {

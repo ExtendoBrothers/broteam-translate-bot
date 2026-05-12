@@ -29,7 +29,7 @@ import { scoreHumor } from '../utils/humorScorer';
 import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { logger, rotateLogFile } from '../utils/logger';
 import { config } from '../config';
-import { isSpammyResult } from '../utils/spamFilter';
+import { isSpammyResult, containsSuspiciousDomain } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { emitLogLine } from '../utils/translationLogEmitter';
 import { weightedShuffle, recordNegatives, getWeightsForLangs } from '../utils/languageWeights';
@@ -362,7 +362,7 @@ async function executeTranslationChain(
       const trimmedResult = result.trim();
 
       // Alt-lang retry on obviously broken results
-      if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/')) {
+      if (['/', ':', '.', '', ' '].includes(trimmedResult) || trimmedResult.startsWith('/') || containsSuspiciousDomain(trimmedResult)) {
         logger.warn(`[${chainLabel}] Problematic result for ${lang}: '${result}'. Trying alt lang.`);
         const altResult = await retryWithDifferentLang(translationChain, trimmedResult, [lang]);
         if (altResult) result = altResult;
