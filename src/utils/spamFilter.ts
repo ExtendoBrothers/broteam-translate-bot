@@ -2,6 +2,15 @@
  * Spam filtering utilities for translation results and feedback
  */
 
+const suspiciousDomainPatterns = [
+  /(?:https?:\/\/)?(?:www\.)?azerbaijan\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?azerbaijanphoto\.com\b/i,
+  /(?:https?:\/\/)?(?:www\.)?eatin\.korea\b/i,
+  /sissyhypno/i,
+  /mctitittttvvvvvtvtepe\.com/i,
+  /(?:https?:\/\/)?(?:www\.)?eatkorea\b/i,
+];
+
 /**
  * Checks if a translation result is spammy based on word repetition and length
  * @param result The translation result text to check
@@ -9,14 +18,6 @@
  */
 export function containsSuspiciousDomain(result: string): boolean {
   const lowerResult = result.toLowerCase();
-  const suspiciousDomainPatterns = [
-    /(?:https?:\/\/)?(?:www\.)?azerbaijan\.com\b/i,
-    /(?:https?:\/\/)?(?:www\.)?azerbaijanphoto\.com\b/i,
-    /(?:https?:\/\/)?(?:www\.)?eatin\.korea\b/i,
-    /sissyhypno/i,
-    /mctitittttvvvvvtvtepe\.com/i,
-    /(?:https?:\/\/)?(?:www\.)?eatkorea\b/i,
-  ];
 
   for (const pattern of suspiciousDomainPatterns) {
     if (pattern.test(lowerResult)) {
