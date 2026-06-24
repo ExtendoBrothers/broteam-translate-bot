@@ -469,7 +469,7 @@ async function runChainWithRetries(
     } else {
       const reasons = spammy ? `${check.reason}; spammy content` : check.reason;
       logger.warn(`[${chainLabel}] Attempt ${attempts} unacceptable: ${reasons}`);
-      recordNegatives(languages);
+      recordNegatives(languages, { multiplier: chainLabel === 'Oldschool' ? 1 : 2 });
     }
 
     // Maintain pool of English results for best-of fallback

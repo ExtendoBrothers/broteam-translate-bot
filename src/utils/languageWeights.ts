@@ -164,14 +164,16 @@ export function recordPositives(langs: string[]): void {
 /**
  * Record negative signals for a set of languages.
  * Called when a chain attempt fails the acceptability check and must be retried.
+ * A multiplier can be supplied to scale the penalty for chain-specific bias.
  */
-export function recordNegatives(langs: string[]): void {
+export function recordNegatives(langs: string[], opts: { multiplier?: number } = {}): void {
   if (!langs.length) return;
+  const multiplier = opts.multiplier ?? 1;
   const data = loadWeights();
   for (const lang of langs) {
     if (lang === 'en') continue;
     ensureLang(data, lang);
-    data[lang].negatives += 1;
+    data[lang].negatives += multiplier;
   }
   saveWeights(data);
 }

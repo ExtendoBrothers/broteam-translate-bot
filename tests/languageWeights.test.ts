@@ -210,6 +210,12 @@ describe('recordNegatives()', () => {
     expect(capturedWrite).toBeNull();
   });
 
+  it('applies the configured multiplier when recording negatives', () => {
+    recordNegatives(['ja'], { multiplier: 2 });
+    const written = capturedWrite as Record<string, { positives: number; negatives: number }>;
+    expect(written['ja'].negatives).toBe(2);
+  });
+
   it('persists to disk (atomicWriteJsonSync is called)', () => {
     const { atomicWriteJsonSync } = jest.requireMock('../src/utils/safeFileOps') as {
       atomicWriteJsonSync: jest.Mock;
