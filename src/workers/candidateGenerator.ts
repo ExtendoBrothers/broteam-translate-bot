@@ -32,6 +32,7 @@ import { config } from '../config';
 import { isSpammyResult, containsSuspiciousDomain } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { emitLogLine } from '../utils/translationLogEmitter';
+import { getMinimumLengthPercent, getMinimumLengthRatio } from '../utils/translationQuality';
 import { weightedShuffle, recordNegatives, getWeightsForLangs } from '../utils/languageWeights';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
@@ -108,7 +109,7 @@ function appendToDebugLog(content: string): void {
 interface CircuitState { failures: number; openedAt?: number; }
 const circuit: Record<string, CircuitState> = {};
 const FAILURE_THRESHOLD = 5;
-const CIRCUIT_COOLDOWN_MS = 60 * 60 * 1000; // 1 hour
+const CIRCUIT_COOLDOWN_MS = 20 * 60 * 1000; // 20 minutes
 
 function isCircuitOpen(lang: string): boolean {
   const state = circuit[lang];
@@ -155,10 +156,10 @@ const delay = (ms: number) => new Promise<void>(resolve => setTimeout(resolve, m
 /** Returns per-hop delay in ms. Reads env var at call-time so tests can set it to 0. */
 function getHopDelay(): number {
   const raw = process.env.TRANSLATION_HOP_DELAY_MS;
-  const parsed = Number(raw ?? '5000');
-  const base = Number.isFinite(parsed) ? parsed : 5000;
+  const parsed = Number(raw ?? '2000');
+  const base = Number.isFinite(parsed) ? parsed : 2000;
   if (base === 0) return 0;
-  return base + Math.floor(Math.random() * 1200);
+  return base + Math.floor(Math.random() * 800);
 }
 
 function shuffleArray<T>(array: T[]): T[] {
@@ -239,7 +240,8 @@ function isAcceptable(
     .replace(/\s{2,}/g, ' ')
     .trim();
 
-  const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+  const minimumLengthRatio = getMinimumLengthRatio(originalTextOnly);
+  const tooShort = textOnly.length < Math.ceil(minimumLengthRatio * originalTextOnly.length);
   const empty = textOnly.length <= 1;
   const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
   const sameAsInput = textOnly === originalTextOnly;
@@ -321,7 +323,7 @@ function isAcceptable(
   const notEnglish = detectedLang !== 'en';
 
   const reasons: string[] = [];
-  if (tooShort) reasons.push(`Too short: ${textOnly.length} < 33% of input (${originalTextOnly.length})`);
+  if (tooShort) reasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input (${originalTextOnly.length})`);
   if (tooLong) reasons.push(`Too long: ${trimmed.length} > 288 chars`);
   if (empty) reasons.push('Empty output');
   if (punctuationOnly) reasons.push('Punctuation only');

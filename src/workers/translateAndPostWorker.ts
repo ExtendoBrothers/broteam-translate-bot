@@ -30,6 +30,7 @@ import { evaluateHeuristics } from '../utils/heuristicEvaluator';
 import { checkForDuplicates, recordSuccessfulPost, initializeDuplicatePrevention } from '../utils/duplicatePrevention';
 import { isSpammyResult, isSpammyFeedbackEntry, containsSuspiciousDomain } from '../utils/spamFilter';
 import { atomicWriteTextSync } from '../utils/safeFileOps';
+import { getMinimumLengthPercent, getMinimumLengthRatio } from '../utils/translationQuality';
 import fs from 'fs';
 import path from 'path';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
@@ -63,8 +64,9 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
   const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
 
-  // Check if output is too short (less than 33% of input text length)
-  const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+  // Check if output is too short.
+  const minimumLengthRatio = getMinimumLengthRatio(originalTextOnly);
+  const tooShort = textOnly.length < Math.ceil(minimumLengthRatio * originalTextOnly.length);
   // Check if output is empty or nearly empty
   const empty = textOnly.length <= 1;
   // Check if output consists only of punctuation or symbols
@@ -142,7 +144,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     const detectedLang = 'non-latin';
     const notEnglish = true;
     const unacceptableReasons: string[] = [];
-    if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+    if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input text (${originalTextOnly.length})`);
     if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
     if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
     if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
@@ -185,7 +187,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
-  if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+  if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input text (${originalTextOnly.length})`);
   if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
@@ -223,7 +225,7 @@ let lastPostTime = 0;
 interface CircuitState { failures: number; openedAt?: number; }
 const circuit: Record<string, CircuitState> = {};
 const FAILURE_THRESHOLD = 5; // Open circuit after 5 failures
-const CIRCUIT_COOLDOWN_MS = 1 * 60 * 60 * 1000; // 1 hour cooldown
+const CIRCUIT_COOLDOWN_MS = 20 * 60 * 1000; // 20 minute cooldown
 
 // Check if circuit is open for a language (skip if too many recent failures)
 function isCircuitOpen(lang: string): boolean {
@@ -261,7 +263,7 @@ function recordSuccess(lang: string): void {
   }
 }
 
-function jitteredTranslationDelay(baseMs = 5000) {
+function jitteredTranslationDelay(baseMs = 2000) {
   // Add 0-1200ms jitter to spread requests
   return baseMs + Math.floor(Math.random() * 1200);
 }
@@ -482,7 +484,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       
-      const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+      const minimumLengthRatio = getMinimumLengthRatio(originalTextOnly);
+      const tooShort = textOnly.length < Math.ceil(minimumLengthRatio * originalTextOnly.length);
       const empty = textOnly.length <= 1;
       const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
       const duplicate = postedOutputs.includes(trimmed);
@@ -628,7 +631,8 @@ export const translateAndPostWorker = async (): Promise<WorkerResult> => {
       const textOnly = trimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
       
-      const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+      const minimumLengthRatio = getMinimumLengthRatio(originalTextOnly);
+      const tooShort = textOnly.length < Math.ceil(minimumLengthRatio * originalTextOnly.length);
       const empty = textOnly.length <= 1;
       const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
       const duplicate = postedOutputs.includes(trimmed);
