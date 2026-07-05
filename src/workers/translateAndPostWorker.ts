@@ -55,6 +55,7 @@ function appendToDebugLog(content: string) {
 // Checks for length, content validity, duplicates, language, and problematic characters.
 // Returns whether acceptable and a string of failure reasons.
 function isAcceptable(finalResult: string, originalText: string, postedOutputs: string[]): { acceptable: boolean; reason: string } {
+  const MAX_ACCEPTABLE_LENGTH = 1000;
   const trimmed = finalResult.trim();
   const originalTrimmed = originalText.trim();
 
@@ -130,8 +131,8 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     }
   }
 
-  // Check if output exceeds Twitter character limit (280 + 8 buffer for edge cases)
-  const tooLong = trimmed.length > 288;
+  // Allow longer outputs so they can be split manually after acceptability checks.
+  const tooLong = trimmed.length > MAX_ACCEPTABLE_LENGTH;
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
   // Quick reject: Check for non-Latin scripts that should never be classified as English
@@ -145,7 +146,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     const notEnglish = true;
     const unacceptableReasons: string[] = [];
     if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input text (${originalTextOnly.length})`);
-    if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
+    if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > ${MAX_ACCEPTABLE_LENGTH} characters`);
     if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
     if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
     if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
@@ -188,7 +189,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
   // Collect all failure reasons
   const unacceptableReasons: string[] = [];
   if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input text (${originalTextOnly.length})`);
-  if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > 288 characters`);
+  if (tooLong) unacceptableReasons.push(`Too long: ${trimmed.length} > ${MAX_ACCEPTABLE_LENGTH} characters`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
   if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');

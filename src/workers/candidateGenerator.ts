@@ -222,6 +222,7 @@ function isAcceptable(
   finalResult: string,
   originalText: string
 ): { acceptable: boolean; reason: string } {
+  const MAX_ACCEPTABLE_LENGTH = 1000;
   const trimmed = finalResult.trim();
   const originalTrimmed = originalText.trim();
   const tokenPattern = /__XTOK_[A-Z]+_\d+_[A-Za-z0-9+/=]+__/g;
@@ -246,7 +247,7 @@ function isAcceptable(
   const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
   const sameAsInput = textOnly === originalTextOnly;
   const problematicChar = ['/', ':', '.', '', ' '].includes(textOnly) || textOnly.startsWith('/');
-  const tooLong = trimmed.length > 288;
+  const tooLong = trimmed.length > MAX_ACCEPTABLE_LENGTH;
 
   // Repetition / spam pattern checks
   const spamPatterns = [
@@ -324,7 +325,7 @@ function isAcceptable(
 
   const reasons: string[] = [];
   if (tooShort) reasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input (${originalTextOnly.length})`);
-  if (tooLong) reasons.push(`Too long: ${trimmed.length} > 288 chars`);
+  if (tooLong) reasons.push(`Too long: ${trimmed.length} > ${MAX_ACCEPTABLE_LENGTH} chars`);
   if (empty) reasons.push('Empty output');
   if (punctuationOnly) reasons.push('Punctuation only');
   if (sameAsInput) reasons.push('Same as input');
