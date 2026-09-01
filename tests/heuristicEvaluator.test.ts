@@ -23,11 +23,13 @@ jest.mock('../src/utils/logger', () => ({
   },
 }));
 
-import { getWeights, updateWeightsFromFeedback } from '../src/utils/heuristicEvaluator';
+let getWeights: typeof import('../src/utils/heuristicEvaluator').getWeights;
+let updateWeightsFromFeedback: typeof import('../src/utils/heuristicEvaluator').updateWeightsFromFeedback;
 
 describe('updateWeightsFromFeedback()', () => {
   beforeEach(() => {
     jest.resetModules();
+    ({ getWeights, updateWeightsFromFeedback } = require('../src/utils/heuristicEvaluator'));
   });
 
   it('reduces the oldschoolChain loss by one third when oldschool loses', () => {

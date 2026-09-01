@@ -108,5 +108,6 @@ Write-Ok "Build complete"
 # 6. Done
 # ---------------------------------------------------------------------------
 Write-Step "Setup complete"
-Write-Host "Start the bot with:  npm start   (or npm run dev for auto-reload)"
+Write-Host "Local run:            npm start   (or npm run dev for auto-reload)"
+Write-Host "Deployment/restart:   ./scripts/restart-clean.ps1"
 Write-Host "Dashboard:           http://localhost:3456"

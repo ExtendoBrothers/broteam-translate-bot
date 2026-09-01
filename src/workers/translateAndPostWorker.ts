@@ -131,7 +131,7 @@ function isAcceptable(finalResult: string, originalText: string, postedOutputs: 
     }
   }
 
-  // Allow longer outputs so they can be split manually after acceptability checks.
+  // Allow longer outputs because postTweet() handles splitting when required.
   const tooLong = trimmed.length > MAX_ACCEPTABLE_LENGTH;
 
   // Detect language using langdetect library on text-only content (expects 'en' for English)
