@@ -56,7 +56,7 @@ jobs:
           echo "Low: ${{ steps.audit.outputs.low }}"
 
       - name: Create or update dependency security issue
-        if: ${{ steps.audit.outputs.critical != '0' || steps.audit.outputs.high != '0' || steps.audit.outputs.moderate != '0' }}
+        if: ${{ steps.audit.outputs.critical != '0' || steps.audit.outputs.high != '0' || steps.audit.outputs.moderate != '0' || steps.audit.outputs.low != '0' }}
         uses: actions/github-script@v7
         with:
           script: |
