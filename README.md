@@ -83,6 +83,17 @@ broteam-translate-bot/
 
 ### Installation
 
+**One-click setup (Windows):**
+```powershell
+git clone https://github.com/ExtendoBrothers/broteam-translate-bot.git
+cd broteam-translate-bot
+npm install
+npm run setup
+```
+`npm run setup` checks your Node version, installs dependencies, creates `.env` from `.env.example` if missing, starts the LibreTranslate Docker container, waits for it to come up, and builds the project. When it finishes, just run `npm start`.
+
+**Manual steps** (if you'd rather do it yourself, or aren't on Windows):
+
 1. **Clone and install:**
    ```powershell
    git clone https://github.com/ExtendoBrothers/broteam-translate-bot.git
@@ -92,13 +103,13 @@ broteam-translate-bot/
 
 2. **Start LibreTranslate:**
    ```powershell
-   docker-compose up -d libre
+   docker-compose up -d libretranslate
    ```
 
 3. **Configure environment:**
    ```powershell
    cp .env.example .env
-   # Only DASHBOARD_PORT and LIBRE_TRANSLATE_URL are needed to get started
+   # Only DASHBOARD_PORT and LIBRETRANSLATE_URL are needed to get started
    ```
 
 4. **Run tests:**
@@ -123,7 +134,7 @@ broteam-translate-bot/
 
 | Variable | Default | Description |
 |----------|---------|-------------|
-| `LIBRE_TRANSLATE_URL` | `http://localhost:5000/translate` | LibreTranslate endpoint |
+| `LIBRETRANSLATE_URL` | `http://127.0.0.1:5000/translate` | LibreTranslate endpoint |
 | `LIBRE_TRANSLATE_API_KEY` | — | API key if your instance requires one |
 | `CANDIDATE_CHAIN_DEPTH` | `6` | Pivot-language hops per chain (higher = slower, more distortion) |
 | `OLDSCHOOL_MODE` | `false` | Use fixed chains instead of randomized |
@@ -227,7 +238,7 @@ See [DUPLICATE_PREVENTION.md](DUPLICATE_PREVENTION.md) for details.
 
 ```powershell
 # Start LibreTranslate
-docker-compose up -d libre
+docker-compose up -d libretranslate
 
 # Check it's healthy
 curl http://localhost:5000/languages
@@ -235,6 +246,8 @@ curl http://localhost:5000/languages
 # View logs
 docker logs libretranslate
 ```
+
+**First run note:** `LT_UPDATE_MODELS=true` makes the container download all 49 language models on first start, which can take several minutes over a slow connection and may exceed the container's `start_period: 60s` healthcheck window (it'll just report `unhealthy`/`starting` until the download finishes — check progress with `docker logs -f libretranslate` rather than assuming it's broken).
 
 If LibreTranslate is unreachable, translation jobs are marked as `error` and shown with an error badge in the dashboard. The bot keeps running.
 
@@ -251,8 +264,9 @@ If LibreTranslate is unreachable, translation jobs are marked as `error` and sho
 - Check `combined.log` for fetch errors
 
 ### Translations all show as error
-- LibreTranslate is likely down: `docker-compose restart libre`
-- Verify `LIBRE_TRANSLATE_URL` in `.env`
+- LibreTranslate is likely down: `docker-compose restart libretranslate`
+- Verify `LIBRETRANSLATE_URL` in `.env`
+- On first run, LibreTranslate needs a few minutes to download language models — check `docker logs -f libretranslate`
 
 ### Tests failing
 ```powershell
