@@ -87,10 +87,9 @@ broteam-translate-bot/
 ```powershell
 git clone https://github.com/ExtendoBrothers/broteam-translate-bot.git
 cd broteam-translate-bot
-npm install
 npm run setup
 ```
-`npm run setup` checks your Node version, installs dependencies, creates `.env` from `.env.example` if missing, starts the LibreTranslate Docker container, waits for it to come up, and builds the project. When it finishes, just run `npm start`.
+`npm run setup` checks your Node version, installs dependencies, creates `.env` from `.env.example` if missing, starts the LibreTranslate Docker container, waits for it to come up, and builds the project. For a local run, use `npm start`; for deployment or restart, use `./scripts/restart-clean.ps1`.
 
 **Manual steps** (if you'd rather do it yourself, or aren't on Windows):
 
