@@ -7,6 +7,7 @@
   },
   "main": "dist/src/index.js",
   "scripts": {
+    "setup": "powershell -ExecutionPolicy Bypass -File scripts/setup.ps1",
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "manual": "node dist/src/index.js",
@@ -35,7 +36,7 @@
     "winston": "^3.8.2"
   },
   "optionalDependencies": {
-    "onnxruntime-node": "^1.26.0"
+    "onnxruntime-node": "^1.29.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
@@ -46,14 +47,14 @@
     "@typescript-eslint/parser": "^8.59.3",
     "eslint": "^10.4.0",
     "jest": "^30.4.2",
-    "pm2": "^7.0.1",
+    "pm2": "^7.0.4",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.1",
     "ts-node-dev": "^2.0.0",
     "typescript": "^6.0.3"
   },
   "overrides": {
-    "systeminformation": ">=5.30.8",
+    "systeminformation": ">=5.33.7",
     "flatted": "$flatted",
     "handlebars": ">=4.7.9"
   },

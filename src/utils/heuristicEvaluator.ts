@@ -370,7 +370,8 @@ export function updateWeightsFromFeedback(
       w[rule].weight += LEARNING_RATE;
       changed = true;
     } else if (lostFired && !wonFired) {
-      w[rule].weight -= LEARNING_RATE;
+      const lossScale = rule === 'oldschoolChain' ? 1 / 3 : 1;
+      w[rule].weight -= LEARNING_RATE * lossScale;
       changed = true;
     }
   }

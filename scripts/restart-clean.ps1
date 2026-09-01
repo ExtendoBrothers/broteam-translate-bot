@@ -1,6 +1,8 @@
 # PowerShell script to guarantee a clean build and PM2 restart
 # Usage: ./scripts/restart-clean.ps1
 
+$script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
+
 # ---------------------------------------------------------------------------
 # Helper: gracefully shut down all known bot instances before rebuilding.
 # Order of operations:
@@ -10,7 +12,7 @@
 #   4. Remove the lock file
 # ---------------------------------------------------------------------------
 function Stop-AllBotInstances {
-    $lockFile = ".bot-instance.lock"
+    $lockFile = Join-Path $script:RepoRoot ".bot-instance.lock"
 
     if (Test-Path $lockFile) {
         try {
@@ -84,6 +86,9 @@ function Stop-AllBotInstances {
 # ---------------------------------------------------------------------------
 
 Write-Host "Fetching latest tags from remote..."
+Push-Location $script:RepoRoot
+try {
+
 git fetch --tags
 
 Write-Host ""
@@ -93,7 +98,7 @@ Write-Host "==> All instances stopped."
 Write-Host ""
 
 Write-Host "Removing dist directory..."
-Remove-Item -Recurse -Force dist -ErrorAction SilentlyContinue
+Remove-Item -Recurse -Force (Join-Path $script:RepoRoot 'dist') -ErrorAction SilentlyContinue
 
 Write-Host "Building project..."
 npm run build
@@ -104,4 +109,19 @@ node scripts/update-package-version.js
 Write-Host "Starting PM2 bot with fresh environment..."
 pm2 start ecosystem.config.js --only broteam-translate-bot
 
+if ($LASTEXITCODE -ne 0) {
+    throw "PM2 start failed. Verify ecosystem.config.js exists in repo root and PM2 is installed."
+}
+
+Write-Host "Starting PM2 dashboard..."
+pm2 start ecosystem.config.js --only pm2-dashboard
+
+if ($LASTEXITCODE -ne 0) {
+    throw "PM2 dashboard start failed. Verify pm2-dashboard is defined in ecosystem.config.js."
+}
+
 Write-Host "Done. Bot is running the latest build with fresh environment."
+}
+finally {
+    Pop-Location
+}

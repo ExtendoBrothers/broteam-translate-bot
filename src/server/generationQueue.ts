@@ -18,6 +18,11 @@ interface Job {
   tweet: Tweet;
 }
 
+function isJobStillGenerating(queueId: string): boolean {
+  const item = candidateStore.getById(queueId);
+  return item?.status === 'generating';
+}
+
 class GenerationQueue {
   private pending: Job[] = [];
   private running = false;
@@ -44,12 +49,26 @@ class GenerationQueue {
   private async _run(job: Job): Promise<void> {
     logger.info(`[GenQueue] Starting generation for ${job.queueId} (${this.pending.length} waiting)`);
     try {
+      if (!isJobStillGenerating(job.queueId)) {
+        logger.info(`[GenQueue] Skipping ${job.queueId} because it is no longer generating`);
+        return;
+      }
+
       const candidates = await generateCandidates(job.tweet);
+      if (!isJobStillGenerating(job.queueId)) {
+        logger.info(`[GenQueue] Discarded results for ${job.queueId} because it was skipped or completed elsewhere`);
+        return;
+      }
+
       candidateStore.setReady(job.queueId, candidates);
       logger.info(`[GenQueue] Done: ${job.queueId}`);
     } catch (err) {
-      candidateStore.setError(job.queueId, String(err));
-      logger.error(`[GenQueue] Failed: ${job.queueId}: ${err}`);
+      if (isJobStillGenerating(job.queueId)) {
+        candidateStore.setError(job.queueId, String(err));
+        logger.error(`[GenQueue] Failed: ${job.queueId}: ${err}`);
+      } else {
+        logger.info(`[GenQueue] Ignored error for ${job.queueId} because it is no longer generating`);
+      }
     } finally {
       this.running = false;
       // Prune tweet tracker to prevent file growing unboundedly (same as main bot)

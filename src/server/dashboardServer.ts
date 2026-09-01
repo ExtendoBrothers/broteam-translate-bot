@@ -23,7 +23,6 @@ import { generationQueue } from './generationQueue';
 import { fetchTweets } from '../twitter/fetchTweets';
 import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
-import { atomicWriteTextSync } from '../utils/safeFileOps';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
 import { recordPositives } from '../utils/languageWeights';
@@ -140,41 +139,22 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
 
     const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
 
-    // Read + dedup existing entries
-    let existingEntries: typeof feedbackEntry[] = [];
-    if (fs.existsSync(feedbackPath)) {
-      try {
-        const content = fs.readFileSync(feedbackPath, 'utf8');
-        for (const line of content.split('\n').filter(l => l.trim())) {
-          existingEntries.push(JSON.parse(line.trim()));
-        }
-      } catch (e) {
-        logger.warn('[FEEDBACK] Could not read existing feedback, starting fresh:', e);
-      }
-    }
-
     if (isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
       logger.warn('[FEEDBACK] Blocked spammy feedback entry.');
       return;
     }
-    existingEntries.push(feedbackEntry);
-
-    // Dedup by tweetId — keep most recent
-    const seen = new Set<string>();
-    const deduped: typeof existingEntries = [];
-    for (let i = existingEntries.length - 1; i >= 0; i--) {
-      const e = existingEntries[i] as { tweetId?: string };
-      const key = e.tweetId ?? '';
-      if (!seen.has(key)) { seen.add(key); deduped.unshift(existingEntries[i]); }
+    // Append-only write avoids loading/parsing/rewriting the full JSONL file on every post.
+    // Use open/write/fsync/close for better durability than a buffered append helper.
+    const serialized = JSON.stringify(feedbackEntry, (_k, v) =>
+      typeof v === 'string' ? v.replace(/\n/g, '\\n').replace(/\r/g, '\\r') : v,
+    );
+    const fd = fs.openSync(feedbackPath, 'a');
+    try {
+      fs.writeSync(fd, `${serialized}\n`, undefined, 'utf8');
+      fs.fsyncSync(fd);
+    } finally {
+      fs.closeSync(fd);
     }
-
-    const jsonl = deduped.map(e => JSON.stringify(
-      JSON.parse(JSON.stringify(e, (_k, v) =>
-        typeof v === 'string' ? v.replace(/\n/g, '\\n').replace(/\r/g, '\\r') : v
-      ))
-    )).filter(Boolean).join('\n') + '\n';
-
-    atomicWriteTextSync(feedbackPath, jsonl);
     logger.info(`[FEEDBACK] Logged feedback for tweet ${item.tweet.id} (userSelected=${selected.chainLabel})`);
 
     // Record language positives so weighted shuffle favours this chain's languages

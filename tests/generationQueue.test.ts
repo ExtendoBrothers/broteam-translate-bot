@@ -17,6 +17,7 @@ jest.mock('../src/server/candidateStore', () => ({
   candidateStore: {
     setReady: jest.fn(),
     setError: jest.fn(),
+    getById: jest.fn(),
   },
 }));
 
@@ -55,7 +56,8 @@ const mockCandidates = [
 describe('GenerationQueue', () => {
   let generationQueue: any;
   let mockGenerateCandidates: jest.Mock;
-  let mockCandidateStore: { setReady: jest.Mock; setError: jest.Mock };
+  let mockCandidateStore: { setReady: jest.Mock; setError: jest.Mock; getById: jest.Mock };
+  let queueState: Record<string, { status: 'generating' | 'ready' | 'posted' | 'skipped' }>;
 
   beforeEach(() => {
     jest.resetModules();
@@ -63,6 +65,10 @@ describe('GenerationQueue', () => {
     mockGenerateCandidates = require('../src/workers/candidateGenerator').generateCandidates;
     mockCandidateStore = require('../src/server/candidateStore').candidateStore;
     generationQueue = require('../src/server/generationQueue').generationQueue;
+    queueState = {};
+    mockCandidateStore.getById.mockImplementation((id: string) => queueState[id]);
+    mockCandidateStore.setReady.mockImplementation((id: string) => { queueState[id] = { status: 'ready' }; });
+    mockCandidateStore.setError.mockImplementation((id: string) => { queueState[id] = { status: 'ready' }; });
   });
 
   // ── depth ────────────────────────────────────────────────────────────────────
@@ -81,6 +87,9 @@ describe('GenerationQueue', () => {
       generationQueue.enqueue('j1', mockTweet);
       generationQueue.enqueue('j2', mockTweet);
       generationQueue.enqueue('j3', mockTweet);
+      queueState.j1 = { status: 'generating' };
+      queueState.j2 = { status: 'generating' };
+      queueState.j3 = { status: 'generating' };
 
       // j1 started via setImmediate, j2 + j3 are pending
       expect(generationQueue.depth).toBe(2);
@@ -90,6 +99,8 @@ describe('GenerationQueue', () => {
       mockGenerateCandidates.mockResolvedValue(mockCandidates);
       generationQueue.enqueue('j1', mockTweet);
       generationQueue.enqueue('j2', mockTweet);
+      queueState.j1 = { status: 'generating' };
+      queueState.j2 = { status: 'generating' };
       // let both complete
       for (let i = 0; i < 6; i++) await flushPromises();
       expect(generationQueue.depth).toBe(0);
@@ -102,6 +113,7 @@ describe('GenerationQueue', () => {
     it('calls candidateStore.setReady with the candidates', async () => {
       mockGenerateCandidates.mockResolvedValue(mockCandidates);
       generationQueue.enqueue('q-success', mockTweet);
+      queueState['q-success'] = { status: 'generating' };
       for (let i = 0; i < 3; i++) await flushPromises();
       expect(mockCandidateStore.setReady).toHaveBeenCalledWith('q-success', mockCandidates);
     });
@@ -109,6 +121,7 @@ describe('GenerationQueue', () => {
     it('does not call setError on success', async () => {
       mockGenerateCandidates.mockResolvedValue(mockCandidates);
       generationQueue.enqueue('q-ok', mockTweet);
+      queueState['q-ok'] = { status: 'generating' };
       for (let i = 0; i < 3; i++) await flushPromises();
       expect(mockCandidateStore.setError).not.toHaveBeenCalled();
     });
@@ -120,6 +133,7 @@ describe('GenerationQueue', () => {
     it('calls candidateStore.setError with the error string', async () => {
       mockGenerateCandidates.mockRejectedValue(new Error('Translation bombed'));
       generationQueue.enqueue('q-fail', mockTweet);
+      queueState['q-fail'] = { status: 'generating' };
       for (let i = 0; i < 3; i++) await flushPromises();
       expect(mockCandidateStore.setError).toHaveBeenCalledWith(
         'q-fail',
@@ -130,6 +144,7 @@ describe('GenerationQueue', () => {
     it('does not call setReady on failure', async () => {
       mockGenerateCandidates.mockRejectedValue(new Error('boom'));
       generationQueue.enqueue('q-err', mockTweet);
+      queueState['q-err'] = { status: 'generating' };
       for (let i = 0; i < 3; i++) await flushPromises();
       expect(mockCandidateStore.setReady).not.toHaveBeenCalled();
     });
@@ -141,6 +156,8 @@ describe('GenerationQueue', () => {
 
       generationQueue.enqueue('q-err', mockTweet);
       generationQueue.enqueue('q-ok', mockTweet);
+      queueState['q-err'] = { status: 'generating' };
+      queueState['q-ok'] = { status: 'generating' };
       for (let i = 0; i < 6; i++) await flushPromises();
       expect(mockCandidateStore.setReady).toHaveBeenCalledWith('q-ok', mockCandidates);
     });
@@ -164,6 +181,9 @@ describe('GenerationQueue', () => {
       generationQueue.enqueue('j1', mockTweet);
       generationQueue.enqueue('j2', mockTweet);
       generationQueue.enqueue('j3', mockTweet);
+      queueState.j1 = { status: 'generating' };
+      queueState.j2 = { status: 'generating' };
+      queueState.j3 = { status: 'generating' };
 
       for (let i = 0; i < 15; i++) await flushPromises();
 
@@ -181,6 +201,9 @@ describe('GenerationQueue', () => {
       generationQueue.enqueue('j1', { ...mockTweet, id: 'a' });
       generationQueue.enqueue('j2', { ...mockTweet, id: 'b' });
       generationQueue.enqueue('j3', { ...mockTweet, id: 'c' });
+      queueState.j1 = { status: 'generating' };
+      queueState.j2 = { status: 'generating' };
+      queueState.j3 = { status: 'generating' };
 
       for (let i = 0; i < 9; i++) await flushPromises();
 
@@ -202,6 +225,8 @@ describe('GenerationQueue', () => {
 
       generationQueue.enqueue('j1', { ...mockTweet, id: 'first' });
       generationQueue.enqueue('j2', { ...mockTweet, id: 'second' });
+      queueState.j1 = { status: 'generating' };
+      queueState.j2 = { status: 'generating' };
 
       // Let the first job start but not finish
       await flushPromises();
@@ -223,11 +248,14 @@ describe('GenerationQueue', () => {
         .mockResolvedValue(mockCandidates);
 
       generationQueue.enqueue('j1', mockTweet);
+      queueState.j1 = { status: 'generating' };
       await flushPromises(); // start j1
 
       // Enqueue more jobs while j1 is running
       generationQueue.enqueue('j2', mockTweet);
       generationQueue.enqueue('j3', mockTweet);
+      queueState.j2 = { status: 'generating' };
+      queueState.j3 = { status: 'generating' };
       expect(generationQueue.depth).toBe(2);
 
       resolveRunning();
@@ -236,6 +264,24 @@ describe('GenerationQueue', () => {
       // All three should have been processed
       expect(mockCandidateStore.setReady).toHaveBeenCalledTimes(3);
       expect(generationQueue.depth).toBe(0);
+    });
+
+    it('skips a job that was marked skipped before it starts or while it is running', async () => {
+      let resolveRunning!: () => void;
+      mockGenerateCandidates.mockImplementationOnce(() => new Promise<typeof mockCandidates>(r => {
+        resolveRunning = () => r(mockCandidates);
+      }));
+
+      generationQueue.enqueue('skip-me', mockTweet);
+      queueState['skip-me'] = { status: 'generating' };
+      await flushPromises();
+
+      queueState['skip-me'] = { status: 'skipped' };
+      resolveRunning();
+      for (let i = 0; i < 6; i++) await flushPromises();
+
+      expect(mockCandidateStore.setReady).not.toHaveBeenCalledWith('skip-me', mockCandidates);
+      expect(mockCandidateStore.setError).not.toHaveBeenCalledWith('skip-me', expect.any(String));
     });
   });
 });

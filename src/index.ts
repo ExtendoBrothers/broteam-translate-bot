@@ -20,7 +20,7 @@ if (!process.env.MONTHLY_FETCH_LIMIT) {
   process.env.MONTHLY_FETCH_LIMIT = '0';
 }
 import { logger } from './utils/logger';
-import { acquireLock } from './utils/instanceLock';
+import { acquireLock } from './utils/enhancedInstanceLock';
 import { getVersion } from './utils/version';
 import { initializeGracefulShutdown, onShutdown } from './utils/gracefulShutdown';
 import { startHealthMonitoring, logHealthReport } from './utils/healthCheck';

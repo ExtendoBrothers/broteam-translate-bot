@@ -9,6 +9,7 @@ import { logger } from './logger';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
 import { calculateSimilarity, normalizeText } from './optimizedDuplicateCheck';
 import { processLogFileLines } from './streamLogReader';
+import { getMinimumLengthPercent, getMinimumLengthRatio } from './translationQuality';
 
 // @ts-expect-error - langdetect has no TypeScript definitions
 import * as langdetect from 'langdetect';
@@ -142,7 +143,8 @@ export function isAcceptableWithSemanticCheck(
   const originalTextOnly = originalTrimmed.replace(tokenPattern, '').replace(/@[a-zA-Z0-9_-]+/g, '').replace(/#[a-zA-Z0-9_]+/g, '').replace(/\s{2,}/g, ' ').trim();
 
   // Check if output is too short
-  const tooShort = textOnly.length < Math.ceil(0.33 * originalTextOnly.length);
+  const minimumLengthRatio = getMinimumLengthRatio(originalTextOnly);
+  const tooShort = textOnly.length < Math.ceil(minimumLengthRatio * originalTextOnly.length);
   const empty = textOnly.length <= 1;
   const punctuationOnly = /^[\p{P}\p{S}]+$/u.test(textOnly);
   const duplicate = postedOutputs.includes(trimmed);
@@ -193,7 +195,7 @@ export function isAcceptableWithSemanticCheck(
   const notEnglish = detectedLang !== 'en';
 
   const unacceptableReasons: string[] = [];
-  if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < 33% of input text (${originalTextOnly.length})`);
+  if (tooShort) unacceptableReasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input text (${originalTextOnly.length})`);
   if (empty) unacceptableReasons.push('Output is empty or too short (<=1 char)');
   if (punctuationOnly) unacceptableReasons.push('Output is only punctuation/symbols');
   if (duplicate) unacceptableReasons.push('Output is a duplicate of a previously posted tweet');
