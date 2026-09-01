@@ -90,6 +90,28 @@ jobs:
               });
             }
 
+      - name: Close resolved dependency security issue
+        if: ${{ steps.audit.outputs.critical == '0' && steps.audit.outputs.high == '0' && steps.audit.outputs.moderate == '0' }}
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const marker = '<!-- dependency-hygiene-alert -->';
+            const { data: issues } = await github.rest.issues.listForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              state: 'open',
+              labels: 'dependencies,security'
+            });
+
+            for (const issue of issues.filter(issue => issue.body && issue.body.includes(marker))) {
+              await github.rest.issues.update({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                issue_number: issue.number,
+                state: 'closed'
+              });
+            }
+
       - name: Fail on high or critical production vulnerabilities
         if: ${{ steps.audit.outputs.critical != '0' || steps.audit.outputs.high != '0' }}
         run: |
