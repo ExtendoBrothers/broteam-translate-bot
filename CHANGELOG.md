@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Fixed fetched tweet text picking up translated link-card metadata, such as Twitch preview titles and viewer counts, across syndication and Nitter RSS sources.
 - Clarified dependency audit closure, setup/restart instructions, translation-length comments, and test module isolation following review feedback.
 - Updated dependency alert tracking to create or refresh the issue for low-severity vulnerabilities as well.
 - Updated PM2 and its system information dependency to patched releases, removing remaining audited transitive vulnerabilities; the dependency workflow now closes its alert issue after a clean audit.

@@ -2,6 +2,21 @@ import { logger } from '../utils/logger';
 import { Tweet } from '../types';
 import { snowflakeToDateSafe } from '../utils/snowflakeId';
 
+/** Remove link-card metadata that public timeline sources append to tweet text. */
+export function cleanFetchedTweetText(text: string): string {
+  const normalized = text.replace(/\s+/g, ' ').trim();
+  const linkMarker = normalized.search(/\s+Link\s+/i);
+
+  if (linkMarker === -1) return normalized;
+
+  const tweetText = normalized.slice(0, linkMarker).trim();
+  if (/(?:https?:\/\/|www\.)[^\s]+$/i.test(tweetText) || /(?:^|\s)[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(tweetText)) {
+    return tweetText;
+  }
+
+  return normalized;
+}
+
 /**
  * Twitter Syndication API - Public, no auth required
  * This is what twitter.com uses for embedded timelines
@@ -42,7 +57,7 @@ async function fetchFromSyndicationAPI(username: string, maxTweets = 40): Promis
       if (entry.type !== 'tweet' || !entry.content?.tweet) continue;
       
       const tweet = entry.content.tweet;
-      const text = tweet.full_text || tweet.text || '';
+      const text = cleanFetchedTweetText(tweet.full_text || tweet.text || '');
       const tweetId = tweet.id_str || '';
       
       // Always extract timestamp from Twitter snowflake ID since API created_at is unreliable
