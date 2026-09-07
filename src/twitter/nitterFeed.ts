@@ -4,17 +4,17 @@ import { snowflakeToDateSafe } from '../utils/snowflakeId';
 
 /** Remove link-card metadata that public timeline sources append to tweet text. */
 export function cleanFetchedTweetText(text: string): string {
-  const normalized = text.replace(/\s+/g, ' ').trim();
-  const linkMarker = normalized.search(/\s+Link\s+/i);
+  const trimmed = text.trim();
+  const linkMarker = trimmed.search(/\s+Link\s+/i);
 
-  if (linkMarker === -1) return normalized;
+  if (linkMarker === -1) return trimmed;
 
-  const tweetText = normalized.slice(0, linkMarker).trim();
-  if (/(?:https?:\/\/|www\.)[^\s]+$/i.test(tweetText) || /(?:^|\s)[a-z0-9-]+(?:\.[a-z0-9-]+)+(?:\/[^\s]*)?$/i.test(tweetText)) {
+  const tweetText = trimmed.slice(0, linkMarker).trim();
+  if (/^(?:(?:https?:\/\/|www\.)[^\s]+|[a-z0-9-]+(?:\.[a-z0-9-]+)+\/[^\s]+)$/i.test(tweetText)) {
     return tweetText;
   }
 
-  return normalized;
+  return trimmed;
 }
 
 /**

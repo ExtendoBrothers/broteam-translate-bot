@@ -12,4 +12,8 @@ describe('cleanFetchedTweetText', () => {
       'Visit https://example.com and Link your account'
     );
   });
+
+  it('preserves a bare domain followed by normal text starting with Link', () => {
+    expect(cleanFetchedTweetText('example.com Link your account')).toBe('example.com Link your account');
+  });
 });
