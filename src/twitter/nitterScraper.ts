@@ -2,6 +2,7 @@ import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { snowflakeToDate } from '../utils/snowflakeId';
+import { cleanFetchedTweetText } from './nitterFeed';
 
 /**
  * Try various Nitter instances via RSS feeds
@@ -133,6 +134,7 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
           .replace(/https?:\/\/[^\s]+/g, '') // Remove URLs
           .replace(/\s+/g, ' ')
           .trim();
+        text = cleanFetchedTweetText(text);
         
         if (!text || text.length < 5) continue;
         if (text.length > 280) text = text.slice(0, 277) + '...';
