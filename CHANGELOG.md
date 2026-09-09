@@ -2,6 +2,7 @@
 
 ## Unreleased
 
+- Overrode PM2's vulnerable `js-yaml` dependency with patched version `4.3.2`.
 - Fixed fetched tweet text picking up translated link-card metadata, such as Twitch preview titles and viewer counts, across syndication and Nitter RSS sources.
 - Clarified dependency audit closure, setup/restart instructions, translation-length comments, and test module isolation following review feedback.
 - Updated dependency alert tracking to create or refresh the issue for low-severity vulnerabilities as well.
