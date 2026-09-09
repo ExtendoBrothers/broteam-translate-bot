@@ -6,7 +6,7 @@
 - Clarified dependency audit closure, setup/restart instructions, translation-length comments, and test module isolation following review feedback.
 - Updated dependency alert tracking to create or refresh the issue for low-severity vulnerabilities as well.
 - Updated PM2 and its system information dependency to patched releases, removing remaining audited transitive vulnerabilities; the dependency workflow now closes its alert issue after a clean audit.
-- Updated optional `onnxruntime-node` to 1.29.0 to remove the vulnerable `adm-zip` 0.5.x dependency from production installs.
+- Pinned optional `onnxruntime-node` to 1.21.1, which removes the vulnerable `adm-zip` dependency from production installs.
 - Added `npm run setup` (`scripts/setup.ps1`) for one-click installs: checks Node version, runs `npm ci`, creates `.env`, starts LibreTranslate via Docker, waits for it to be healthy, and builds the project.
 - Fixed README setup instructions referencing a nonexistent `libre` docker-compose service (actual service name is `libretranslate`), which broke fresh installs on a new machine.
 - Fixed README documenting `LIBRE_TRANSLATE_URL` instead of the actual `LIBRETRANSLATE_URL` env var used by the code.

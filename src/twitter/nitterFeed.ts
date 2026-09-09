@@ -2,7 +2,7 @@ import { logger } from '../utils/logger';
 import { Tweet } from '../types';
 import { snowflakeToDateSafe } from '../utils/snowflakeId';
 
-/** Remove link-card metadata that public timeline sources append to tweet text. */
+/** Remove link-card metadata from URL-only tweets in public timeline sources. */
 export function cleanFetchedTweetText(text: string): string {
   const trimmed = text.trim();
   const linkMarker = trimmed.search(/\s+Link\s+/i);
