@@ -97,6 +97,39 @@ function hasContradictionOrJuxtaposition(text) {
   return contradictionPairs.some(([a, b]) => t.includes(a) && t.includes(b));
 }
 
+function hasSpecificImplication(text) {
+  const t = String(text || '').toLowerCase();
+  return /(^|\s)@[a-z0-9_]+|\b(you|your|goddess|girlfriend|wife|warrant|court|arrest|kill|die|shoot|pit|affair|pervert|crime|conspiracy|debt)\b/i.test(t);
+}
+
+function hasMeaningfulRepetition(text) {
+  const t = String(text || '').trim();
+  const repeatedPhrase = /\b(\w+(?:\s+\w+){1,3})\b[\s,!?.:\n-]+\1\b/i.test(t);
+  return repeatedPhrase && (hasSetupPunchlineShape(t) || t.length >= 40);
+}
+
+function wordOverlapSimilarity(first, second) {
+  const firstWords = new Set(normalizeText(first).split(/\s+/).filter(word => word.length > 2));
+  const secondWords = new Set(normalizeText(second).split(/\s+/).filter(word => word.length > 2));
+  if (firstWords.size === 0 || secondWords.size === 0) return 0;
+
+  let intersection = 0;
+  for (const word of firstWords) {
+    if (secondWords.has(word)) intersection++;
+  }
+  return intersection / new Set([...firstWords, ...secondWords]).size;
+}
+
+function getModelScore(candidate) {
+  if (typeof candidate?.unifiedHumorScore === 'number') {
+    return candidate.unifiedHumorScore;
+  }
+
+  const score = typeof candidate?.humorScore === 'number' ? candidate.humorScore : 0;
+  const label = String(candidate?.humorLabel || '').toUpperCase();
+  return label === 'NO_HUMOR' ? 1 - score : score;
+}
+
 function humorThemeHits(text) {
   const t = String(text || '').toLowerCase();
   const themes = [
@@ -116,7 +149,7 @@ function scoreCandidate(candidate, originalText) {
   const result = String(candidate?.result || '');
   const original = String(originalText || '');
 
-  const sourceScore = typeof candidate?.humorScore === 'number' ? candidate.humorScore : 0;
+  const sourceScore = getModelScore(candidate);
   const normalizedResult = normalizeText(result);
   const normalizedOriginal = normalizeText(original);
 
@@ -127,6 +160,15 @@ function scoreCandidate(candidate, originalText) {
   if (identicalToInput) {
     score -= 2.0;
     reasons.push('too close to original');
+  }
+
+  const similarity = wordOverlapSimilarity(result, original);
+  if (!identicalToInput && similarity >= 0.7) {
+    score -= 0.45;
+    reasons.push('mostly repeats the original');
+  } else if (similarity >= 0.5) {
+    score -= 0.15;
+    reasons.push('shares too much wording with original');
   }
 
   if (hasNarrativeStructure(result)) {
@@ -149,6 +191,11 @@ function scoreCandidate(candidate, originalText) {
     reasons.push('uses contradiction/juxtaposition');
   }
 
+  if (hasSpecificImplication(result)) {
+    score += 0.18;
+    reasons.push('creates a specific social implication');
+  }
+
   const themeCount = humorThemeHits(result);
   if (themeCount > 0) {
     score += Math.min(0.3, themeCount * 0.07);
@@ -160,24 +207,19 @@ function scoreCandidate(candidate, originalText) {
     reasons.push('dirty/crude punchline energy');
   }
 
-  if (result.length > 0 && result.length < 25) {
+  const hasShortSemanticTwist = result.length > 0 && result.length <= 60
+    && (hasContradictionOrJuxtaposition(result) || humorThemeHits(result) > 0 || hasSpecificImplication(result));
+  if (hasShortSemanticTwist) {
+    score += 0.12;
+    reasons.push('short phrase has a semantic twist');
+  } else if (result.length > 0 && result.length < 25) {
     score -= 0.22;
     reasons.push('too short');
   }
 
-  if (result.length >= 120) {
+  if (result.length >= 40 && result.length <= 150) {
     score += 0.08;
-    reasons.push('detailed phrasing');
-  }
-
-  if (result.length >= 180) {
-    score += 0.12;
-    reasons.push('extended narrative payoff');
-  }
-
-  if (result.length >= 250) {
-    score += 0.15;
-    reasons.push('long-form absurd story');
+    reasons.push('substantive but not padded');
   }
 
   if (result.trim().split(/\s+/).length < 8) {
@@ -203,6 +245,11 @@ function scoreCandidate(candidate, originalText) {
   if (/\b\w+\b(?:\s+\b\w+\b){0,1}$/.test(result.trim()) && result.trim().split(/\s+/).length <= 2) {
     score -= 0.1;
     reasons.push('single-word or tiny phrase');
+  }
+
+  if (hasMeaningfulRepetition(result)) {
+    score += 0.12;
+    reasons.push('repetition adds escalation or payoff');
   }
 
   return {
@@ -262,15 +309,26 @@ function writeJsonl(filePath, entries) {
   }
 }
 
-function toEntryLog(entry, generatedFeedback) {
+function normalizeSource(source) {
+  return String(source || '').toUpperCase().replace(/-/g, '_');
+}
+
+function toEntryLog(entry, generatedFeedback, analyses = []) {
   const original = escapeLogText(entry.originalText);
   const selected = escapeLogText(entry.selectedResult);
   const notes = escapeLogText(generatedFeedback.notes);
+  const candidateAnalysis = analyses.map(({ candidate, analysis }) =>
+    `- **${candidate.source}** (${analysis.score.toFixed(3)}): ${analysis.reasons.join('; ') || 'no additional heuristic signals'}`
+  );
 
   return [
     `## Tweet ${entry.tweetId}`,
     `**Original:** ${original}`,
     `**Bot Selected:** ${entry.botSelected} - "${selected}"`,
+    '',
+    '**Agent Analysis:**',
+    ...candidateAnalysis,
+    `- **Winner:** ${generatedFeedback.actualBest} (${notes})`,
     `**Rating:** ${generatedFeedback.rating}/5`,
     `**Best:** ${generatedFeedback.actualBest}`,
     `**Notes:** "${notes}"`,
@@ -340,7 +398,7 @@ function main() {
     const rating = pickRating(winner.analysis);
 
     const actualBest = winner.candidate.source;
-    const wasCorrect = String(actualBest || '').toLowerCase() === String(entry.botSelected || '').toLowerCase();
+    const wasCorrect = normalizeSource(actualBest) === normalizeSource(entry.botSelected);
     const notes = buildNotes(winner.analysis);
 
     const generatedFeedback = {
@@ -356,7 +414,7 @@ function main() {
     entry.userFeedback = generatedFeedback;
     ratingBuckets[rating] += 1;
     processedTweetIds.push(entry.tweetId);
-    perTweetLogs.push(toEntryLog(entry, generatedFeedback));
+    perTweetLogs.push(toEntryLog(entry, generatedFeedback, analyses));
   }
 
   if (!dryRun) {

@@ -17,3 +17,11 @@
 - Doubled failed-translation penalties for random chains and reduced the oldschool loss penalty to one third to compensate for its lower frequency.
 - Tightened the short-output gate to 40% for tweets with at least 10 words and shortened translation-chain cooldowns so LibreTranslate can keep up.
 - Relaxed the short-output gate for sub-10-word tweets from 33% to 25% to reduce false rejections like 11-character outputs from 40-character inputs.
+- Processed 563 pending feedback entries, expanded the agent feedback log to 942 reviewed entries, replayed 144 manual selections into heuristic weights, and updated humor guidance with measured length and candidate-selection findings.
+- Restricted humor-model training export to manual user feedback by default, preventing automatically generated heuristic ratings from becoming self-reinforcing labels.
+- Added deterministic class balancing and isolated ONNX conversion options for safer humor-model experiments.
+- Ignored versioned local humor-model experiment artifacts alongside the canonical custom models.
+- Clarified that the agent, not the user, generates ratings for pending feedback; added transformation, specific implication, short-twist, and conditional-repetition signals to the feedback workflow.
+- Separated manual preference evidence from retained agent assessments in feedback analysis so generated ratings contribute to diagnostics and pattern discovery without being mistaken for user labels.
+- Completed agent feedback logging with per-candidate heuristic analysis, normalized source comparisons, and explicit user-versus-agent labels in recent reports.
+- Aligned manual feedback entry with the selection-only workflow and changed feedback JSON persistence to atomic writes.
