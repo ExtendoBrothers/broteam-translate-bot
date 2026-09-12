@@ -2,7 +2,9 @@
 /**
  * Feedback Analysis Tool
  * 
- * Analyzes patterns in user feedback to identify preferences and suggest improvements
+ * Analyzes user selections and agent-generated assessments to identify preferences
+ * and suggest improvements. The two sources are reported separately because
+ * agent assessments explain the data but are not independent user labels.
  * 
  * Usage:
  *   node scripts/analyze-feedback.js
@@ -11,6 +13,12 @@
 
 const fs = require('fs');
 const path = require('path');
+
+function normalizeSource(source) {
+  return String(source || '')
+    .toUpperCase()
+    .replace(/-/g, '_');
+}
 
 function analyzeFeedback() {
   const args = process.argv.slice(2);
@@ -64,6 +72,8 @@ function analyzeFeedback() {
   }
   
   const withFeedback = entries.filter(e => e.userFeedback);
+  const userFeedback = withFeedback.filter(e => String(e.userFeedback.feedbackSource || '').toLowerCase().startsWith('user'));
+  const agentFeedback = withFeedback.filter(e => String(e.userFeedback.feedbackSource || '').toLowerCase().startsWith('agent'));
   const total = entries.length;
   const feedbackCount = withFeedback.length;
 
@@ -72,6 +82,13 @@ function analyzeFeedback() {
   console.log('='.repeat(70));
   console.log(`\nTotal tweets processed: ${total}`);
   console.log(`Tweets with feedback: ${feedbackCount} (${((feedbackCount / total) * 100).toFixed(1)}%)`);
+
+  console.log('\n' + '-'.repeat(70));
+  console.log('FEEDBACK PROVENANCE');
+  console.log('-'.repeat(70));
+  console.log(`Manual user selections: ${userFeedback.length}`);
+  console.log(`Agent interpretations and ratings: ${agentFeedback.length}`);
+  console.log('User selections define preference; agent feedback records the reasoning and quality assessment.');
   
   if (feedbackCount < minSamples) {
     console.log('\n⚠️  Need at least ' + minSamples + ' feedback samples for meaningful analysis.');
@@ -85,8 +102,11 @@ function analyzeFeedback() {
   console.log('SELECTION ACCURACY');
   console.log('-'.repeat(70));
 
-  const correctSelections = withFeedback.filter(e => e.userFeedback.wasCorrect === true).length;
-  const incorrectSelections = withFeedback.filter(e => e.userFeedback.wasCorrect === false).length;
+  const userSelectionsWithBest = userFeedback.filter(e => e.userFeedback.actualBest);
+  const correctSelections = userSelectionsWithBest.filter(e =>
+    normalizeSource(e.userFeedback.actualBest) === normalizeSource(e.botSelected)
+  ).length;
+  const incorrectSelections = userSelectionsWithBest.length - correctSelections;
   
   if (correctSelections + incorrectSelections > 0) {
     const accuracy = (correctSelections / (correctSelections + incorrectSelections)) * 100;
@@ -102,35 +122,26 @@ function analyzeFeedback() {
   const sourceStats = {};
   ['RANDOM_1', 'RANDOM_2', 'RANDOM_3', 'OLDSCHOOL'].forEach(source => {
     sourceStats[source] = {
-      selected: entries.filter(e => e.botSelected === source).length,
-      preferred: withFeedback.filter(e => e.userFeedback.actualBest === source).length,
-      avgRating: 0,
-      ratingCount: 0
+      selected: entries.filter(e => normalizeSource(e.botSelected) === source).length,
+      userPreferred: userFeedback.filter(e => normalizeSource(e.userFeedback.actualBest) === source).length,
+      agentPreferred: agentFeedback.filter(e => normalizeSource(e.userFeedback.actualBest) === source).length
     };
   });
 
-  // Calculate average ratings
-  withFeedback.forEach(e => {
-    if (e.userFeedback.rating && sourceStats[e.botSelected]) {
-      sourceStats[e.botSelected].avgRating += e.userFeedback.rating;
-      sourceStats[e.botSelected].ratingCount++;
-    }
-  });
-
-  console.log('\nSource          Selected  Preferred  Avg Rating');
+  console.log('\nSource          Bot Selected  User Preferred  Agent Preferred');
   Object.entries(sourceStats).forEach(([source, stats]) => {
-    const avgRating = stats.ratingCount > 0 
-      ? (stats.avgRating / stats.ratingCount).toFixed(1)
-      : 'N/A';
-    console.log(`${source.padEnd(15)} ${String(stats.selected).padStart(8)}  ${String(stats.preferred).padStart(9)}  ${String(avgRating).padStart(10)}`);
+    console.log(`${source.padEnd(15)} ${String(stats.selected).padStart(12)}  ${String(stats.userPreferred).padStart(14)}  ${String(stats.agentPreferred).padStart(14)}`);
   });
 
   console.log('\n' + '-'.repeat(70));
   console.log('RATING DISTRIBUTION');
   console.log('-'.repeat(70));
 
-  const ratings = withFeedback.filter(e => e.userFeedback.rating).map(e => e.userFeedback.rating);
-  if (ratings.length > 0) {
+  const printRatings = (label, sourceEntries) => {
+    const ratings = sourceEntries.filter(e => e.userFeedback.rating).map(e => e.userFeedback.rating);
+    if (ratings.length === 0) return;
+
+    console.log(`\n${label} (${ratings.length} ratings)`);
     for (let i = 5; i >= 1; i--) {
       const count = ratings.filter(r => r === i).length;
       const bar = '█'.repeat(Math.round((count / ratings.length) * 40));
@@ -138,14 +149,17 @@ function analyzeFeedback() {
     }
     const avgRating = ratings.reduce((a, b) => a + b, 0) / ratings.length;
     console.log(`\nAverage rating: ${avgRating.toFixed(2)}/5`);
-  }
+  };
+
+  printRatings('Agent-generated ratings', agentFeedback);
+  printRatings('Manual user ratings (if supplied)', userFeedback);
 
   console.log('\n' + '-'.repeat(70));
   console.log('PATTERN INSIGHTS');
   console.log('-'.repeat(70));
 
   // Analyze length preferences
-  const lengthData = withFeedback
+  const lengthData = agentFeedback
     .filter(e => e.userFeedback.rating)
     .map(e => ({
       length: e.selectedResult.length,
@@ -174,8 +188,8 @@ function analyzeFeedback() {
   }
 
   // Chain preference insight
-  const oldschoolPreferred = withFeedback.filter(e => e.userFeedback.actualBest === 'OLDSCHOOL').length;
-  const randomPreferred = withFeedback.filter(e => e.userFeedback.actualBest && e.userFeedback.actualBest.startsWith('RANDOM')).length;
+  const oldschoolPreferred = userFeedback.filter(e => normalizeSource(e.userFeedback.actualBest) === 'OLDSCHOOL').length;
+  const randomPreferred = userFeedback.filter(e => normalizeSource(e.userFeedback.actualBest).startsWith('RANDOM')).length;
   
   if (oldschoolPreferred + randomPreferred >= 10) {
     const oldschoolPct = (oldschoolPreferred / (oldschoolPreferred + randomPreferred)) * 100;
@@ -196,8 +210,9 @@ function analyzeFeedback() {
     const f = e.userFeedback;
     console.log(`\n[${e.tweetId}] ${e.originalText.substring(0, 50)}...`);
     console.log(`  Bot picked: ${e.botSelected} (score: ${e.selectedScore.toFixed(3)})`);
-    if (f.rating) console.log(`  Rating: ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}`);
-    if (f.actualBest) console.log(`  Actually best: ${f.actualBest}`);
+    const isAgentFeedback = String(f.feedbackSource || '').toLowerCase().startsWith('agent');
+    if (f.rating) console.log(`  ${isAgentFeedback ? 'Agent' : 'User'} rating: ${'★'.repeat(f.rating)}${'☆'.repeat(5 - f.rating)}`);
+    if (f.actualBest) console.log(`  ${isAgentFeedback ? 'Agent interpretation' : 'User preferred'}: ${f.actualBest}`);
     if (f.notes) console.log(`  Notes: ${f.notes}`);
   });
 

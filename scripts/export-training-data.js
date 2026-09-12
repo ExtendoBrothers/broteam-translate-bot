@@ -9,6 +9,8 @@
  *   node scripts/export-training-data.js
  *   node scripts/export-training-data.js --min-confidence 4
  *   node scripts/export-training-data.js --output custom-training.jsonl
+ *   node scripts/export-training-data.js --include-agent-auto
+ *   node scripts/export-training-data.js --balance
  * 
  * Training Label Logic:
  *   - actualBest candidate → HUMOR (label=1)
@@ -22,6 +24,8 @@ const path = require('path');
 
 function exportTrainingData() {
   const args = process.argv.slice(2);
+  const includeAgentAuto = args.includes('--include-agent-auto');
+  const balanceClasses = args.includes('--balance');
   
   // Parse arguments
   let minConfidence = 3; // Minimum rating to consider data reliable
@@ -47,12 +51,21 @@ function exportTrainingData() {
 
   const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n').filter(Boolean);
   const entries = lines.map(line => JSON.parse(line));
-  const withFeedback = entries.filter(e => e.userFeedback);
+  // Automatic feedback is generated from the same heuristics being trained.
+  // Exclude it by default to avoid teaching the model its own predictions.
+  const withFeedback = entries.filter(e => {
+    if (!e.userFeedback) return false;
+    if (includeAgentAuto) return true;
+    return String(e.userFeedback.feedbackSource || '').toLowerCase().startsWith('user');
+  });
 
   console.log('='.repeat(70));
   console.log('EXPORT TRAINING DATA');
   console.log('='.repeat(70));
-  console.log(`\nTotal feedback entries: ${withFeedback.length}`);
+  console.log(`\nFeedback entries used: ${withFeedback.length}`);
+  if (!includeAgentAuto) {
+    console.log('  Source filter: manual user feedback only');
+  }
 
   if (withFeedback.length < 20) {
     console.warn(`\n⚠️  Warning: Only ${withFeedback.length} feedback entries found.`);
@@ -113,7 +126,25 @@ function exportTrainingData() {
     }
   });
 
+  if (balanceClasses) {
+    const positives = trainingExamples.filter(example => example.label === 1);
+    const negatives = trainingExamples.filter(example => example.label === 0);
+    const targetCount = Math.min(positives.length, negatives.length);
+    const sortByStableKey = (a, b) => `${a.tweetId}:${a.text}`.localeCompare(`${b.tweetId}:${b.text}`);
+
+    positives.sort(sortByStableKey);
+    negatives.sort(sortByStableKey);
+    trainingExamples.length = 0;
+    trainingExamples.push(...positives.slice(0, targetCount), ...negatives.slice(0, targetCount));
+  }
+
+  positiveCount = trainingExamples.filter(example => example.label === 1).length;
+  negativeCount = trainingExamples.filter(example => example.label === 0).length;
+
   console.log(`\nTraining examples generated: ${trainingExamples.length}`);
+  if (balanceClasses) {
+    console.log('  Class balancing: enabled');
+  }
   console.log(`  Positive (HUMOR): ${positiveCount}`);
   console.log(`  Negative (NO_HUMOR): ${negativeCount}`);
 

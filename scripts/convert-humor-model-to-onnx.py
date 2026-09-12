@@ -16,7 +16,7 @@ import sys
 import argparse
 from pathlib import Path
 
-def convert_model(custom=False):
+def convert_model(custom=False, model_dir=None, output_dir=None):
     try:
         from transformers import AutoTokenizer, AutoModelForSequenceClassification
         from optimum.onnxruntime import ORTModelForSequenceClassification
@@ -30,12 +30,12 @@ def convert_model(custom=False):
 
     # Model to convert - base or custom fine-tuned
     if custom:
-        MODEL_NAME = "models/humor-detector-custom"
-        OUTPUT_DIR = Path("models/humor-detector-custom-onnx")
+        MODEL_NAME = model_dir or "models/humor-detector-custom"
+        OUTPUT_DIR = Path(output_dir or "models/humor-detector-custom-onnx")
         print("\n🎯 Converting CUSTOM fine-tuned model")
     else:
-        MODEL_NAME = "mohameddhiab/humor-no-humor"
-        OUTPUT_DIR = Path("models/humor-detector")
+        MODEL_NAME = model_dir or "mohameddhiab/humor-no-humor"
+        OUTPUT_DIR = Path(output_dir or "models/humor-detector")
         print("\n📦 Converting BASE model")
     
     print(f"\n📦 Converting model: {MODEL_NAME}")
@@ -102,9 +102,11 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description='Convert humor model to ONNX')
     parser.add_argument('--custom', action='store_true', 
                         help='Convert custom fine-tuned model instead of base model')
+    parser.add_argument('--model-dir', help='Input model directory or Hugging Face model name')
+    parser.add_argument('--output-dir', help='ONNX output directory')
     args = parser.parse_args()
     
     print("🔄 Humor Detection Model Converter")
     print("=" * 50)
-    convert_model(custom=args.custom)
+    convert_model(custom=args.custom, model_dir=args.model_dir, output_dir=args.output_dir)
 

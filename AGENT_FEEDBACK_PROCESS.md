@@ -24,7 +24,13 @@ The bot now automatically:
 5. Selects the highest-scoring result for posting
 6. Saves all candidates and scores to `feedback-data.jsonl` for review
 
-## Manual Feedback Process (When Requested)
+## Agent Feedback Process (When Requested)
+
+The user supplies candidate selections, not star ratings. The agent must do both of the following for every pending tweet:
+- select the best candidate using `feedback-heuristics.md`
+- assign an independent agent rating from 1-5 based on the quality of that selected candidate
+
+The agent rating is an assessment of the result, not a claim about user preference. It must be recorded and used for agent-quality diagnostics, pattern analysis, and explaining why a candidate won. It must not be treated as an independent user label or replayed into learned weights.
 
 ## Process Steps
 
@@ -80,7 +86,9 @@ For each tweet, run:
 node scripts/add-feedback.js [TWEET_ID] --rating [1-5] --best [SOURCE] --notes "[explanation]"
 ```
 
-Execute these sequentially (one at a time), not in parallel.
+For batch processing, use `node scripts/auto-feedback-pending.js`. It writes `feedbackSource: "agent-auto"`, `learningEligible: false`, the agent-generated rating, the agent-selected best candidate, and concise reasoning. These records are included in feedback analysis and future heuristic review. Do not overwrite existing `user-manual` feedback unless explicitly asked to regrade it.
+
+For a single user selection, use `node scripts/add-feedback.js <TWEET_ID> --best <SOURCE> --notes "..."`. A user rating is optional; if omitted, the agent rating remains the quality assessment for that record.
 
 ### 5. Confirm Completion
 After all feedback is added, provide a brief summary:
@@ -88,13 +96,13 @@ After all feedback is added, provide a brief summary:
 - Count by rating (how many 1s, 2s, 3s, 4s, 5s)
 - Path to the detailed log file
 
-## Rating Guidelines
+## Agent Rating Guidelines
 
-- **5/5**: Exceptional - perfect setup-punchline, sexual/crude refs, contradictions, extreme absurdity
-- **4/5**: Very funny - good coherent structure, absurd references, good juxtaposition
-- **3/5**: Moderately funny - some humor elements, coherent but mild
-- **2/5**: Weak - mostly coherent but boring, or weak absurdity
-- **1/5**: Garbage - incoherent, identical to input, single words, syntactical nonsense
+- **5/5**: Exceptional, specific transformation with a strong implication, setup-payoff, contradiction, or escalation
+- **4/5**: Coherent and clearly funny, with a useful twist, direct address, threat, accusation, or vivid juxtaposition
+- **3/5**: Readable and transformed, but mild, generic, or missing a strong payoff
+- **2/5**: Some structure or absurdity, but bland, too close to the input, short, or weakly connected
+- **1/5**: Incoherent, unchanged, generic fragments, mechanical gibberish, or no meaningful humor
 
 ## Notes Writing Style
 Notes should be:
@@ -112,10 +120,11 @@ Examples:
 ## Important Reminders
 
 1. **Never pick identical-to-input results** - automatic 1/5 rating
-2. **Complete phrases > single words** - even if absurd
-3. **Coherent sentences > gibberish** - unless gibberish has funny pattern
-4. **Setup-punchline structure** - highly preferred
-5. **Read all heuristics** before starting - they contain detailed patterns from user feedback
+2. **Meaningful transformation beats raw length** - a short semantic twist can beat a long paraphrase
+3. **Readable implication beats random gibberish** - threats, accusations, self-incrimination, and direct address are useful when understandable
+4. **Setup-punchline structure and contradiction** - highly preferred
+5. **Treat repetition conditionally** - escalation or altered meaning can work; mechanical repeated words should lose
+6. **Read all heuristics** before starting - they contain detailed patterns from user feedback
 
 ## End of Process
 After completion, user may want to:
