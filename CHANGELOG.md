@@ -1,3 +1,4 @@
+- Resolved the moderate `@humanfs/node` symlink traversal vulnerability by upgrading ESLint and pinning the transitive dependency to `0.16.8`.
 # Changelog
 
 ## Unreleased
