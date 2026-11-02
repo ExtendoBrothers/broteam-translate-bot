@@ -3,8 +3,8 @@
  * Manual Feedback Tool for Humor Selection
  * 
  * Usage:
- *   node scripts/add-feedback.js <tweetId> --rating <1-5>
  *   node scripts/add-feedback.js <tweetId> --best <RANDOM_1|RANDOM_2|RANDOM_3|OLDSCHOOL>
+ *   node scripts/add-feedback.js <tweetId> --best <source> [--rating <1-5>]
  *   node scripts/add-feedback.js <tweetId> --correct <yes|no>
  *   node scripts/add-feedback.js <tweetId> --notes "Your feedback here"
  * 
@@ -16,7 +16,7 @@
 
 const fs = require('fs');
 const path = require('path');
-const { atomicWriteJsonSync } = require('../dist/src/utils/safeFileOps');
+const { atomicWriteJsonSync, atomicWriteTextSync } = require('../dist/src/utils/safeFileOps');
 
 function addFeedback() {
   const args = process.argv.slice(2);
@@ -24,8 +24,8 @@ function addFeedback() {
   if (args.length < 2) {
     console.error('Usage: node scripts/add-feedback.js <tweetId> [options]');
     console.error('Options:');
-    console.error('  --rating <1-5>           Rate the selected result (1=bad, 5=excellent)');
-    console.error('  --best <source>          Which candidate was actually funniest (RANDOM_1, RANDOM_2, RANDOM_3, OLDSCHOOL)');
+    console.error('  --best <source>          Which candidate was actually funniest (required)');
+    console.error('  --rating <1-5>           Optional user rating (the agent normally supplies ratings)');
     console.error('  --correct <yes|no>       Was the bot selection correct?');
     console.error('  --notes "<text>"         Additional feedback notes');
     process.exit(1);
@@ -53,6 +53,11 @@ function addFeedback() {
       feedback.notes = args[i + 1];
       i++;
     }
+  }
+
+  if (!feedback.actualBest && !feedback.rating && !feedback.notes && feedback.wasCorrect === undefined) {
+    console.error('Error: provide at least --best, --rating, --correct, or --notes.');
+    process.exit(1);
   }
 
   // Read feedback data file
@@ -125,7 +130,11 @@ function addFeedback() {
   }
 
   // Write back
-  fs.writeFileSync(feedbackPath, updatedLines.join('\n') + '\n', 'utf8');
+  const writeOk = atomicWriteTextSync(feedbackPath, updatedLines.join('\n') + '\n');
+  if (!writeOk) {
+    console.error('Error: failed to atomically save feedback data.');
+    process.exit(1);
+  }
   console.log('\n✓ Feedback saved to feedback-data.jsonl');
 
   // Apply heuristic weight learning if actualBest differs from botSelected

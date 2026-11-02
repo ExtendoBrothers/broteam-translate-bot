@@ -69,5 +69,6 @@ training-data.jsonl
 # Custom ML models (local or large)
 models/humor-detector-custom/
 models/humor-detector-custom-onnx/
+models/humor-detector-custom-*/
 test-results.txt
 test-results-full.txt
