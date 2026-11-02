@@ -3,6 +3,7 @@
 
 ## Unreleased
 
+- Updated vulnerable development dependencies and replaced `ts-node-dev` with `tsx`; the production audit is clean. The full audit retains one low-severity `deepmerge` advisory with no fixed npm release.
 - Overrode PM2's vulnerable `js-yaml` dependency with patched version `4.3.2`.
 - Fixed fetched tweet text picking up translated link-card metadata, such as Twitch preview titles and viewer counts, across syndication and Nitter RSS sources.
 - Clarified dependency audit closure, setup/restart instructions, translation-length comments, and test module isolation following review feedback.

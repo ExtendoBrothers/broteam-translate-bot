@@ -2,7 +2,7 @@
   "version": "0.2.0",
   "configurations": [
     {
-      "name": "Attach to ts-node-dev (9229)",
+      "name": "Attach to tsx (9229)",
       "type": "node",
       "request": "attach",
       "port": 9229,

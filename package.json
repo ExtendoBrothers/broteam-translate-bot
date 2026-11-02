@@ -11,9 +11,9 @@
     "build": "tsc -p tsconfig.json",
     "start": "node dist/src/index.js",
     "manual": "node dist/src/index.js",
-    "manual:dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "dev": "ts-node-dev --respawn --transpile-only src/index.ts",
-    "debug": "ts-node-dev --respawn --transpile-only --inspect=9229 src/index.ts",
+    "manual:dev": "tsx watch src/index.ts",
+    "dev": "tsx watch src/index.ts",
+    "debug": "tsx watch --inspect=9229 src/index.ts",
     "ci:quick": "npm ci && npm run lint && npm run build && npm test",
     "lint": "node scripts/check-eslint-node-version.js && eslint src scripts --ext .ts,.js",
     "test": "jest",
@@ -50,7 +50,7 @@
     "pm2": "^7.0.4",
     "ts-jest": "^29.4.11",
     "ts-node": "^10.9.1",
-    "ts-node-dev": "^2.0.0",
+    "tsx": "^4.23.15",
     "typescript": "^6.0.3"
   },
   "overrides": {
@@ -58,6 +58,8 @@
     "systeminformation": ">=5.33.7",
     "flatted": "$flatted",
     "handlebars": ">=4.7.10",
+    "glob": "^14.0.2",
+    "minimatch": "^11.0.4",
     "pm2": {
       "js-yaml": "4.3.2"
     }
