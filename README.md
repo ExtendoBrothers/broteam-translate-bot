@@ -32,6 +32,15 @@ A Twitter translation bot that fetches tweets from @BroTeamPills, runs them thro
 - **Heuristic Scoring**: Rule-based evaluator as fallback/secondary signal
 - **Smart Selection**: Best candidate flagged automatically; you make the final call
 
+Random chains use weighted language selection based on lifetime counts in
+`translation-logs/language-weights.json`. Each manual selection adds a positive
+signal, while each failed chain attempt adds a negative signal to its listed
+languages (two for random chains). The weight is
+`0.1 + 1.8 * (4 * positives + 5) / (4 * positives + negatives + 10)`;
+new languages start at 1.0. The smoothed ratio keeps weights between 0.1 and
+1.9 without cumulative score drift, while retaining the full history. These
+are selection and retry signals, not measured per-language success rates.
+
 ### Stability & Reliability
 - **Graceful Shutdown**: SIGINT/SIGTERM handlers with cleanup
 - **Crash Recovery**: Atomic file writes, candidate queue survives restarts
