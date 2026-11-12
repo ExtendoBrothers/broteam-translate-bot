@@ -16,6 +16,11 @@ A Twitter translation bot that fetches tweets from @BroTeamPills, runs them thro
 5. You review the candidates, pick the best one, and click **Post**
 6. The bot opens `twitter.com/intent/tweet?text=...` in your browser — you click Tweet
 
+The Nitter RSS fallback uses public instances that permit scraping; availability
+can change. Check [Nitter Status](https://status.d420.net/) for current instance
+and RSS health. A reported healthy instance may still fail for a specific feed
+or network, in which case the bot tries the next instance.
+
 ## Key Features
 
 ### Manual Review Dashboard
