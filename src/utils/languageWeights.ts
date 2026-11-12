@@ -85,15 +85,13 @@ function ensureLang(data: WeightsData, lang: string): void {
 }
 
 /**
- * Compute the selection weight for a language.
- * Weight = max(0.1, 1.0 + positives * 0.04 - negatives * 0.01)
- * A language with no history has weight 1.0 (neutral).
- * Each positive nudges the weight up by 0.04; each negative nudges it down by 0.01.
- * One positive therefore absorbs 4 retries. Minimum weight is 0.1 (reached after
- * 90 net negatives) so all languages stay in the pool permanently.
+ * Smoothed signal ratio: a positive counts four times as much as a negative.
+ * The prior makes unseen languages neutral and keeps weights between 0.1 and 1.9.
+ * Lifetime counts remain intact, and the ratio does not drift with sample size.
  */
 function computeWeight(stats: LangStats): number {
-  return Math.max(0.1, 1.0 + stats.positives * 0.04 - stats.negatives * 0.01);
+  const { positives, negatives } = stats;
+  return 0.1 + 1.8 * (4 * positives + 5) / (4 * positives + negatives + 10);
 }
 
 // Register a graceful-shutdown handler to flush any pending debounced write

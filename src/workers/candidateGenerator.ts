@@ -445,7 +445,7 @@ async function runChainWithRetries(
     try {
       const weights = getWeightsForLangs(languages);
       const weightStr = Object.entries(weights)
-        .map(([l, w]) => `${l}:${w.toFixed(2)}`)
+        .map(([l, w]) => `${l}:${w.toFixed(4)}`)
         .join(' ');
       if (weightStr) appendToDebugLog(`[DEBUG][${chainLabel}][weights] ${weightStr}\n`);
     } catch { /* non-critical */ }

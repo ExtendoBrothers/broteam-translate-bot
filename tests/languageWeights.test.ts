@@ -99,29 +99,19 @@ describe('weightedShuffle()', () => {
     }
   });
 
-  it('high-weight language appears first more often under biased Math.random', () => {
-    // Give 'ja' many positives so its weight >> others
+  it('uses the calculated weights to select languages', () => {
     resetStore({ ja: { positives: 50, negatives: 0 }, ru: { positives: 0, negatives: 0 } });
-
-    let jaFirst = 0;
-    const trials = 200;
-    for (let i = 0; i < trials; i++) {
-      const result = weightedShuffle(['ja', 'ru']);
-      if (result[0] === 'ja') jaFirst++;
+    const spy = jest.spyOn(Math, 'random').mockReturnValue(0.5);
+    try {
+      expect(weightedShuffle(['ru', 'ja'])[0]).toBe('ja');
+    } finally {
+      spy.mockRestore();
     }
-    // ja weight = 1 + 50*0.04 = 3.0, ru weight = 1.0, so ja should lead ~75% of the time
-    // Allow generous margin to avoid flakiness
-    expect(jaFirst / trials).toBeGreaterThan(0.6);
   });
 
-  it('low-weight language still appears in the result (minimum weight 0.1)', () => {
-    // 90 net negatives → weight = max(0.1, 1.0 - 0.9) = 0.1
-    resetStore({ ja: { positives: 0, negatives: 90 } });
-    const seen = new Set<string>();
-    for (let i = 0; i < 50; i++) {
-      weightedShuffle(['ja', 'ru']).forEach(l => seen.add(l));
-    }
-    expect(seen.has('ja')).toBe(true);
+  it('keeps a heavily penalized language in the result', () => {
+    resetStore({ ja: { positives: 0, negatives: 45000 } });
+    expect(weightedShuffle(['ja', 'ru']).sort()).toEqual(['ja', 'ru']);
   });
 });
 
@@ -244,26 +234,44 @@ describe('getWeightsSnapshot()', () => {
     expect(snap['ja']).toEqual({
       positives: 5,
       negatives: 2,
-      weight: expect.closeTo(1.0 + 5 * 0.04 - 2 * 0.01, 5),
+      weight: expect.closeTo(0.1 + 1.8 * 25 / 32, 5),
     });
   });
 
-  it('weight formula: max(0.1, 1.0 + pos*0.04 - neg*0.01)', () => {
-    resetStore({ bad: { positives: 0, negatives: 90 } });
+  it('distinguishes heavily penalized languages using their lifetime ratios', () => {
+    resetStore({
+      de: { positives: 15, negatives: 45582 },
+      ru: { positives: 180, negatives: 45328 },
+      el: { positives: 650, negatives: 2933 },
+    });
     const snap = getWeightsSnapshot();
-    expect(snap['bad'].weight).toBeCloseTo(0.1, 5);
+    expect(snap.de.weight).toBeGreaterThan(0.1);
+    expect(snap.ru.weight).toBeGreaterThan(snap.de.weight);
+    expect(snap.el.weight).toBeGreaterThan(snap.ru.weight);
   });
 
-  it('weight increases with positives', () => {
-    resetStore({ hi: { positives: 10, negatives: 0 } });
+  it('stays stable as the same signal ratio accumulates', () => {
+    resetStore({
+      earlier: { positives: 2500, negatives: 25000 },
+      later: { positives: 25000, negatives: 250000 },
+    });
     const snap = getWeightsSnapshot();
-    expect(snap['hi'].weight).toBeCloseTo(1.4, 5);
+    expect(snap.earlier.weight).toBeCloseTo(snap.later.weight, 3);
+    expect(snap.later.weight).toBeGreaterThan(0.6);
+    expect(snap.later.weight).toBeLessThan(0.7);
   });
 
-  it('weight decreases with negatives', () => {
-    resetStore({ lo: { positives: 0, negatives: 20 } });
-    const snap = getWeightsSnapshot();
-    expect(snap['lo'].weight).toBeCloseTo(0.8, 5);
+  it('responds to new signals while retaining lifetime counts', () => {
+    resetStore({ ja: { positives: 5, negatives: 20 } });
+    const initial = getWeightsSnapshot().ja.weight;
+    recordPositives(['ja']);
+    const afterPositive = getWeightsSnapshot().ja.weight;
+    recordNegatives(['ja']);
+    const afterNegative = getWeightsSnapshot().ja;
+    expect(afterPositive).toBeGreaterThan(initial);
+    expect(afterNegative.weight).toBeLessThan(afterPositive);
+    expect(afterNegative.positives).toBe(6);
+    expect(afterNegative.negatives).toBe(21);
   });
 });
 
@@ -294,8 +302,8 @@ describe('getWeightsForLangs()', () => {
   it('returns computed weights for stored languages', () => {
     resetStore({ ja: { positives: 5, negatives: 0 }, ru: { positives: 0, negatives: 10 } });
     const w = getWeightsForLangs(['ja', 'ru']);
-    expect(w['ja']).toBeCloseTo(1.2, 5);  // 1.0 + 5*0.04
-    expect(w['ru']).toBeCloseTo(0.9, 5);  // 1.0 - 10*0.01
+    expect(w['ja']).toBeCloseTo(1.6, 5);
+    expect(w['ru']).toBeCloseTo(0.55, 5);
   });
 
   it('only returns entries for the requested languages, not all stored ones', () => {
@@ -304,9 +312,9 @@ describe('getWeightsForLangs()', () => {
     expect(Object.keys(w)).toEqual(['ja']);
   });
 
-  it('applies the minimum weight floor of 0.1', () => {
-    resetStore({ bad: { positives: 0, negatives: 90 } });
+  it('keeps heavily penalized weights above 0.1', () => {
+    resetStore({ bad: { positives: 0, negatives: 45000 } });
     const w = getWeightsForLangs(['bad']);
-    expect(w['bad']).toBeCloseTo(0.1, 5);
+    expect(w['bad']).toBeGreaterThan(0.1);
   });
 });
