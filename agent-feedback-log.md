@@ -23720,3 +23720,3073 @@ Ratings: 1=129, 2=201, 3=231, 4=156, 5=81
 **Rating:** 4/5
 **Best:** Random-3
 **Notes:** "has narrative structure; has setup/punchline shape"
+
+# Batch 2026-11-13 - Agent Feedback (219 pending tweets)
+
+Generated at: 2026-11-13T10:04:07.655Z
+Ratings: 1=86, 2=54, 3=33, 4=28, 5=18
+## Tweet 2098879321544995294
+**Original:** just checking
+**Bot Selected:** Random-1 - "I'm just watching"
+
+**Agent Analysis:**
+- **Random-1** (-0.048): too short; fragment-length phrasing
+- **Random-2** (-0.738): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.781): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2098939720617312504
+**Original:** fr fr
+**Bot Selected:** Random-3 - "Angry"
+
+**Agent Analysis:**
+- **Oldschool** (-0.107): too short; fragment-length phrasing
+- **Random-3** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.759): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.765): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2098977398914236656
+**Original:** I made the mistake of telling them that I was carving a spear
+**Bot Selected:** Random-2 - "I made a mistake. I'm hurt"
+
+**Agent Analysis:**
+- **Random-2** (0.499): complete sentence structure
+- **Random-3** (0.462): complete sentence structure; substantive but not padded
+- **Random-1** (0.319): complete sentence structure; fragment-length phrasing
+- **Oldschool** (0.150): fragment-length phrasing
+- **Winner:** Random-2 (complete sentence structure)
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "complete sentence structure"
+
+## Tweet 2099021263004119075
+**Original:** insane
+**Bot Selected:** Random-3 - "This is crazy"
+
+**Agent Analysis:**
+- **Random-3** (-0.106): too short; fragment-length phrasing
+- **Random-2** (-0.729): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.742): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099023057885249694
+**Original:** it actually made money?!
+**Bot Selected:** Random-2 - "I make money? Contact me!"
+
+**Agent Analysis:**
+- **Oldschool** (0.582): has setup/punchline shape; complete sentence structure; fragment-length phrasing
+- **Random-2** (0.385): has setup/punchline shape; fragment-length phrasing
+- **Random-1** (0.151): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (0.120): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Oldschool (has setup/punchline shape; complete sentence structure)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2099027792289726687
+**Original:** bro\nDiablo 3 was so bad that Blizzard offices in Korea were raided and they were forced to give refunds?\nImage
+**Bot Selected:** Random-2 - "brother 1\nDemocracy 3 is very bad, even the Korean office. We have to pay? Foto"
+
+**Agent Analysis:**
+- **Random-1** (1.090): has narrative structure; has setup/punchline shape; complete sentence structure; includes humor themes; substantive but not padded
+- **Random-2** (1.051): has narrative structure; has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Random-3** (0.533): has setup/punchline shape; substantive but not padded
+- **Oldschool** (0.345): has setup/punchline shape; fragment-length phrasing
+- **Winner:** Random-1 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2099030607078871100
+**Original:** fuck\nOFF\n\nBlizzard has already passed the Debra Wilson point?\n\noh yeah bro it's over
+**Bot Selected:** Random-1 - "Democratic\nFreedom of Freedom\nThe Black card goes to Dunton? Gall, Brother"
+
+**Agent Analysis:**
+- **Oldschool** (0.600): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-3** (0.566): has setup/punchline shape; includes humor themes; substantive but not padded
+- **Random-2** (0.466): has setup/punchline shape; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.404): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Winner:** Oldschool (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2098945059366584401
+**Original:** HOLY FUCK THEY GOT HAMBURGER HELPER ON THE CASE\nITS OVER \nTHE FORCE IS FEMALE
+**Bot Selected:** Random-1 - "THEY HAVE A BURGER BOARD\nADD \nPOWER IS A WOMAN"
+
+**Agent Analysis:**
+- **Random-1** (0.495): complete sentence structure; substantive but not padded
+- **Oldschool** (0.484): complete sentence structure; substantive but not padded
+- **Random-2** (0.277): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.147): substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (complete sentence structure; substantive but not padded)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; substantive but not padded"
+
+## Tweet 2098969161494061263
+**Original:** ha ha what
+**Bot Selected:** Random-3 - "It's for him"
+
+**Agent Analysis:**
+- **Random-3** (-0.078): too short; fragment-length phrasing
+- **Oldschool** (-0.159): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.197): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.646): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099197262664712531
+**Original:** Here's the full Blizzard report but it's mostly what you already know\n\nAn extraction husk with none of the original talent remaining
+**Bot Selected:** Random-2 - "Complete" Bill report" But most of them\n\nTake everything from the same mountain"
+
+**Agent Analysis:**
+- **Oldschool** (1.001): complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Random-3** (0.992): complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Random-2** (0.832): complete sentence structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-1** (0.616): uses contradiction/juxtaposition; substantive but not padded
+- **Winner:** Oldschool (complete sentence structure; uses contradiction/juxtaposition)
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; uses contradiction/juxtaposition"
+
+## Tweet 2099241715672416529
+**Original:** does he pass the audition?
+**Bot Selected:** Random-2 - "or pass the test?"
+
+**Agent Analysis:**
+- **Oldschool** (0.219): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (0.168): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (0.146): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.122): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Oldschool (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2099254200488341596
+**Original:** got my very first normal blade to just carry on you at all times in Canada as if it's nothing and no one is allowed to say anything about it\n\nfeel like going to the gym or a book club for women
+**Bot Selected:** Random-3 - "My first official interview continued in Canada as if there was nothing to say\n\nWomen's books"
+
+**Agent Analysis:**
+- **Oldschool** (1.011): has narrative structure; complete sentence structure; includes humor themes; substantive but not padded
+- **Random-3** (0.857): has narrative structure; complete sentence structure; includes humor themes
+- **Random-2** (0.720): has narrative structure; includes humor themes; substantive but not padded
+- **Random-1** (0.693): has narrative structure; includes humor themes; substantive but not padded
+- **Winner:** Oldschool (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2099302111511216239
+**Original:** he brought the K9 unit
+**Bot Selected:** Random-3 - "k9 units available"
+
+**Agent Analysis:**
+- **Random-2** (-0.087): too short; fragment-length phrasing
+- **Random-1** (-0.105): too short; fragment-length phrasing
+- **Oldschool** (-0.107): too short; fragment-length phrasing
+- **Random-3** (-0.199): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099333101423923591
+**Original:** what's fucked up to find out decades later and really dark regarding the kids in the Mrs. Doubtfire movie was uncovering that each child was, one by one, molesting Robin Williams
+**Bot Selected:** Random-2 - "" For the next 10 years, the clouds that are on fire show that every child fights Robin Williams," Say:"
+
+**Agent Analysis:**
+- **Random-3** (0.812): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Oldschool** (0.776): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-2** (0.765): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-1** (0.547): has narrative structure; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; has setup/punchline shape)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2099336315032813924
+**Original:** I vibecoded my viewers into my stream \n\nThey got along pretty well but mostly just pissed on each other
+**Bot Selected:** Random-1 - "Hide the flow of my audience \n\nThey're fine, but they're almost free"
+
+**Agent Analysis:**
+- **Random-1** (1.143): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-2** (1.124): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-3** (0.813): uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.632): uses contradiction/juxtaposition; substantive but not padded
+- **Winner:** Random-1 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2099256949879791901
+**Original:** thank you brother I will stay safe
+**Bot Selected:** Random-1 - "Women are safe"
+
+**Agent Analysis:**
+- **Oldschool** (0.374): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.331): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (0.253): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.143): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2099258805578093017
+**Original:** REAL
+**Bot Selected:** Random-2 - "Art"
+
+**Agent Analysis:**
+- **Random-2** (-0.369): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.696): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.711): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Random-1** (-0.732): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (shares too much wording with original; too short)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "shares too much wording with original; too short"
+
+## Tweet 2099289672887525487
+**Original:** jesus
+**Bot Selected:** Random-1 - "storm size"
+
+**Agent Analysis:**
+- **Random-1** (0.296): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (-0.225): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.711): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Random-3** (-2.900): too close to original; shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2099289715031855451
+**Original:** I have purpose now
+**Bot Selected:** Random-3 - "Now I am"
+
+**Agent Analysis:**
+- **Random-3** (-0.068): too short; fragment-length phrasing
+- **Oldschool** (-0.329): mostly repeats the original; complete sentence structure; too short; fragment-length phrasing
+- **Random-2** (-0.697): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-1** (-0.758): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099604098848874497
+**Original:** Hoff Dog 2
+**Bot Selected:** Random-2 - "1 " children"
+
+**Agent Analysis:**
+- **Random-3** (-0.171): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.344): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.642): too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.759): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099636303780610104
+**Original:** Let's just game, bo
+**Bot Selected:** Random-1 - "Come on, okay"
+
+**Agent Analysis:**
+- **Random-1** (0.315): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (-0.121): too short; fragment-length phrasing
+- **Random-2** (-0.144): too short; fragment-length phrasing
+- **Oldschool** (-0.778): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2099664498336415896
+**Original:** How To Play Metal Gear Video
+**Bot Selected:** Random-3 - "How to Play Video"
+
+**Agent Analysis:**
+- **Oldschool** (0.108): fragment-length phrasing
+- **Random-3** (-0.093): too short; fragment-length phrasing
+- **Random-1** (-0.125): too short; fragment-length phrasing
+- **Random-2** (-0.270): shares too much wording with original; too short; fragment-length phrasing
+- **Winner:** Oldschool (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2099760736818135532
+**Original:** playing new star wars and saw this and jolted ability to Fully Heal anally
+**Bot Selected:** Random-3 - "See a new star war, see the ability to complete the treatment"
+
+**Agent Analysis:**
+- **Random-1** (0.537): has narrative structure; substantive but not padded
+- **Random-3** (0.258): substantive but not padded
+- **Random-2** (0.253): substantive but not padded
+- **Oldschool** (0.179): no additional heuristic signals
+- **Winner:** Random-1 (has narrative structure; substantive but not padded)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has narrative structure; substantive but not padded"
+
+## Tweet 2099966488023355436
+**Original:** I'm Blue
+**Bot Selected:** Random-2 - "I like it"
+
+**Agent Analysis:**
+- **Random-2** (-0.035): too short; fragment-length phrasing
+- **Random-1** (-0.221): shares too much wording with original; too short; fragment-length phrasing
+- **Random-3** (-0.346): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-2.327): too close to original; shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2099986215382737247
+**Original:** Violent Gamers ONLY get in here
+**Bot Selected:** Random-2 - "Play a hard game here"
+
+**Agent Analysis:**
+- **Random-1** (0.274): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.206): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (0.071): fragment-length phrasing
+- **Random-3** (-0.054): too short; fragment-length phrasing
+- **Winner:** Random-1 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2100026882943279527
+**Original:** Mario Teaches Comfort
+**Bot Selected:** Random-1 - "Mario's fine"
+
+**Agent Analysis:**
+- **Random-3** (-0.147): too short; fragment-length phrasing
+- **Random-1** (-0.193): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.206): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.225): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2100389763131797967
+**Original:** Once you know, you can never go back to not seeing them
+**Bot Selected:** Random-2 - "You won't see them again"
+
+**Agent Analysis:**
+- **Oldschool** (0.634): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.622): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.498): creates a specific social implication; short phrase has a semantic twist
+- **Random-3** (0.412): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2101077229069537735
+**Original:** oh sorry just under the hood of all my GAMES\n\nnow let's ride
+**Bot Selected:** Random-1 - "Sorry about the gas\n\nGet up"
+
+**Agent Analysis:**
+- **Oldschool** (0.471): complete sentence structure; substantive but not padded
+- **Random-1** (0.112): fragment-length phrasing
+- **Random-3** (0.107): fragment-length phrasing
+- **Random-2** (0.080): fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure; substantive but not padded)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; substantive but not padded"
+
+## Tweet 2101114626377499039
+**Original:** This changes everything
+**Bot Selected:** Random-1 - "Edit All"
+
+**Agent Analysis:**
+- **Random-1** (-0.208): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.219): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.241): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.241): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2102165005688791278
+**Original:** LOOK\nI JUST WANT TO GAME, SWEETHEART\nImage
+**Bot Selected:** Random-2 - "I just want to be fun"
+
+**Agent Analysis:**
+- **Random-1** (0.381): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.143): complete sentence structure; too short; fragment-length phrasing
+- **Random-2** (-0.038): too short; fragment-length phrasing
+- **Oldschool** (-0.766): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2102531648244052126
+**Original:** Let sleeping dogs GAME
+**Bot Selected:** Random-2 - "Hold dogs"
+
+**Agent Analysis:**
+- **Random-2** (-0.075): too short; fragment-length phrasing
+- **Random-3** (-0.089): too short; fragment-length phrasing
+- **Oldschool** (-0.098): too short; fragment-length phrasing
+- **Random-1** (-0.205): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2102884416179863814
+**Original:** GRAVEYARD KEEPER 2 IS OUT!\nWE'RE PLAYIN IT
+**Bot Selected:** Random-2 - "ANOTHER GRAVE!\nWE PLAY"
+
+**Agent Analysis:**
+- **Random-3** (0.516): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.420): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (0.376): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Random-2** (0.110): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2103244639826489439
+**Original:** Tonight we are inventing a universe of race cars
+**Bot Selected:** Random-2 - "Today, we invented a metal world"
+
+**Agent Analysis:**
+- **Random-1** (0.294): substantive but not padded
+- **Random-2** (0.182): substantive but not padded; fragment-length phrasing
+- **Random-3** (0.085): fragment-length phrasing
+- **Oldschool** (0.067): fragment-length phrasing
+- **Winner:** Random-1 (substantive but not padded)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "substantive but not padded"
+
+## Tweet 2103616519053975631
+**Original:** More RACE CARS
+**Bot Selected:** Random-3 - "Other explanations"
+
+**Agent Analysis:**
+- **Random-2** (-0.126): too short; fragment-length phrasing
+- **Oldschool** (-0.210): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-3** (-0.213): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.733): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2104742878375498004
+**Original:** ha ha shit!
+**Bot Selected:** Random-1 - "Get in the car!"
+
+**Agent Analysis:**
+- **Random-1** (0.147): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (-0.394): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.422): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.816): mostly repeats the original; has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (has setup/punchline shape; too short)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2105046167679807510
+**Original:** this is one of the most Jewish things that I have ever heard of
+**Bot Selected:** Random-2 - "I am the one who taunts the taunt"
+
+**Agent Analysis:**
+- **Random-2** (0.317): substantive but not padded
+- **Random-3** (0.242): no additional heuristic signals
+- **Oldschool** (0.205): shares too much wording with original; substantive but not padded
+- **Random-1** (0.106): fragment-length phrasing
+- **Winner:** Random-2 (substantive but not padded)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "substantive but not padded"
+
+## Tweet 2105072337263734888
+**Original:** Tonight, we breathe more life into the CARS
+**Bot Selected:** Random-3 - "Best life in a terrible future"
+
+**Agent Analysis:**
+- **Oldschool** (0.285): substantive but not padded
+- **Random-3** (0.204): no additional heuristic signals
+- **Random-1** (0.078): fragment-length phrasing
+- **Random-2** (-0.149): too short; fragment-length phrasing
+- **Winner:** Oldschool (substantive but not padded)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "substantive but not padded"
+
+## Tweet 2105268688152887333
+**Original:** GOTHIC\n\nthis was when I first got the voice system working on my stream\n\nyou should see the breakthrough we had tonight I tell you what
+**Bot Selected:** Random-1 - "I have a word in my mind\n\nYou wanted to see what happened today. It's..."
+
+**Agent Analysis:**
+- **Random-1** (0.800): has narrative structure; complete sentence structure; substantive but not padded
+- **Oldschool** (0.792): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-2** (0.766): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-3** (0.475): complete sentence structure; substantive but not padded
+- **Winner:** Random-1 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2105268689650245709
+**Original:** jsyk
+**Bot Selected:** Random-2 - "jerusalem"
+
+**Agent Analysis:**
+- **Random-2** (0.164): substantive but not padded; fragment-length phrasing
+- **Oldschool** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.762): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.773): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (substantive but not padded; fragment-length phrasing)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "substantive but not padded; fragment-length phrasing"
+
+## Tweet 2105415828799885719
+**Original:** TO GAME
+**Bot Selected:** Random-1 - "PLAYING THE GAME"
+
+**Agent Analysis:**
+- **Random-1** (0.317): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.201): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.768): mostly repeats the original; includes humor themes; short phrase has a semantic twist; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.785): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2105411354261950820
+**Original:** I'm working on a Final Fantasy 7 map for Day of Defeat: Source
+**Bot Selected:** Random-3 - "We lost seven fonts in the last day"
+
+**Agent Analysis:**
+- **Random-1** (0.518): complete sentence structure; substantive but not padded
+- **Random-3** (0.373): complete sentence structure; fragment-length phrasing
+- **Random-2** (0.192): no additional heuristic signals
+- **Oldschool** (0.119): fragment-length phrasing
+- **Winner:** Random-1 (complete sentence structure; substantive but not padded)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; substantive but not padded"
+
+## Tweet 2105428356321910871
+**Original:** OK RACERS LET'S ROLL
+**Bot Selected:** Random-3 - "DOGS, LET THEM GO"
+
+**Agent Analysis:**
+- **Random-3** (0.170): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.147): too short; fragment-length phrasing
+- **Random-2** (-0.149): too short; fragment-length phrasing
+- **Oldschool** (-0.168): too short; fragment-length phrasing
+- **Winner:** Random-3 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2105468232442261717
+**Original:** OH YEAH!
+**Bot Selected:** Random-1 - "YES, YES!"
+
+**Agent Analysis:**
+- **Random-1** (0.110): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (-0.394): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.397): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.397): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (has setup/punchline shape; too short)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2105606962520170950
+**Original:** a few hunny bucks
+**Bot Selected:** Random-1 - "How many dollars a month"
+
+**Agent Analysis:**
+- **Random-3** (-0.069): too short; fragment-length phrasing
+- **Random-1** (-0.079): too short; fragment-length phrasing
+- **Random-2** (-0.135): too short; fragment-length phrasing
+- **Oldschool** (-0.214): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2105746263262331101
+**Original:** yeah, it was really great!
+**Bot Selected:** Random-1 - "I don't think so well!"
+
+**Agent Analysis:**
+- **Random-1** (0.175): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (0.166): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (0.162): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (-0.414): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2105763625994764791
+**Original:** I'm a Karen but I posted some of the rotting meat a supermarket I'd go to tries to sell and every month I get an email that it's doing numbers
+**Bot Selected:** Random-2 - "I'm Karen, but I sell supers, get e-mails. It's a number I send to the lottery every month"
+
+**Agent Analysis:**
+- **Random-2** (1.053): has narrative structure; uses contradiction/juxtaposition; includes humor themes; substantive but not padded
+- **Random-3** (1.042): has narrative structure; uses contradiction/juxtaposition; includes humor themes; substantive but not padded
+- **Oldschool** (0.962): has narrative structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-1** (0.782): uses contradiction/juxtaposition; short phrase has a semantic twist; substantive but not padded
+- **Winner:** Random-2 (has narrative structure; uses contradiction/juxtaposition)
+**Rating:** 5/5
+**Best:** Random-2
+**Notes:** "has narrative structure; uses contradiction/juxtaposition"
+
+## Tweet 2115667327044009990
+**Original:** I’ve been building Pheno, a face-analysis app. You can try it on Android and get the full report free. Give it a go and tell me what you think. Sign up and follow the steps in the next post
+**Bot Selected:** Random-2 - "I created fake software from Pihn's mouth, and you can provide information about steroids... Next step"
+
+**Agent Analysis:**
+- **Random-3** (0.996): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-1** (0.949): has narrative structure; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Random-2** (0.819): has narrative structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Oldschool** (0.621): has narrative structure; includes humor themes; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2115643616010154108
+**Original:** Hear me out: Multiplayer Vampire: The Masquerade - Bloodlines
+**Bot Selected:** Random-1 - "Multisex vampire music: dance"
+
+**Agent Analysis:**
+- **Random-1** (0.534): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.327): has setup/punchline shape; fragment-length phrasing
+- **Random-2** (-0.129): too short; fragment-length phrasing
+- **Oldschool** (-0.702): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2115582320992543224
+**Original:** Got anything scary or what? Let's GAME IT
+**Bot Selected:** Random-1 - "I'm scared? Repeat"
+
+**Agent Analysis:**
+- **Random-2** (0.443): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (0.347): has setup/punchline shape; fragment-length phrasing
+- **Random-1** (0.134): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (0.125): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; includes humor themes)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2105763627496272348
+**Original:** tempted to post the video of the staff swarming a crackhead and dragging him into the back\n\nmiss that place
+**Bot Selected:** Random-1 - "It's fun to publish movies\n\nThis place is over"
+
+**Agent Analysis:**
+- **Random-3** (0.507): complete sentence structure; substantive but not padded
+- **Random-1** (0.340): substantive but not padded
+- **Oldschool** (0.340): has setup/punchline shape; fragment-length phrasing
+- **Random-2** (0.280): substantive but not padded
+- **Winner:** Random-3 (complete sentence structure; substantive but not padded)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "complete sentence structure; substantive but not padded"
+
+## Tweet 2105763849249100151
+**Original:** found it!\nhttps://x.com/BroTeamPills/status/2105763849249100151/video/1
+**Bot Selected:** Random-1 - "I bought it!\nhttps://x.com/BroTeamPills/status/2105763849249100151/video/1"
+
+**Agent Analysis:**
+- **Random-1** (0.561): has setup/punchline shape; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Random-2** (0.553): has setup/punchline shape; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Oldschool** (0.454): has setup/punchline shape; includes humor themes; substantive but not padded; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (0.102): mostly repeats the original; has setup/punchline shape; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2105773837115629941
+**Original:** I cannot
+**Bot Selected:** Random-3 - "Court of Justice"
+
+**Agent Analysis:**
+- **Oldschool** (0.421): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (-0.119): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.198): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.793): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2105776405846053252
+**Original:** MORE CARS\nand games
+**Bot Selected:** Random-1 - "Son of Myint Aung, d.o.b"
+
+**Agent Analysis:**
+- **Random-3** (0.186): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (0.059): shares too much wording with original; includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.132): too short; fragment-length phrasing
+- **Oldschool** (-0.248): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2105880256825667689
+**Original:** are they really giving out MAID pamphlets in Canada like this now?
+**Bot Selected:** Random-2 - "INTERVIECTION OF TERRIA: WHITE CARE?"
+
+**Agent Analysis:**
+- **Oldschool** (0.611): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.564): has narrative structure; substantive but not padded
+- **Random-2** (0.346): has setup/punchline shape; fragment-length phrasing
+- **Random-3** (0.340): has setup/punchline shape; fragment-length phrasing
+- **Winner:** Oldschool (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2106074661356486878
+**Original:** Miss Cleo guiding you through your own death
+**Bot Selected:** Random-3 - "He died of Franco"
+
+**Agent Analysis:**
+- **Random-3** (0.766): has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.314): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.076): fragment-length phrasing
+- **Random-2** (-0.063): too short; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; creates a specific social implication"
+
+## Tweet 2106145191623365056
+**Original:** Let's GAME\n(more cars + Yakuza girls)
+**Bot Selected:** Random-2 - "Repeat\nMaybe a gangster"
+
+**Agent Analysis:**
+- **Random-2** (0.260): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.087): fragment-length phrasing
+- **Random-3** (-0.137): too short; fragment-length phrasing
+- **Oldschool** (-0.142): too short; fragment-length phrasing
+- **Winner:** Random-2 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2114360329262244131
+**Original:** You coming to the Coolhole Awards this year?
+**Bot Selected:** Random-3 - "This year I won David's award?"
+
+**Agent Analysis:**
+- **Random-3** (0.558): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.331): has setup/punchline shape; fragment-length phrasing
+- **Oldschool** (0.126): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.097): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2106573390027075710
+**Original:** Remember the Star Trek VHS board game?\n\nIT'S BACK
+**Bot Selected:** Random-3 - "UNIQUE COMPANY, NON UN 30%? Return"
+
+**Agent Analysis:**
+- **Oldschool** (0.373): has setup/punchline shape; fragment-length phrasing
+- **Random-2** (0.353): has setup/punchline shape; fragment-length phrasing
+- **Random-3** (0.347): has setup/punchline shape; fragment-length phrasing
+- **Random-1** (0.262): has setup/punchline shape; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Oldschool (has setup/punchline shape; fragment-length phrasing)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; fragment-length phrasing"
+
+## Tweet 2106573547753935069
+**Original:** You'll have to make your own Starfleet rank insignia stickers yourself though
+**Bot Selected:** Random-1 - "You need to turn planets into climate"
+
+**Agent Analysis:**
+- **Random-1** (0.942): complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.695): complete sentence structure; creates a specific social implication; short phrase has a semantic twist
+- **Oldschool** (0.604): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.389): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Random-1 (complete sentence structure; uses contradiction/juxtaposition)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; uses contradiction/juxtaposition"
+
+## Tweet 2106868563219014045
+**Original:** thinking about it
+**Bot Selected:** Random-3 - "I miss him"
+
+**Agent Analysis:**
+- **Random-3** (-0.028): too short; fragment-length phrasing
+- **Random-1** (-0.090): too short; fragment-length phrasing
+- **Oldschool** (-0.203): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.237): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2106868564569489860
+**Original:** it would only take 10 years
+**Bot Selected:** Random-2 - "It only takes 10 years"
+
+**Agent Analysis:**
+- **Random-2** (-0.101): too short; fragment-length phrasing
+- **Random-1** (-0.116): too short; fragment-length phrasing
+- **Oldschool** (-0.167): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.255): shares too much wording with original; too short; fragment-length phrasing
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2106972736962892186
+**Original:** clever girl
+**Bot Selected:** Random-2 - "Good boy"
+
+**Agent Analysis:**
+- **Random-1** (0.214): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.127): too short; fragment-length phrasing
+- **Random-3** (-0.217): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.219): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2106972738011472126
+**Original:** used ai to make me a shocked face for the thumbnail\n\nfeel pretty good about it
+**Bot Selected:** Random-3 - "I took my face with me\n\nIt's nice"
+
+**Agent Analysis:**
+- **Random-2** (0.423): complete sentence structure
+- **Random-3** (0.356): substantive but not padded
+- **Random-1** (0.156): fragment-length phrasing
+- **Oldschool** (-0.766): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (complete sentence structure)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "complete sentence structure"
+
+## Tweet 2107192020012016105
+**Original:** u get good price!
+**Bot Selected:** Random-3 - "High price!"
+
+**Agent Analysis:**
+- **Oldschool** (0.225): mostly repeats the original; has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.149): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.135): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (-0.005): shares too much wording with original; has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Oldschool (mostly repeats the original; has setup/punchline shape)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "mostly repeats the original; has setup/punchline shape"
+
+## Tweet now I'm 75% convinced
+**Original:** now I'm 75% convinced
+**Bot Selected:** Random-1 - "I believe in 25%"
+
+**Agent Analysis:**
+- **Random-1** (-0.042): too short; fragment-length phrasing
+- **Random-3** (-0.048): too short; fragment-length phrasing
+- **Oldschool** (-0.062): too short; fragment-length phrasing
+- **Random-2** (-0.114): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107228814304838134
+**Original:** TAKE THE SHOT\nand GAME
+**Bot Selected:** Random-3 - "More than $5"
+
+**Agent Analysis:**
+- **Random-1** (-0.073): too short; fragment-length phrasing
+- **Random-2** (-0.122): too short; fragment-length phrasing
+- **Random-3** (-0.131): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.766): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107232399423914288
+**Original:** killing myself through the government and coming back as a black woman also through the government
+**Bot Selected:** Random-2 - "The government committed suicide and returned black women"
+
+**Agent Analysis:**
+- **Random-3** (0.432): includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.427): includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-2** (0.299): substantive but not padded
+- **Oldschool** (0.137): substantive but not padded; fragment-length phrasing
+- **Winner:** Random-3 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2107585385773842707
+**Original:** so you would
+**Bot Selected:** Random-1 - "How can we show how we trust the Lord"
+
+**Agent Analysis:**
+- **Random-3** (0.400): complete sentence structure
+- **Random-1** (-0.065): too short; fragment-length phrasing
+- **Random-2** (-0.113): too short; fragment-length phrasing
+- **Oldschool** (-0.203): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (complete sentence structure)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "complete sentence structure"
+
+## Tweet 2107589524155220425
+**Original:** second place
+**Bot Selected:** Random-3 - "and"
+
+**Agent Analysis:**
+- **Random-3** (-0.213): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.705): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.716): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.902): shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107603375399543250
+**Original:** that was the first version and I will be murdered if I post it
+**Bot Selected:** Random-2 - "This is the first version. If they let me go, I will die"
+
+**Agent Analysis:**
+- **Random-2** (0.861): complete sentence structure; creates a specific social implication; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-3** (0.771): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.493): complete sentence structure; substantive but not padded
+- **Oldschool** (0.277): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Random-2 (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2107605665082724448
+**Original:** STAR WARS FAST
+**Bot Selected:** Random-3 - "A STAR FIGHTS FAST"
+
+**Agent Analysis:**
+- **Random-2** (-0.110): too short; fragment-length phrasing
+- **Random-1** (-0.251): shares too much wording with original; too short; fragment-length phrasing
+- **Oldschool** (-0.292): shares too much wording with original; too short; fragment-length phrasing
+- **Random-3** (-0.341): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107667334748135631
+**Original:** fine
+**Bot Selected:** Random-3 - "Okay. I'll tell you"
+
+**Agent Analysis:**
+- **Random-3** (0.402): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (-0.739): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.758): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.758): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2107668169506865162
+**Original:** fUCK
+**Bot Selected:** Random-1 - "Be Happy"
+
+**Agent Analysis:**
+- **Random-1** (-0.185): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.202): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.717): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107668931410567437
+**Original:** NOPE
+**Bot Selected:** Random-2 - "Example:"
+
+**Agent Analysis:**
+- **Random-2** (-0.082): too short; fragment-length phrasing
+- **Random-3** (-0.631): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-1** (-0.753): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.760): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107669385485926554
+**Original:** (unmute)
+**Bot Selected:** Random-3 - "No lips"
+
+**Agent Analysis:**
+- **Random-3** (-0.172): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.760): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.760): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107669793012867441
+**Original:** WHAT!
+**Bot Selected:** Random-1 - "Kim!"
+
+**Agent Analysis:**
+- **Oldschool** (0.159): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.156): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (-0.405): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.408): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Oldschool (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2107678088402502024
+**Original:** thanks boo!
+**Bot Selected:** Random-1 - "Look at you!"
+
+**Agent Analysis:**
+- **Random-1** (0.671): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.671): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.671): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.658): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Random-1 (has setup/punchline shape; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; creates a specific social implication"
+
+## Tweet 2107681476301222018
+**Original:** had AI make a script for it
+**Bot Selected:** Random-2 - "I wrote the script"
+
+**Agent Analysis:**
+- **Random-2** (-0.065): too short; fragment-length phrasing
+- **Random-3** (-0.065): too short; fragment-length phrasing
+- **Oldschool** (-0.065): too short; fragment-length phrasing
+- **Random-1** (-0.081): too short; fragment-length phrasing
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107875673415332096
+**Original:** got in trouble for this one
+**Bot Selected:** Random-2 - "We have a problem"
+
+**Agent Analysis:**
+- **Random-2** (-0.060): too short; fragment-length phrasing
+- **Random-1** (-0.088): too short; fragment-length phrasing
+- **Oldschool** (-0.088): too short; fragment-length phrasing
+- **Random-3** (-0.127): too short; fragment-length phrasing
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107877990134915576
+**Original:** yes
+**Bot Selected:** Random-1 - "Yes, yes, yes"
+
+**Agent Analysis:**
+- **Oldschool** (-0.203): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.293): shares too much wording with original; too short; fragment-length phrasing
+- **Random-2** (-2.906): too close to original; shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-2.906): too close to original; shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2107903626622689470
+**Original:** friends with Elon
+**Bot Selected:** Random-2 - "Amateur"
+
+**Agent Analysis:**
+- **Random-1** (0.084): fragment-length phrasing
+- **Random-3** (-0.239): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.716): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.742): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2107954751270998516
+**Original:** LET'S FUCKIN GAME, CUTIES
+**Bot Selected:** Random-1 - "HELLO, GIRLS"
+
+**Agent Analysis:**
+- **Random-2** (0.223): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (0.153): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.155): too short; fragment-length phrasing
+- **Random-1** (-0.206): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2108084058853130610
+**Original:** You got shut down by Riddick himself
+**Bot Selected:** Random-1 - "The horse will knock you out"
+
+**Agent Analysis:**
+- **Random-2** (0.603): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.397): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (-0.185): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.208): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2108084294379778255
+**Original:** I am
+**Bot Selected:** Random-2 - "I like it"
+
+**Agent Analysis:**
+- **Random-2** (-0.035): too short; fragment-length phrasing
+- **Oldschool** (-0.203): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.722): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.756): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2108256178803482786
+**Original:** no i tell u
+**Bot Selected:** Random-2 - "I won't"
+
+**Agent Analysis:**
+- **Random-1** (0.401): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.281): shares too much wording with original; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (-0.141): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.742): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2108326152217780734
+**Original:** Here to haul your gamer ass away
+**Bot Selected:** Random-1 - "To insult your player"
+
+**Agent Analysis:**
+- **Oldschool** (0.391): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (-0.035): too short; fragment-length phrasing
+- **Random-2** (-0.096): too short; fragment-length phrasing
+- **Random-3** (-0.196): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2108693351067427089
+**Original:** FIGHTS
+**Bot Selected:** Random-1 - "WAR"
+
+**Agent Analysis:**
+- **Random-1** (-0.711): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.749): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.749): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2108819533355991152
+**Original:** GOSH
+**Bot Selected:** Random-3 - "George Gegywickz"
+
+**Agent Analysis:**
+- **Random-2** (-0.194): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.723): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.750): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2109073073064538345
+**Original:** haha no you are wrong
+**Bot Selected:** Random-3 - "you're right"
+
+**Agent Analysis:**
+- **Random-2** (0.325): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (0.325): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (0.311): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.175): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2109471480648270275
+**Original:** MODS=GODS
+**Bot Selected:** Random-3 - "EXAMPLE: GOD"
+
+**Agent Analysis:**
+- **Random-1** (0.448): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (0.194): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.066): too short; fragment-length phrasing
+- **Random-3** (-0.636): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (has setup/punchline shape; includes humor themes)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2109522024360198360
+**Original:** Reddit must be preserved
+**Bot Selected:** Random-1 - "I'm sorry I saved your life"
+
+**Agent Analysis:**
+- **Random-1** (0.432): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.035): fragment-length phrasing
+- **Random-2** (-0.225): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.811): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2109731484676534502
+**Original:** Feel too slow in Graveyard Keeper 2?\nI made you a skateboard!
+**Bot Selected:** Random-1 - "Two important numbers at Hardy cemetery? I'm talking to you!"
+
+**Agent Analysis:**
+- **Random-1** (1.017): has setup/punchline shape; complete sentence structure; creates a specific social implication; short phrase has a semantic twist
+- **Random-2** (0.881): has setup/punchline shape; complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.832): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Oldschool** (0.644): has setup/punchline shape; complete sentence structure; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (has setup/punchline shape; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2109731485888770067
+**Original:** Get the mod here:
+**Bot Selected:** Random-1 - "Help me"
+
+**Agent Analysis:**
+- **Random-1** (0.129): fragment-length phrasing
+- **Random-3** (-0.135): too short; fragment-length phrasing
+- **Oldschool** (-0.156): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.209): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2109732340604047655
+**Original:** Also on Thunderstore
+**Bot Selected:** Random-3 - "Stone at the same time"
+
+**Agent Analysis:**
+- **Random-3** (-0.086): too short; fragment-length phrasing
+- **Random-1** (-0.103): too short; fragment-length phrasing
+- **Random-2** (-0.195): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.762): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2109767736910070180
+**Original:** Let's GAME.
+**Bot Selected:** Random-3 - "Look at the race."
+
+**Agent Analysis:**
+- **Random-3** (-0.114): too short; fragment-length phrasing
+- **Oldschool** (-0.147): too short; fragment-length phrasing
+- **Random-2** (-0.645): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-1** (-0.667): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2110118403629576702
+**Original:** I commend you for leaving the comments on at least
+**Bot Selected:** Random-2 - "I have at least one person"
+
+**Agent Analysis:**
+- **Oldschool** (0.609): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.375): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.364): complete sentence structure; fragment-length phrasing
+- **Random-3** (0.054): fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2110131471470211364
+**Original:** Alright dude let's just get some honest to Christ gaming done in here
+**Bot Selected:** Random-3 - "All right, to be honest, play against Jesus"
+
+**Agent Analysis:**
+- **Random-3** (0.664): has narrative structure; creates a specific social implication; substantive but not padded; foreign fragments reduce clarity
+- **Random-1** (0.464): includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-2** (0.275): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.249): substantive but not padded
+- **Winner:** Random-3 (has narrative structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has narrative structure; creates a specific social implication"
+
+## Tweet 2110246715836232112
+**Original:** SHIT
+**Bot Selected:** Random-1 - "Black"
+
+**Agent Analysis:**
+- **Oldschool** (-0.714): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.739): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.743): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.759): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2110497700114547097
+**Original:** Drop your shit and let's GAME
+**Bot Selected:** Random-2 - "Throw something to play"
+
+**Agent Analysis:**
+- **Oldschool** (0.294): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (-0.112): too short; fragment-length phrasing
+- **Random-2** (-0.116): too short; fragment-length phrasing
+- **Random-1** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2110861887588143598
+**Original:** Tonight\nI'm sayin\n\nLet's just \nGAME
+**Bot Selected:** Random-2 - "Tonight\nI said...\n\nSpeed \nSAR"
+
+**Agent Analysis:**
+- **Random-2** (0.728): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-3** (0.115): fragment-length phrasing
+- **Random-1** (0.087): fragment-length phrasing
+- **Oldschool** (0.064): fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; includes humor themes)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2110967150710268165
+**Original:** cranking Monsters, staying awake all night at the LAN playing Dressmaker
+**Bot Selected:** Random-2 - "Do not sleep at the station at night"
+
+**Agent Analysis:**
+- **Random-2** (0.323): no additional heuristic signals
+- **Oldschool** (0.266): substantive but not padded
+- **Random-1** (0.222): no additional heuristic signals
+- **Random-3** (0.086): foreign fragments reduce clarity
+- **Winner:** Random-2 (best available option with comparatively stronger coherence and humor signal)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2108816552594485347
+**Original:** we will be watching that execution in Coolhole by the way
+**Bot Selected:** Random-1 - "Look at that beautiful room"
+
+**Agent Analysis:**
+- **Random-3** (0.213): no additional heuristic signals
+- **Random-1** (0.116): fragment-length phrasing
+- **Random-2** (0.075): fragment-length phrasing
+- **Oldschool** (-0.176): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (best available option with comparatively stronger coherence and humor signal)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "best available option with comparatively stronger coherence and humor signal"
+
+## Tweet 2111213513213616318
+**Original:** GET IN
+**Bot Selected:** Random-1 - "Take the car"
+
+**Agent Analysis:**
+- **Random-1** (-0.095): too short; fragment-length phrasing
+- **Random-3** (-0.128): too short; fragment-length phrasing
+- **Oldschool** (-0.203): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.768): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2111356930853904885
+**Original:** Hey!\n\nI made you a site to help you with your gaming backlog.\n\nIt's called Backlogger\n\nI'm still building it and testing it out but let me know how it works for you. \nI'm hoping it makes whizzing through the games you've been meaning to play a lot more fun.
+**Bot Selected:** Random-2 - "Get in touch!\n\nI made a page to cancel the game. Ser Italy.\n\nLow\n\nI'll put it in and try it, but I know it's good for you. Ser Italy. \nI'm giving it away."
+
+**Agent Analysis:**
+- **Oldschool** (1.693): has narrative structure; has setup/punchline shape; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-1** (1.633): has narrative structure; has setup/punchline shape; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Random-2** (1.630): has narrative structure; has setup/punchline shape; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; includes humor themes
+- **Random-3** (1.172): has narrative structure; has setup/punchline shape; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded; foreign fragments reduce clarity
+- **Winner:** Oldschool (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2111357270177288641
+**Original:** There's a really fun part where you sort through your backlogged games and whip them into Now, Soon, or Later bins.\n\nI found this part pretty addictive on its own
+**Bot Selected:** Random-3 - "That's an interesting xogo moi that was xogated this morning.\n\nInst levoume to addiction"
+
+**Agent Analysis:**
+- **Random-2** (0.636): has narrative structure; includes humor themes; substantive but not padded
+- **Random-1** (0.427): creates a specific social implication; substantive but not padded
+- **Oldschool** (0.322): substantive but not padded
+- **Random-3** (0.300): substantive but not padded
+- **Winner:** Random-2 (has narrative structure; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has narrative structure; includes humor themes"
+
+## Tweet 2111357642857988571
+**Original:** You can even import your entire Steam purchase history and feel the full weight of your sins\n\nI want to make this part even more painful and show how much you've spent on games you just ignored.
+**Bot Selected:** Random-1 - "You can take out the dates by buying the whole scene and feeling your sins\n\nI want this episode to be more painful."
+
+**Agent Analysis:**
+- **Random-1** (1.046): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-3** (1.021): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-2** (0.960): has narrative structure; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.930): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded; foreign fragments reduce clarity
+- **Winner:** Random-1 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2111357987290058894
+**Original:** Other fun features are how much you've played in moneytime of each game.\n\nAlso how much value is left in your sunk ass investments, unharvested
+**Bot Selected:** Random-1 - "Another interesting feature is how much you play in every game.\n\nYour investment in sunscreen is not important"
+
+**Agent Analysis:**
+- **Random-3** (1.335): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; includes humor themes; substantive but not padded
+- **Oldschool** (0.988): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-2** (0.813): has narrative structure; complete sentence structure; includes humor themes; substantive but not padded
+- **Random-1** (0.529): has setup/punchline shape; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2111371468638736487
+**Original:** its steals ur money and game
+**Bot Selected:** Random-3 - "He stole money and games"
+
+**Agent Analysis:**
+- **Random-1** (0.479): complete sentence structure; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.294): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.088): fragment-length phrasing
+- **Oldschool** (-0.724): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (complete sentence structure; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; includes humor themes"
+
+## Tweet 2112306503709581583
+**Original:** Let's GAME, Freebirds!
+**Bot Selected:** Random-1 - "Free end, free end!"
+
+**Agent Analysis:**
+- **Oldschool** (0.543): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.218): has setup/punchline shape; too short; fragment-length phrasing; repetition adds escalation or payoff
+- **Random-2** (0.112): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.108): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Oldschool (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2112425531883110783
+**Original:** I made a website for looksmaxxers and incels to rate their faces.\n\nSouth Park just aired and episode with an app that does the same thing.\n\nThese are all probably out there\n\nIt's just that\n\nI WAS FIRST!
+**Bot Selected:** Random-1 - "Luxury.\n\n" South Park" The applications published similar emissions and programmes.\n\nIt could be there\n\nComing\n\nI was!"
+
+**Agent Analysis:**
+- **Random-1** (1.038): has narrative structure; has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Random-3** (1.029): has narrative structure; has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Random-2** (1.016): has narrative structure; has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Oldschool** (0.824): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Winner:** Random-1 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2112425533317525554
+**Original:** It's at https://Phenoface.com\n\n\nYou can even pay for an in-depth pdf telling you how ugly your face is and what surgeries you'd need to be normal\n\nI should have been faster on the app though!
+**Bot Selected:** Random-3 - "I was inside https://Phenoface.com You can get a different background\nI'm on an app!"
+
+**Agent Analysis:**
+- **Random-1** (0.951): has setup/punchline shape; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Random-2** (0.901): has setup/punchline shape; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Random-3** (0.711): has setup/punchline shape; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.430): has setup/punchline shape; substantive but not padded; foreign fragments reduce clarity
+- **Winner:** Random-1 (has setup/punchline shape; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2112432990756475310
+**Original:** it seems really mean but it's funny\nif it took off then I'd feel bad that I am helping people
+**Bot Selected:** Random-3 - "That means....\nI can't help people if I go"
+
+**Agent Analysis:**
+- **Random-3** (1.177): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-2** (0.780): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.746): uses contradiction/juxtaposition; short phrase has a semantic twist; substantive but not padded
+- **Oldschool** (0.508): complete sentence structure; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2112454371607031929
+**Original:** ok!
+**Bot Selected:** Random-3 - "This is ��`���!"
+
+**Agent Analysis:**
+- **Oldschool** (0.159): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (0.130): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (0.125): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (-0.002): has setup/punchline shape; too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Oldschool (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2112641068999299401
+**Original:** this may actually set a "Gay Retard" precedence
+**Bot Selected:** Random-1 - "It shall allow: " The head sending homosexuals" Concentrate"
+
+**Agent Analysis:**
+- **Random-1** (0.709): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-2** (0.397): complete sentence structure; substantive but not padded; foreign fragments reduce clarity
+- **Oldschool** (0.312): substantive but not padded
+- **Random-3** (-0.001): fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Random-1 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2112666915542106527
+**Original:** Crank it and LET'S GAME
+**Bot Selected:** Random-2 - "Turn around"
+
+**Agent Analysis:**
+- **Random-2** (-0.196): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.218): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.776): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2112757615285723280
+**Original:** A quarter of people do not feel like they belong here? Nothing about what you posted here was good.\n\nI think you're fedposting for discontents
+**Bot Selected:** Random-1 - "People who don't feel they belong to ordinary people? You're just a good writer.\n\nI thought you started the fire"
+
+**Agent Analysis:**
+- **Random-1** (1.404): has narrative structure; has setup/punchline shape; uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Random-3** (1.008): has narrative structure; has setup/punchline shape; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.597): has setup/punchline shape; substantive but not padded
+- **Random-2** (0.538): has setup/punchline shape; substantive but not padded
+- **Winner:** Random-1 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2112790104645513537
+**Original:** you dropped this, king
+**Bot Selected:** Random-1 - "You left"
+
+**Agent Analysis:**
+- **Random-1** (0.306): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (0.294): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.183): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.204): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2112973754217427408
+**Original:** realer
+**Bot Selected:** Random-3 - "I'm happy"
+
+**Agent Analysis:**
+- **Random-3** (-0.176): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.643): too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.704): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.754): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2112977463735353733
+**Original:** bro\nmy friends have worked with David Suzuki and were repulsed by what an obnoxious, egocentric asshole he is\n\ngood get for you though!
+**Bot Selected:** Random-3 - "They were called the Calder brothers\nDavid Skookie's friends were surprised to find the hole\n\nBut it's good for you!"
+
+**Agent Analysis:**
+- **Random-1** (1.628): has narrative structure; has setup/punchline shape; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-3** (0.819): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Random-2** (0.756): has narrative structure; has setup/punchline shape; substantive but not padded; foreign fragments reduce clarity
+- **Oldschool** (0.403): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2113033110715847121
+**Original:** Let's eat!
+**Bot Selected:** Random-2 - "Yes!"
+
+**Agent Analysis:**
+- **Random-2** (-0.397): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-1** (-0.548): shares too much wording with original; has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.548): shares too much wording with original; has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.548): shares too much wording with original; has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-2 (has setup/punchline shape; too short)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2113094088237240683
+**Original:** bro we saw you on xvideos getting a foot job from your underaged neice
+**Bot Selected:** Random-1 - "You've been working since you were a kid"
+
+**Agent Analysis:**
+- **Random-1** (0.833): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-3** (0.705): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-2** (0.589): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (-0.099): too short; fragment-length phrasing
+- **Winner:** Random-1 (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2113100198285300050
+**Original:** yeah like choosing from hundreds of genders
+**Bot Selected:** Random-1 - "He likes to choose hundreds of products"
+
+**Agent Analysis:**
+- **Random-3** (0.623): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.133): fragment-length phrasing
+- **Random-2** (0.112): fragment-length phrasing
+- **Oldschool** (-0.689): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Winner:** Random-3 (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2113124676721639778
+**Original:** are you trans?
+**Bot Selected:** Random-1 - "Approaching target?"
+
+**Agent Analysis:**
+- **Random-1** (0.159): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (0.147): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (-0.384): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.402): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2113125903807214047
+**Original:** bro
+**Bot Selected:** Random-2 - "Black and Black"
+
+**Agent Analysis:**
+- **Random-2** (0.257): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.122): too short; fragment-length phrasing
+- **Random-1** (-0.710): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2113130333365477443
+**Original:** it's an Indian shell game
+**Bot Selected:** Random-3 - "It's your cock"
+
+**Agent Analysis:**
+- **Random-3** (0.419): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (-0.113): too short; fragment-length phrasing
+- **Random-1** (-0.190): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.197): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2113138237971824765
+**Original:** going on the computer to get mad and then staying on
+**Bot Selected:** Random-1 - "To Computers and Anger"
+
+**Agent Analysis:**
+- **Random-3** (0.760): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.193): no additional heuristic signals
+- **Random-2** (-0.120): too short; fragment-length phrasing
+- **Oldschool** (-0.226): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2113144708503687436
+**Original:** you'll cowards don't smoke dick
+**Bot Selected:** Random-2 - "You don't have the guts"
+
+**Agent Analysis:**
+- **Oldschool** (0.633): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (-0.100): too short; fragment-length phrasing
+- **Random-3** (-0.196): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.227): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2113152036955205896
+**Original:** SHIT!
+**Bot Selected:** Random-2 - "French!"
+
+**Agent Analysis:**
+- **Oldschool** (0.159): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (0.110): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (-0.401): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-1** (-0.411): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Oldschool (has setup/punchline shape; too short)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2113164299439083786
+**Original:** I do what I can
+**Bot Selected:** Random-2 - "What can you do"
+
+**Agent Analysis:**
+- **Oldschool** (0.289): shares too much wording with original; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.119): complete sentence structure; too short; fragment-length phrasing
+- **Random-1** (0.100): fragment-length phrasing
+- **Random-3** (-0.087): too short; fragment-length phrasing
+- **Winner:** Oldschool (shares too much wording with original; creates a specific social implication)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "shares too much wording with original; creates a specific social implication"
+
+## Tweet 2113320319096397991
+**Original:** pretty good
+**Bot Selected:** Random-1 - "Florida"
+
+**Agent Analysis:**
+- **Random-1** (-0.181): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.738): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.760): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.773): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 21133420470255127110
+**Original:** Here's a quick read about BioWare's downfall\n\nYou probably know a lot of this already\n\nBut you might appreciate a laugh down memory road
+**Bot Selected:** Random-2 - "Read more about the decline in biological warfare\n\nYou must know a lot about that\n\nThanks if you're on your way"
+
+**Agent Analysis:**
+- **Random-3** (0.940): has narrative structure; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Random-2** (0.607): has narrative structure; substantive but not padded
+- **Random-1** (0.467): has narrative structure; substantive but not padded; foreign fragments reduce clarity
+- **Oldschool** (0.266): substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2113342027052298615
+**Original:** Full PDF here:
+**Bot Selected:** Random-2 - "Read more:"
+
+**Agent Analysis:**
+- **Random-2** (0.082): fragment-length phrasing
+- **Oldschool** (-0.131): too short; fragment-length phrasing
+- **Random-1** (-0.680): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.680): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-2 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2113342028927156627
+**Original:** Who could forget Manveer Heir?\n\nHates whites \nand unfortunately\n\nhad to work for them
+**Bot Selected:** Random-1 - "Who can forget a successor? I hate white people \nI'm sorry\n\nWork"
+
+**Agent Analysis:**
+- **Random-2** (0.905): has setup/punchline shape; complete sentence structure; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.745): has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Random-1** (0.650): has setup/punchline shape; complete sentence structure; substantive but not padded; fragment-length phrasing
+- **Random-3** (0.551): has setup/punchline shape; substantive but not padded
+- **Winner:** Random-2 (has setup/punchline shape; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2113342033532440944
+**Original:** This is the guy who wants you dead\nhttps://x.com/BroTeamPills/status/2113342033532440944/photo/1
+**Bot Selected:** Random-3 - "You'll get it\nhttps://x.com/BroTeamPills/status/2113342033532440944/photo/1"
+
+**Agent Analysis:**
+- **Random-2** (0.746): complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Random-3** (0.490): creates a specific social implication; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.481): creates a specific social implication; includes humor themes; substantive but not padded; fragment-length phrasing
+- **Oldschool** (0.296): includes humor themes; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-2 (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2113342035893838231
+**Original:** How about David Gaider\n\nwho doesn't care for your Not Being Gay Privilege?
+**Bot Selected:** Random-2 - "David Gant\n\nYou don't care about your shame?"
+
+**Agent Analysis:**
+- **Random-2** (0.733): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.727): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-3** (0.433): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Oldschool** (0.420): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; creates a specific social implication"
+
+## Tweet 2113342038116831626
+**Original:** This is the cocky teenage latina ready to destroy your frail ego with a look
+**Bot Selected:** Random-3 - "This crazy teenager wants to destroy his weak breath with his eyes"
+
+**Agent Analysis:**
+- **Random-3** (0.307): substantive but not padded
+- **Oldschool** (0.280): substantive but not padded
+- **Random-1** (0.241): no additional heuristic signals
+- **Random-2** (0.097): fragment-length phrasing
+- **Winner:** Random-3 (substantive but not padded)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "substantive but not padded"
+
+## Tweet 2113342040335593599
+**Original:** And Jennifer Hepler\n\nwho did not care for actually playing the games she was writing for
+**Bot Selected:** Random-2 - "Loan Jennifer\n\nYou want to write to a real gru"
+
+**Agent Analysis:**
+- **Oldschool** (0.350): includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.349): includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-2** (0.290): substantive but not padded
+- **Random-3** (0.148): substantive but not padded; fragment-length phrasing
+- **Winner:** Oldschool (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2113342042583802191
+**Original:** She got in because she wrote slashfic and her husband already worked for BioWare
+**Bot Selected:** Random-2 - "He came here because he wrote it " Disabled" Her husband's a club"
+
+**Agent Analysis:**
+- **Random-2** (0.833): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Random-3** (0.663): creates a specific social implication; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Oldschool** (0.393): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.299): substantive but not padded
+- **Winner:** Random-2 (has narrative structure; has setup/punchline shape)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2113342044882256060
+**Original:** And Stanley Woo\n\na BioWare employee who got mad on the forum
+**Bot Selected:** Random-2 - "Samurai Dan\n\nDead Sea Roll"
+
+**Agent Analysis:**
+- **Random-3** (0.105): fragment-length phrasing
+- **Oldschool** (0.098): fragment-length phrasing
+- **Random-2** (0.091): fragment-length phrasing
+- **Random-1** (0.085): fragment-length phrasing
+- **Winner:** Random-3 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2113342047025512711
+**Original:** End of Rine.
+**Bot Selected:** Random-1 - "I'm sorry."
+
+**Agent Analysis:**
+- **Random-3** (-0.080): too short; fragment-length phrasing
+- **Random-1** (-0.590): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.642): too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.648): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2113393821925118210
+**Original:** Are you trans
+**Bot Selected:** Random-1 - "You stand before Qey"
+
+**Agent Analysis:**
+- **Random-1** (0.427): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.389): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.323): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.714): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 21133938219251182100
+**Original:** Let's finish Silver Pines tonight\n\nor kill you
+**Bot Selected:** Random-1 - "I got beer today\n\nKill someone"
+
+**Agent Analysis:**
+- **Random-3** (0.465): creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.399): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.096): fragment-length phrasing
+- **Random-2** (-0.016): fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (creates a specific social implication; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "creates a specific social implication; includes humor themes"
+
+## Tweet 2113575343550574827
+**Original:** what the fuck faggot shit is this cnn on my timeline
+**Bot Selected:** Random-1 - "I am the Shaytan of Albay. n"
+
+**Agent Analysis:**
+- **Oldschool** (0.138): fragment-length phrasing
+- **Random-2** (0.119): fragment-length phrasing
+- **Random-3** (0.106): fragment-length phrasing
+- **Random-1** (-0.047): too short; fragment-length phrasing
+- **Winner:** Oldschool (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2113768386647966150
+**Original:** ODST Night\n\nFinish the Fight
+**Bot Selected:** Random-2 - "Stop the fight"
+
+**Agent Analysis:**
+- **Oldschool** (0.119): fragment-length phrasing
+- **Random-3** (-0.122): too short; fragment-length phrasing
+- **Random-1** (-0.194): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-2** (-0.217): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2115875038482292754
+**Original:** Aphelion just saying
+**Bot Selected:** Random-2 - "Alumínium"
+
+**Agent Analysis:**
+- **Random-2** (-0.094): too short; fragment-length phrasing
+- **Random-3** (-0.100): too short; fragment-length phrasing
+- **Random-1** (-0.121): too short; fragment-length phrasing
+- **Oldschool** (-0.811): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2113822694018064467
+**Original:** Hey!\n\nA great guy I know is launching his board game\n\nIt looks wicked\n\nHe's really clever and puts a lot of time into making his games fun as shit, maybe you'll like it too\n\nThey already hit over 7 million euros on a 50,000 euro goal. \n\nEveryone's really excited for it
+**Bot Selected:** Random-3 - "Contact me!\n\nYou know I started it\n\nIt looks bad\n\nSpending a lot of time, very smart, enjoying his game\n\nMore than 70,000in 50,000 targets have been achieved. \n\nEverybody's excited"
+
+**Agent Analysis:**
+- **Random-3** (1.097): has narrative structure; has setup/punchline shape; complete sentence structure; includes humor themes
+- **Random-1** (0.993): has narrative structure; has setup/punchline shape; complete sentence structure; substantive but not padded
+- **Oldschool** (0.991): has narrative structure; has setup/punchline shape; complete sentence structure; includes humor themes
+- **Random-2** (0.833): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-3
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2113822695473467497
+**Original:** I got one of the fancy packs\n\nReally eager to play it\n\nNot a sponsored post or anything, Jaime is just a really cool guy and I'm happy to see this success
+**Bot Selected:** Random-1 - "I have an elegant package\n\nI want to redefine it\n\nI'm glad to see this"
+
+**Agent Analysis:**
+- **Random-3** (0.792): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-2** (0.734): complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Oldschool** (0.533): complete sentence structure; substantive but not padded
+- **Random-1** (0.513): complete sentence structure; substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2114120157652251002
+**Original:** right now\nright now\nʳᶦᵍʰᵗ ⁿᵒʷ
+**Bot Selected:** Random-2 - "Now\nNow\nPoints"
+
+**Agent Analysis:**
+- **Random-1** (0.085): fragment-length phrasing
+- **Random-3** (0.074): fragment-length phrasing
+- **Oldschool** (-0.790): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.795): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2114148094472544271
+**Original:** getting kills way out of his league anyway
+**Bot Selected:** Random-1 - "i'm looking for a killer in the category"
+
+**Agent Analysis:**
+- **Random-1** (0.593): uses contradiction/juxtaposition; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.506): includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-3** (0.003): fragment-length phrasing; foreign fragments reduce clarity
+- **Oldschool** (-0.207): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (uses contradiction/juxtaposition; short phrase has a semantic twist)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition; short phrase has a semantic twist"
+
+## Tweet 2114164271580131702
+**Original:** Yes.
+**Bot Selected:** Random-1 - "News."
+
+**Agent Analysis:**
+- **Random-1** (-0.616): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-3** (-0.616): too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.621): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.665): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2114170343904641062
+**Original:** Best in the dang world and only getting better
+**Bot Selected:** Random-3 - "A Better and Better World"
+
+**Agent Analysis:**
+- **Oldschool** (0.099): fragment-length phrasing
+- **Random-3** (0.087): fragment-length phrasing
+- **Random-2** (-0.146): too short; fragment-length phrasing
+- **Random-1** (-0.153): too short; fragment-length phrasing
+- **Winner:** Oldschool (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2114333082803388759
+**Original:** Have fun!\n\nhttps://mario.coolhost.ca
+**Bot Selected:** Random-2 - "Watch out!\n\nhttps://mario.coolhost.ca"
+
+**Agent Analysis:**
+- **Oldschool** (0.328): has setup/punchline shape; substantive but not padded; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (0.237): has setup/punchline shape; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.443): shares too much wording with original; has setup/punchline shape; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-1.907): too close to original; shares too much wording with original; has setup/punchline shape; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (has setup/punchline shape; substantive but not padded)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "has setup/punchline shape; substantive but not padded"
+
+## Tweet 2114395230804062626
+**Original:** shit will I die?
+**Bot Selected:** Random-1 - "i'm dead?"
+
+**Agent Analysis:**
+- **Random-3** (0.693): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.191): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (-0.362): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.372): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-3 (has setup/punchline shape; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; creates a specific social implication"
+
+## Tweet 2114808381592748495
+**Original:** anyway here is progress: Goldensouls will be Goldeneye but co-op. Phase B is a new campaign that's like Dark Souls. Mario is ready and can take 32 players running through the whole game together. Zelda is a battle royale. ZeldaFPS is first person Zelda with 4 player co-op
+**Bot Selected:** Random-3 - "At least we've grown, Global Gold Club, but he will cooperate. C. " Between the box" THIS SCENE IS A NEW WAR, TO START EATING WITH BLACK WOMEN, FROM KING MPPPP@5 Sudan"
+
+**Agent Analysis:**
+- **Random-3** (1.101): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; includes humor themes
+- **Random-1** (0.867): has narrative structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-2** (0.525): has narrative structure; substantive but not padded
+- **Oldschool** (0.287): substantive but not padded
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2114845480320680019
+**Original:** Let's GAME
+**Bot Selected:** Random-3 - "Come in"
+
+**Agent Analysis:**
+- **Random-2** (0.399): complete sentence structure
+- **Random-3** (-0.209): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (complete sentence structure)
+**Rating:** 2/5
+**Best:** Random-2
+**Notes:** "complete sentence structure"
+
+## Tweet 2115206647052394763
+**Original:** Let's play some Marvel Rivals, brother
+**Bot Selected:** Random-1 - "Nice train"
+
+**Agent Analysis:**
+- **Oldschool** (0.252): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (-0.152): too short; fragment-length phrasing
+- **Random-1** (-0.210): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.231): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (includes humor themes; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "includes humor themes; short phrase has a semantic twist"
+
+## Tweet 2115141187300737353
+**Original:** Are you nuts? \nWhere am I gonna find 80 bucks??
+**Bot Selected:** Random-2 - "You're there? \nWhere $80 million? V = V"
+
+**Agent Analysis:**
+- **Random-2** (0.884): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.693): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.684): has setup/punchline shape; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.198): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; creates a specific social implication"
+
+## Tweet 2115488775409106950
+**Original:** Air Fryer Video
+**Bot Selected:** Random-2 - "Vedi Video"
+
+**Agent Analysis:**
+- **Random-1** (-0.189): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.648): too short; fragment-length phrasing; incoherent or fragmentary
+- **Oldschool** (-0.730): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.768): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2114763990559858939
+**Original:** Ebonomics Video
+**Bot Selected:** Random-2 - "We live in energy"
+
+**Agent Analysis:**
+- **Oldschool** (-0.114): too short; fragment-length phrasing
+- **Random-2** (-0.693): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.880): shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.880): shares too much wording with original; too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2114401605126627348
+**Original:** Christ Is King Pilot Video
+**Bot Selected:** Random-2 - "Video for the King of Christ"
+
+**Agent Analysis:**
+- **Random-1** (0.093): fragment-length phrasing
+- **Oldschool** (0.092): fragment-length phrasing
+- **Random-2** (-0.057): shares too much wording with original; fragment-length phrasing
+- **Random-3** (-0.104): too short; fragment-length phrasing
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2115851155997905115
+**Original:** Time Commando Furries Video
+**Bot Selected:** Random-3 - "Time control, stop video"
+
+**Agent Analysis:**
+- **Random-1** (0.087): fragment-length phrasing
+- **Random-3** (-0.145): too short; fragment-length phrasing
+- **Oldschool** (-0.176): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.694): too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2115938288678883761
+**Original:** Tonight we study the Blade
+**Bot Selected:** Random-3 - "Brass is looking for me today"
+
+**Agent Analysis:**
+- **Oldschool** (0.408): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.108): fragment-length phrasing
+- **Random-1** (0.096): fragment-length phrasing
+- **Random-2** (-0.004): fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Oldschool (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2116213541539897699
+**Original:** Snake Laxative
+**Bot Selected:** Random-3 - "Legislation"
+
+**Agent Analysis:**
+- **Random-3** (-0.059): too short; fragment-length phrasing
+- **Oldschool** (-0.279): too short; fragment-length phrasing; foreign fragments reduce clarity; single-word or tiny phrase
+- **Random-1** (-0.754): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.763): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2116295683926049073
+**Original:** Metal Gear Solid That is all
+**Bot Selected:** Random-3 - "He's the only one"
+
+**Agent Analysis:**
+- **Random-3** (-0.067): too short; fragment-length phrasing
+- **Oldschool** (-0.080): too short; fragment-length phrasing
+- **Random-2** (-0.109): too short; fragment-length phrasing
+- **Random-1** (-0.169): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2115957100677341413
+**Original:** new bumper for coolhole.org [COOLHOLE INDOCTRINATION SIMULATRIX PROTOCOL V0.1] Video
+**Bot Selected:** Random-2 - "New standard value coolhole.org PROTOCOL V.1 $4\r"
+
+**Agent Analysis:**
+- **Random-1** (0.516): has setup/punchline shape; substantive but not padded
+- **Random-3** (0.181): substantive but not padded; fragment-length phrasing
+- **Oldschool** (0.181): substantive but not padded; fragment-length phrasing
+- **Random-2** (0.171): substantive but not padded; foreign fragments reduce clarity
+- **Winner:** Random-1 (has setup/punchline shape; substantive but not padded)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "has setup/punchline shape; substantive but not padded"
+
+## Tweet 2117315811396161817
+**Original:** Career Lessons
+**Bot Selected:** Random-1 - "Last time"
+
+**Agent Analysis:**
+- **Oldschool** (-0.183): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.193): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.239): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.329): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2117355468633076210
+**Original:** they wrote about me trying to get Marvel 3 rollback going \n\nvariable.games/2026/08/27/ul…
+**Bot Selected:** Random-2 - "They said I wanted to come and see three wonderful things \n\nvariable.games/2026/08/27/ul…"
+
+**Agent Analysis:**
+- **Random-1** (0.610): uses contradiction/juxtaposition; includes humor themes; substantive but not padded; foreign fragments reduce clarity
+- **Oldschool** (0.312): includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-3** (0.311): includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-2** (0.287): includes humor themes; substantive but not padded; foreign fragments reduce clarity
+- **Winner:** Random-1 (uses contradiction/juxtaposition; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition; includes humor themes"
+
+## Tweet 2117355469933281599
+**Original:** LURP
+**Bot Selected:** Random-2 - "A red-headed crocodile breathing"
+
+**Agent Analysis:**
+- **Random-3** (0.074): fragment-length phrasing
+- **Oldschool** (-0.653): too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.720): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-1** (-0.749): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2117399812702433754
+**Original:** Let's shoot guys
+**Bot Selected:** Random-1 - "We shot them"
+
+**Agent Analysis:**
+- **Random-1** (-0.119): too short; fragment-length phrasing
+- **Oldschool** (-0.119): too short; fragment-length phrasing
+- **Random-3** (-0.214): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.260): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2117678193536876945
+**Original:** Herzog Remembers Fitzcarraldo
+**Bot Selected:** Random-2 - "DUKE WORK FOR F"
+
+**Agent Analysis:**
+- **Random-1** (0.415): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.122): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-2** (-0.122): too short; fragment-length phrasing
+- **Oldschool** (-0.210): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (creates a specific social implication; short phrase has a semantic twist)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "creates a specific social implication; short phrase has a semantic twist"
+
+## Tweet 2117745376434500039
+**Original:** Gaming gets you a GF 100% of the time
+**Bot Selected:** Random-1 - "A jacket with 100% time"
+
+**Agent Analysis:**
+- **Random-3** (0.387): shares too much wording with original; creates a specific social implication; short phrase has a semantic twist
+- **Random-1** (-0.072): too short; fragment-length phrasing
+- **Oldschool** (-0.082): too short; fragment-length phrasing
+- **Random-2** (-0.206): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (shares too much wording with original; creates a specific social implication)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "shares too much wording with original; creates a specific social implication"
+
+## Tweet 2117745416577945899
+**Original:** Bro Stream
+**Bot Selected:** Random-2 - "Explosive current"
+
+**Agent Analysis:**
+- **Random-2** (-0.028): too short; fragment-length phrasing
+- **Random-3** (-0.184): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.212): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.220): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2117895214954397720
+**Original:** This is what happened when I tried to do a sponsored stream for Phantom Blade Zero\n\nyoutu.be/u-lwK_yvylQ
+**Bot Selected:** Random-1 - "When I was spending money on basic value, Pethy\n\nyoutu.be/u-lwK_yvylQ"
+
+**Agent Analysis:**
+- **Oldschool** (0.684): complete sentence structure; creates a specific social implication; substantive but not padded
+- **Random-2** (0.517): complete sentence structure; substantive but not padded
+- **Random-1** (0.512): complete sentence structure; substantive but not padded
+- **Random-3** (0.307): substantive but not padded
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2118040581834158334
+**Original:** Debra Wilson Holds Still Video
+**Bot Selected:** Random-3 - "Debra Deposit More video"
+
+**Agent Analysis:**
+- **Random-2** (-0.011): fragment-length phrasing; foreign fragments reduce clarity
+- **Random-3** (-0.097): too short; fragment-length phrasing
+- **Oldschool** (-0.125): too short; fragment-length phrasing
+- **Random-1** (-0.128): too short; fragment-length phrasing
+- **Winner:** Random-2 (fragment-length phrasing; foreign fragments reduce clarity)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "fragment-length phrasing; foreign fragments reduce clarity"
+
+## Tweet 2118096966341320924
+**Original:** Hey! \n\nI updated Metal Gear Solid's lighting and textures.\nEasy to install, give it a try!\n\nMight do character models next
+**Bot Selected:** Random-1 - "Hi! \n\nI look forward to hearing about how the metal shines and lasts.\nIt's simple. Try it!\n\nThere may be these symptoms:"
+
+**Agent Analysis:**
+- **Oldschool** (0.826): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Random-1** (0.819): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Random-2** (0.805): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Random-3** (0.798): has narrative structure; has setup/punchline shape; substantive but not padded
+- **Winner:** Oldschool (has narrative structure; has setup/punchline shape)
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2118097056091054528
+**Original:** Files here:\n\ngithub.com/scheissgeist/meta…
+**Bot Selected:** Random-1 - "This is\n\ngithub.com/scheissgeist/meta…"
+
+**Agent Analysis:**
+- **Random-1** (0.090): substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-2** (0.089): substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Oldschool** (0.089): substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-3** (-0.540): fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Winner:** Random-1 (substantive but not padded; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "substantive but not padded; fragment-length phrasing"
+
+## Tweet 2118105796936687664
+**Original:** Let's GAME
+**Bot Selected:** Random-3 - "Life"
+
+**Agent Analysis:**
+- **Random-1** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.327): includes humor themes; short phrase has a semantic twist; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.724): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118184276869197842
+**Original:** giv kiss then
+**Bot Selected:** Random-2 - "Average soil humidity"
+
+**Agent Analysis:**
+- **Random-2** (-0.043): too short; fragment-length phrasing
+- **Random-1** (-0.095): too short; fragment-length phrasing
+- **Oldschool** (-0.719): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.788): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118184310016770555
+**Original:** np boss
+**Bot Selected:** Random-2 - "New Commander"
+
+**Agent Analysis:**
+- **Random-2** (-0.181): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.738): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.769): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118264049314234789
+**Original:** progress on the FF7 Day of Defeat: Source map
+**Bot Selected:** Random-2 - "day 7: resource map"
+
+**Agent Analysis:**
+- **Random-2** (0.102): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.102): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-3** (0.008): too short; fragment-length phrasing
+- **Oldschool** (-0.159): too short; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; too short)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; too short"
+
+## Tweet 2118402976284889238
+**Original:** Ordering Light
+**Bot Selected:** Random-1 - "Turn off the light"
+
+**Agent Analysis:**
+- **Random-1** (-0.090): too short; fragment-length phrasing
+- **Oldschool** (-0.194): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.199): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.210): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118465709235925048
+**Original:** yeah uhh do you know any video games?\npersonally?
+**Bot Selected:** Random-1 - "Video games? English?"
+
+**Agent Analysis:**
+- **Random-2** (0.756): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Oldschool** (0.736): has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.732): has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.575): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; includes humor themes)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; includes humor themes"
+
+## Tweet 2118592034818920524
+**Original:** bro I have co-op campaign Goldeneye on PC going Video
+**Bot Selected:** Random-2 - "I have a golden bear in my album"
+
+**Agent Analysis:**
+- **Random-1** (0.857): complete sentence structure; creates a specific social implication; includes humor themes; short phrase has a semantic twist; substantive but not padded
+- **Random-2** (0.471): complete sentence structure
+- **Random-3** (0.218): no additional heuristic signals
+- **Oldschool** (-0.218): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2118592036190466301
+**Original:** this is going to get silly as shit how many guys can we fit in this?
+**Bot Selected:** Random-2 - "It'd be stupid if it happened?"
+
+**Agent Analysis:**
+- **Random-3** (0.874): has setup/punchline shape; complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.659): has setup/punchline shape; complete sentence structure
+- **Oldschool** (0.593): has setup/punchline shape; complete sentence structure; fragment-length phrasing
+- **Random-2** (0.404): has setup/punchline shape; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2118601975092888052
+**Original:** playing WoW Forever
+**Bot Selected:** Random-3 - "Always play"
+
+**Agent Analysis:**
+- **Random-1** (-0.197): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.198): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.207): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.734): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118765365039964272
+**Original:** Full Self-Driving Video
+**Bot Selected:** Random-1 - "Input video recording"
+
+**Agent Analysis:**
+- **Random-1** (-0.120): too short; fragment-length phrasing
+- **Oldschool** (-0.191): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.226): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.733): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2118829899633099009
+**Original:** DINOS\n\nThen we'll probably get more co-op Goldeneye going as more gentlemen check in for the evening
+**Bot Selected:** Random-2 - "LNG CAN WORK WITH MORE GOLDEN EYES. BECAUSE MOST PEOPLE WORK AT NIGHT"
+
+**Agent Analysis:**
+- **Oldschool** (0.793): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; substantive but not padded
+- **Random-1** (0.469): complete sentence structure; substantive but not padded
+- **Random-2** (0.451): creates a specific social implication; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-3** (0.146): substantive but not padded; fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2118951553751253426
+**Original:** foreskin restoration is the strongest Hero's Journey
+**Bot Selected:** Random-1 - "Modern contemporary art symbols quickly"
+
+**Agent Analysis:**
+- **Random-3** (0.411): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.303): substantive but not padded
+- **Random-2** (0.100): fragment-length phrasing
+- **Oldschool** (0.079): fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; substantive but not padded)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; substantive but not padded"
+
+## Tweet 2119127748946075755
+**Original:** Careful With Those Video
+**Bot Selected:** Random-2 - "Look at these videos"
+
+**Agent Analysis:**
+- **Random-3** (-0.110): too short; fragment-length phrasing
+- **Oldschool** (-0.118): too short; fragment-length phrasing
+- **Random-2** (-0.205): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.232): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2119251241108963350
+**Original:** ALL YOUR BASE ARE BELONG TO US
+**Bot Selected:** Random-1 - "THE MARKET IS OURS"
+
+**Agent Analysis:**
+- **Random-1** (-0.104): too short; fragment-length phrasing
+- **Random-3** (-0.146): too short; fragment-length phrasing
+- **Random-2** (-0.147): too short; fragment-length phrasing
+- **Oldschool** (-0.711): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2119251239984878005
+**Original:** Would you watch it?
+**Bot Selected:** Random-3 - "He wants to see his house?"
+
+**Agent Analysis:**
+- **Random-3** (0.379): has setup/punchline shape; fragment-length phrasing
+- **Oldschool** (0.153): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (-0.416): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Random-2** (-0.416): has setup/punchline shape; too short; fragment-length phrasing; incoherent or fragmentary
+- **Winner:** Random-3 (has setup/punchline shape; fragment-length phrasing)
+**Rating:** 2/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; fragment-length phrasing"
+
+## Tweet 2119490133770580168
+**Original:** Gone Home Lore Video
+**Bot Selected:** Random-2 - "He's gone"
+
+**Agent Analysis:**
+- **Random-2** (-0.177): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.192): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.204): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.234): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-2 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2119664446788526419
+**Original:** oh\n\nthat's weird
+**Bot Selected:** Random-2 - "⇩\n\nComputers"
+
+**Agent Analysis:**
+- **Random-1** (0.083): fragment-length phrasing
+- **Random-3** (-0.194): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.750): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-2** (-0.823): too short; fragment-length phrasing; incoherent or fragmentary; foreign fragments reduce clarity; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2119852519660868086
+**Original:** Weekend Hobby
+**Bot Selected:** Random-3 - "Vacation"
+
+**Agent Analysis:**
+- **Random-1** (0.006): fragment-length phrasing; foreign fragments reduce clarity
+- **Oldschool** (-0.111): too short; fragment-length phrasing
+- **Random-3** (-0.115): too short; fragment-length phrasing
+- **Random-2** (-0.752): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing; foreign fragments reduce clarity)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing; foreign fragments reduce clarity"
+
+## Tweet 2119909881461551271
+**Original:** Let's KILL DINOS\n\nmore Goldeneye and TIE Fighter testing too
+**Bot Selected:** Random-3 - "He killed Davis\n\nName and lie"
+
+**Agent Analysis:**
+- **Random-3** (0.531): creates a specific social implication; includes humor themes; short phrase has a semantic twist; substantive but not padded; fragment-length phrasing
+- **Random-1** (0.269): includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.109): substantive but not padded; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-2** (0.100): fragment-length phrasing
+- **Winner:** Random-3 (creates a specific social implication; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-3
+**Notes:** "creates a specific social implication; includes humor themes"
+
+## Tweet 2120038476934701310
+**Original:** not bad
+**Bot Selected:** Random-1 - "OK, okay"
+
+**Agent Analysis:**
+- **Random-1** (-0.082): too short; fragment-length phrasing
+- **Random-2** (-0.245): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.738): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.772): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2120214909363404800
+**Original:** Darts in Japan
+**Bot Selected:** Random-2 - "Japanese"
+
+**Agent Analysis:**
+- **Oldschool** (-0.225): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Random-1** (-0.346): shares too much wording with original; too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.708): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.757): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2120256864030282034
+**Original:** No stream today
+**Bot Selected:** Random-1 - "He's leaving today"
+
+**Agent Analysis:**
+- **Random-2** (0.092): fragment-length phrasing
+- **Random-1** (-0.118): too short; fragment-length phrasing
+- **Random-3** (-0.229): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.281): too short; fragment-length phrasing; foreign fragments reduce clarity; single-word or tiny phrase
+- **Winner:** Random-2 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-2
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2120577296658547032
+**Original:** Best I Can Do Is 75
+**Bot Selected:** Random-3 - "The best part is I'm 75 years old"
+
+**Agent Analysis:**
+- **Oldschool** (0.422): complete sentence structure
+- **Random-1** (0.294): shares too much wording with original; complete sentence structure
+- **Random-2** (0.107): fragment-length phrasing
+- **Random-3** (-0.103): too short; fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure)
+**Rating:** 2/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure"
+
+## Tweet 2120625681637969946
+**Original:** No stream today\n\nIt's almost time
+**Bot Selected:** Random-3 - "There's no power today\n\nIt's time"
+
+**Agent Analysis:**
+- **Random-3** (0.106): fragment-length phrasing
+- **Random-2** (0.080): fragment-length phrasing
+- **Random-1** (-0.140): too short; fragment-length phrasing
+- **Oldschool** (-0.209): too short; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Random-3 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2120939683479699948
+**Original:** Kind Words at the Funeral
+**Bot Selected:** Random-1 - "Good reason to bury"
+
+**Agent Analysis:**
+- **Oldschool** (-0.146): too short; fragment-length phrasing
+- **Random-3** (-0.153): too short; fragment-length phrasing
+- **Random-1** (-0.209): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.758): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2120983972369121310
+**Original:** No stream today either
+**Bot Selected:** Oldschool - "Not anymore"
+
+**Agent Analysis:**
+- **Oldschool** (-0.169): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-3** (-0.202): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-2** (-0.216): too short; fragment-length phrasing; single-word or tiny phrase
+- **Random-1** (-0.235): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Oldschool (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Oldschool
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2121075295143043478
+**Original:** Bro Team Pill - Dressmaker
+**Bot Selected:** Random-1 - "[Images in hat"
+
+**Agent Analysis:**
+- **Random-1** (-0.061): too short; fragment-length phrasing
+- **Oldschool** (-0.097): too short; fragment-length phrasing
+- **Random-2** (-0.117): too short; fragment-length phrasing
+- **Random-3** (-0.208): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2121075647531680063
+**Original:** so I got my channel back
+**Bot Selected:** Random-2 - "I took the tildbaka vagina"
+
+**Agent Analysis:**
+- **Random-1** (0.141): fragment-length phrasing
+- **Random-2** (-0.046): too short; fragment-length phrasing
+- **Oldschool** (-0.116): too short; fragment-length phrasing
+- **Random-3** (-0.733): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2121089829685678203
+**Original:** I'll probably start privating Bro Team Eternal and save it as the escape pod for when the inevitable happens
+**Bot Selected:** Random-2 - "" I can control an unknown group in my life.""
+
+**Agent Analysis:**
+- **Random-1** (0.794): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-2** (0.544): complete sentence structure; substantive but not padded
+- **Random-3** (0.478): complete sentence structure; substantive but not padded
+- **Oldschool** (0.360): creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing; foreign fragments reduce clarity
+- **Winner:** Random-1 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2121105624671068356
+**Original:** bro I have over a year's worth of videos to put on the channel if I were to post one every week tons of clips this is going to be quite silly
+**Bot Selected:** Random-2 - "I have an annual video. I'll be in development if I have to send weekly mail"
+
+**Agent Analysis:**
+- **Random-2** (0.842): has narrative structure; complete sentence structure; substantive but not padded
+- **Oldschool** (0.816): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-3** (0.791): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-1** (0.481): complete sentence structure; substantive but not padded
+- **Winner:** Random-2 (has narrative structure; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-2
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2121104119545143544
+**Original:** so I was able to get access to my channel I saw a community strike it's for a stream I did years ago the title was a joke about Q Anon stuff that crossed the line
+**Bot Selected:** Random-1 - "I watched the public attack my electric current and I've been doing it for years because that name was a joke. Q Anon at border crossing"
+
+**Agent Analysis:**
+- **Random-3** (1.056): has narrative structure; complete sentence structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-1** (0.820): has narrative structure; complete sentence structure; substantive but not padded
+- **Random-2** (0.811): has narrative structure; complete sentence structure; substantive but not padded
+- **Oldschool** (-0.152): too short; fragment-length phrasing; single-word or tiny phrase
+- **Winner:** Random-3 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-3
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2121104131398275320
+**Original:** caste mentioned
+**Bot Selected:** Random-3 - "It says a joke I"
+
+**Agent Analysis:**
+- **Random-3** (-0.066): too short; fragment-length phrasing
+- **Random-2** (-0.076): too short; fragment-length phrasing
+- **Random-1** (-0.711): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Oldschool** (-0.761): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-3 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2121104132945932504
+**Original:** just thought I'd share this with you this is how badly you have to understand that there's nothing to see here and other cultures are very normal
+**Bot Selected:** Random-1 - "The worst part is to understand that it's normal to share it here and in other cultures"
+
+**Agent Analysis:**
+- **Random-2** (1.294): has narrative structure; complete sentence structure; uses contradiction/juxtaposition; creates a specific social implication; substantive but not padded
+- **Random-1** (0.772): has narrative structure; creates a specific social implication; substantive but not padded
+- **Random-3** (0.638): complete sentence structure; creates a specific social implication; substantive but not padded
+- **Oldschool** (0.583): has narrative structure; substantive but not padded
+- **Winner:** Random-2 (has narrative structure; complete sentence structure)
+**Rating:** 5/5
+**Best:** Random-2
+**Notes:** "has narrative structure; complete sentence structure"
+
+## Tweet 2121104121180967350
+**Original:** this is inciting violence through harmful conspiracy theories\n\njust the title alone
+**Bot Selected:** Random-1 - "Making violence with the thought of a dangerous conspiracy\n\nAddress"
+
+**Agent Analysis:**
+- **Random-1** (0.874): uses contradiction/juxtaposition; creates a specific social implication; includes humor themes; substantive but not padded
+- **Oldschool** (0.306): substantive but not padded
+- **Random-2** (0.167): substantive but not padded; fragment-length phrasing
+- **Random-3** (0.161): substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (uses contradiction/juxtaposition; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-1
+**Notes:** "uses contradiction/juxtaposition; creates a specific social implication"
+
+## Tweet 2121104122745335937
+**Original:** they make you re-educate about your mistake\n\nThey really want you to know Q Anon is very false and insane\n\nthe place didn't even have a basement!
+**Bot Selected:** Random-1 - "liturgical errors\n\nI want to know a lot of stupid people\n\nThe world deserves more!"
+
+**Agent Analysis:**
+- **Random-1** (1.401): has narrative structure; has setup/punchline shape; complete sentence structure; uses contradiction/juxtaposition; substantive but not padded
+- **Random-2** (0.531): has setup/punchline shape; substantive but not padded
+- **Random-3** (0.527): has setup/punchline shape; substantive but not padded
+- **Oldschool** (0.404): has setup/punchline shape; substantive but not padded; fragment-length phrasing
+- **Winner:** Random-1 (has narrative structure; has setup/punchline shape)
+**Rating:** 5/5
+**Best:** Random-1
+**Notes:** "has narrative structure; has setup/punchline shape"
+
+## Tweet 2121104124376936932
+**Original:** It's specifically about Q Anon, not just any old conspiracy theory\n\nthat's the really bad one to talk about
+**Bot Selected:** Random-2 - "Explain the old vagina theory\n\nTerrible"
+
+**Agent Analysis:**
+- **Random-3** (0.784): has narrative structure; creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-1** (0.516): creates a specific social implication; includes humor themes; substantive but not padded
+- **Random-2** (0.285): substantive but not padded
+- **Oldschool** (0.159): substantive but not padded; fragment-length phrasing
+- **Winner:** Random-3 (has narrative structure; creates a specific social implication)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has narrative structure; creates a specific social implication"
+
+## Tweet 2121104126054699047
+**Original:** Even talking about rich people stealing kids is bad
+**Bot Selected:** Random-3 - "Poor people say rich people steal kids"
+
+**Agent Analysis:**
+- **Random-3** (0.108): fragment-length phrasing
+- **Oldschool** (0.089): fragment-length phrasing
+- **Random-1** (-0.117): too short; fragment-length phrasing
+- **Random-2** (-0.130): too short; fragment-length phrasing
+- **Winner:** Random-3 (fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-3
+**Notes:** "fragment-length phrasing"
+
+## Tweet 2121104127631798667
+**Original:** Covering their bases with the crisis actors too
+**Bot Selected:** Random-1 - "Application of rules to actors in crisis situations"
+
+**Agent Analysis:**
+- **Random-1** (0.310): substantive but not padded
+- **Random-3** (0.293): substantive but not padded
+- **Oldschool** (0.085): fragment-length phrasing
+- **Random-2** (-0.123): too short; fragment-length phrasing
+- **Winner:** Random-1 (substantive but not padded)
+**Rating:** 2/5
+**Best:** Random-1
+**Notes:** "substantive but not padded"
+
+## Tweet 2121104129531724022
+**Original:** TRUST THE PLAN
+**Bot Selected:** Random-2 - "TRUST PROGRAM"
+
+**Agent Analysis:**
+- **Random-1** (-0.138): too short; fragment-length phrasing
+- **Random-2** (-0.189): too short; fragment-length phrasing; single-word or tiny phrase
+- **Oldschool** (-0.732): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Random-3** (-0.737): too short; fragment-length phrasing; incoherent or fragmentary; single-word or tiny phrase
+- **Winner:** Random-1 (too short; fragment-length phrasing)
+**Rating:** 1/5
+**Best:** Random-1
+**Notes:** "too short; fragment-length phrasing"
+
+## Tweet 2121077977371058444
+**Original:** LET'S KILL PEOPLE!
+**Bot Selected:** Random-3 - "WE'LL KILL YOUR MEN!"
+
+**Agent Analysis:**
+- **Random-3** (0.776): has setup/punchline shape; complete sentence structure; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.692): has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-1** (0.565): shares too much wording with original; has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (-1.450): too close to original; shares too much wording with original; has setup/punchline shape; creates a specific social implication; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; complete sentence structure)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; complete sentence structure"
+
+## Tweet 2121078525302317141
+**Original:** but now I can log in!
+**Bot Selected:** Random-3 - "I can come in!"
+
+**Agent Analysis:**
+- **Random-3** (0.867): has setup/punchline shape; uses contradiction/juxtaposition; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.164): has setup/punchline shape; too short; fragment-length phrasing
+- **Oldschool** (0.162): has setup/punchline shape; too short; fragment-length phrasing
+- **Random-1** (0.144): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-3 (has setup/punchline shape; uses contradiction/juxtaposition)
+**Rating:** 4/5
+**Best:** Random-3
+**Notes:** "has setup/punchline shape; uses contradiction/juxtaposition"
+
+## Tweet 2121089901932466343
+**Original:** I just asked AI if it can bring me back and it did
+**Bot Selected:** Random-2 - "I'll ask Allah to bring me back"
+
+**Agent Analysis:**
+- **Oldschool** (0.612): complete sentence structure; creates a specific social implication; short phrase has a semantic twist; fragment-length phrasing
+- **Random-2** (0.507): complete sentence structure
+- **Random-3** (0.107): fragment-length phrasing
+- **Random-1** (-0.055): too short; fragment-length phrasing
+- **Winner:** Oldschool (complete sentence structure; creates a specific social implication)
+**Rating:** 3/5
+**Best:** Oldschool
+**Notes:** "complete sentence structure; creates a specific social implication"
+
+## Tweet 2121090013870141696
+**Original:** they killed my first one\nfuckers!
+**Bot Selected:** Random-2 - "They killed me first\nShit!"
+
+**Agent Analysis:**
+- **Random-2** (0.558): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Random-3** (0.527): has setup/punchline shape; includes humor themes; short phrase has a semantic twist; fragment-length phrasing
+- **Oldschool** (0.346): has setup/punchline shape; fragment-length phrasing
+- **Random-1** (0.126): has setup/punchline shape; too short; fragment-length phrasing
+- **Winner:** Random-2 (has setup/punchline shape; includes humor themes)
+**Rating:** 3/5
+**Best:** Random-2
+**Notes:** "has setup/punchline shape; includes humor themes"
