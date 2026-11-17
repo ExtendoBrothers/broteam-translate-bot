@@ -89,6 +89,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
 
         // The tweet text should be in currentText (accumulated from previous lines)
         let text = currentText
+          .replace(/\s*\[Video(?:\s+\d+)?\](?:\([^)]*\))?/gi, '')
           .replace(/\[Image \d+:[^\]]+\]/g, '')
           .replace(/!\[[^\]]*\]\([^)]+\)/g, '')
           .replace(/\[!\[[^\]]*\]\([^)]+\)\]\([^)]+\)/g, '')
