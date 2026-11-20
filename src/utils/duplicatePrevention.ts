@@ -113,13 +113,13 @@ export async function checkForDuplicates(
 /**
  * Record a successful post and update all tracking systems
  */
-export function recordSuccessfulPost(tweetId: string, content: string) {
+export function recordSuccessfulPost(tweetId: string, content: string, countPost = true) {
   try {
     // Mark tweet as processed
     tweetTracker.markProcessed(tweetId);
 
     // Record the post
-    postTracker.recordPost();
+    if (countPost) postTracker.recordPost();
 
     // Log posted content for duplicate detection
     logPostedContent(tweetId, content);

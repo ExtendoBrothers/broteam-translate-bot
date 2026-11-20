@@ -9,7 +9,7 @@ jest.mock('http', () => {
 });
 jest.mock('child_process', () => ({ execFile: jest.fn() }));
 jest.mock('../src/server/candidateStore', () => ({
-  candidateStore: { list: jest.fn(), getById: jest.fn(), selectPreference: jest.fn() },
+  candidateStore: { list: jest.fn(), getById: jest.fn(), selectPreference: jest.fn(), confirmUncertainPost: jest.fn() },
 }));
 jest.mock('../src/server/generationQueue', () => ({ generationQueue: { depth: 0 } }));
 jest.mock('../src/server/automaticPoster', () => ({ getAutomaticPostingStatus: jest.fn() }));
@@ -20,6 +20,7 @@ jest.mock('../src/utils/logger', () => ({
 }));
 jest.mock('../src/utils/spamFilter', () => ({ isSpammyFeedbackEntry: jest.fn(() => false) }));
 jest.mock('../src/utils/duplicatePrevention', () => ({ recordSuccessfulPost: jest.fn() }));
+jest.mock('../src/utils/postTracker', () => ({ postTracker: { recordPost: jest.fn() } }));
 jest.mock('../src/utils/languageWeights', () => ({ recordPositives: jest.fn() }));
 jest.mock('../src/utils/heuristicEvaluator', () => ({ updateWeightsFromFeedback: jest.fn() }));
 jest.mock('../src/utils/translationLogEmitter', () => ({
@@ -30,6 +31,7 @@ import { candidateStore, QueueItem } from '../src/server/candidateStore';
 import { recordSuccessfulPost } from '../src/utils/duplicatePrevention';
 import { recordPositives } from '../src/utils/languageWeights';
 import { updateWeightsFromFeedback } from '../src/utils/heuristicEvaluator';
+import { postTracker } from '../src/utils/postTracker';
 
 describe('automatic posting feedback', () => {
   let baseUrl: string;
@@ -113,5 +115,49 @@ describe('automatic posting feedback', () => {
       .trim().split('\n').map(line => JSON.parse(line) as { queueItemId: string });
     expect(entries.filter(entry => entry.queueItemId === 'retry')).toHaveLength(1);
     expect(item.preferredCandidateIndex).toBe(1);
+  });
+
+  it('confirms an uncertain post without counting it again and allows preference review', async () => {
+    item.id = 'confirmed';
+    item.status = 'ready';
+    item.autoPostState = 'uncertain';
+    item.autoPostError = 'Posting outcome uncertain: timeout';
+    jest.mocked(candidateStore.confirmUncertainPost).mockImplementation(() => {
+      item.status = 'posted';
+      item.autoPostState = 'posted';
+      return true;
+    });
+    const response = await fetch(`${baseUrl}/api/queue/confirmed/confirm-posted`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', 'Posted', false);
+    expect(postTracker.recordPost).not.toHaveBeenCalled();
+    const queue = await (await fetch(`${baseUrl}/api/queue`)).json() as { items: QueueItem[] };
+    expect(queue.items).toHaveLength(1);
+    expect((await fetch(`${baseUrl}/api/queue/confirmed/preference/1`, { method: 'POST' })).status).toBe(200);
+    expect((await fetch(`${baseUrl}/api/queue/confirmed/confirm-posted`, { method: 'POST' })).status).toBe(409);
+  });
+
+  it('conservatively counts an interrupted post on confirmation', async () => {
+    item.id = 'interrupted';
+    item.status = 'ready';
+    item.autoPostState = 'uncertain';
+    item.autoPostError = 'Posting was interrupted. Check Twitter before dismissing this item.';
+    item.candidates[0].result = 'word '.repeat(100);
+    jest.mocked(candidateStore.confirmUncertainPost).mockReturnValueOnce(true);
+    const response = await fetch(`${baseUrl}/api/queue/interrupted/confirm-posted`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(postTracker.recordPost).toHaveBeenCalledTimes(2);
+    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', item.candidates[0].result, false);
+  });
+
+  it('does not confirm an in-flight post or record a post after a persistence failure', async () => {
+    item.status = 'ready';
+    item.autoPostState = 'posting';
+    expect((await fetch(`${baseUrl}/api/queue/queue/confirm-posted`, { method: 'POST' })).status).toBe(409);
+    item.autoPostState = 'uncertain';
+    jest.mocked(candidateStore.confirmUncertainPost).mockReturnValueOnce(false);
+    expect((await fetch(`${baseUrl}/api/queue/queue/confirm-posted`, { method: 'POST' })).status).toBe(500);
+    expect(recordSuccessfulPost).not.toHaveBeenCalled();
+    expect(postTracker.recordPost).not.toHaveBeenCalled();
   });
 });

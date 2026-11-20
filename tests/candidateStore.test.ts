@@ -228,6 +228,33 @@ describe('CandidateStore', () => {
         expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
       });
 
+      it('confirms an uncertain post, cancels retries, and preserves it for preference review', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate]);
+        candidateStore.beginAutoPost(id, 0);
+        candidateStore.finishAutoPost(id, 'uncertain', 'timeout', new Date(Date.now() - 1).toISOString());
+        expect(candidateStore.confirmUncertainPost(id)).toBe(true);
+        expect(candidateStore.getById(id)).toMatchObject({
+          status: 'posted', autoPostState: 'posted', postedCandidateIndex: 0, autoPostRetryable: false,
+        });
+        expect(candidateStore.getById(id).autoPostRetryAt).toBeUndefined();
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        expect(candidateStore.selectPreference(id, 0)).toBe(true);
+        expect(candidateStore.confirmUncertainPost(id)).toBe(false);
+      });
+
+      it('rejects confirmation while posting and restores the uncertain state if saving fails', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate]);
+        candidateStore.beginAutoPost(id, 0);
+        expect(candidateStore.confirmUncertainPost(id)).toBe(false);
+        candidateStore.finishAutoPost(id, 'uncertain', 'timeout', '2026-01-01T00:00:00.000Z');
+        const before = { ...candidateStore.getById(id) };
+        mockSafeFileOps.atomicWriteJsonSync.mockReturnValueOnce(false);
+        expect(candidateStore.confirmUncertainPost(id)).toBe(false);
+        expect(candidateStore.getById(id)).toEqual(before);
+      });
+
       it('reports an unreadable queue so automatic startup can fail closed', () => {
         jest.resetModules();
         mockFs = require('fs');

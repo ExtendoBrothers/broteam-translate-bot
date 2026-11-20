@@ -250,6 +250,24 @@ class CandidateStore {
     return this._save();
   }
 
+  confirmUncertainPost(id: string): boolean {
+    const item = this.items.get(id);
+    if (!item || item.status !== 'ready' || item.autoPostState !== 'uncertain' ||
+        item.postedCandidateIndex === undefined || !item.candidates[item.postedCandidateIndex]) return false;
+    const previous = { ...item };
+    item.status = 'posted';
+    item.autoPostState = 'posted';
+    item.postedAt = new Date().toISOString();
+    item.autoPostRetryable = false;
+    delete item.autoPostError;
+    delete item.autoPostRetryAt;
+    if (this._save()) return true;
+    Object.assign(item, previous);
+    if (previous.postedAt === undefined) delete item.postedAt;
+    if (previous.autoPostRetryable === undefined) delete item.autoPostRetryable;
+    return false;
+  }
+
   selectPreference(id: string, candidateIndex: number): boolean {
     const item = this.items.get(id);
     if (!item || item.autoPostState !== 'posted' || item.preferredAt || !item.candidates[candidateIndex]) return false;

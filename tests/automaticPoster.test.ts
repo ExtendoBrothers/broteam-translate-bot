@@ -164,6 +164,33 @@ describe('automatic poster', () => {
     expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('queue', 0);
   });
 
+  it('posts a new item before an eligible uncertain retry', async () => {
+    jest.mocked(candidateStore.list).mockReturnValue([
+      { ...item, id: 'retry', autoPostState: 'uncertain', postedCandidateIndex: 1 },
+      { ...item, id: 'new' },
+    ] as ReturnType<typeof candidateStore.list>);
+    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true).mockReturnValueOnce(true);
+    poster.start();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('new', 1);
+  });
+
+  it('reserves the last 30-minute slot for a new item instead of consuming it on a retry', async () => {
+    const retry = { ...item, id: 'retry', autoPostState: 'uncertain', postedCandidateIndex: 1 };
+    jest.mocked(candidateStore.list).mockReturnValue([retry] as ReturnType<typeof candidateStore.list>);
+    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true);
+    jest.mocked(postTracker.getPostCount30m).mockReturnValue(9);
+    poster.start();
+    await jest.advanceTimersByTimeAsync(0);
+    expect(publisher.prepare).not.toHaveBeenCalled();
+    jest.mocked(candidateStore.list).mockReturnValue([
+      retry, { ...item, id: 'new' },
+    ] as ReturnType<typeof candidateStore.list>);
+    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true).mockReturnValueOnce(true);
+    await jest.advanceTimersByTimeAsync(30_000);
+    expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('new', 1);
+  });
+
   it('leaves unsafe best candidates for manual review', async () => {
     jest.mocked(candidateStore.list).mockReturnValue([{
       ...item, candidates: [{ result: 'bad', isBestCandidate: true, acceptabilityWarnings: ['failed'] }],

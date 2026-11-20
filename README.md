@@ -53,7 +53,7 @@ will retry pending items. Check X before retrying any item marked uncertain.
 Long translations are composed as threads. Browser posting is limited to 50 posts
 per 24 hours and 10 posts per 30 minutes, counting each thread part and other
 posts recorded by the bot. Posts made outside the bot are not counted. Browser
-posting also uses a 20-minute interval between attempts. Failed quality checks
+posting also uses a 30-second interval between attempts. Failed quality checks
 remain available for manual review. Language checks flag non-Latin scripts and
 suspicious untranslated words, while allowing contextual names and quotations;
 the dictionary-based checks can still make mistakes. Previously queued results
@@ -61,8 +61,12 @@ are checked again before automatic posting. If post confirmation times out, the
 bot retries automatically up to 10 times, at least 30 seconds apart and subject
 to posting limits. **A timeout does not prove that X rejected the post: retries
 can create duplicates.** Other uncertain outcomes, including interrupted posts,
-remain on the dashboard for review. Browser automation depends on X's interface
-and is not guaranteed to work if X changes it.
+remain on the dashboard for review. After checking X, use **Confirm posted** on
+an uncertain item to stop retries and choose a preferred translation without
+posting again. New items take priority over retries, which reserve a posting
+slot for new items when possible. Posting limits still apply, including to
+uncertain attempts. Browser automation depends on X's interface and is not
+guaranteed to work if X changes it.
 
 The Nitter RSS fallback uses public instances that permit scraping; availability
 can change. Check [Nitter Status](https://status.d420.net/) for current instance

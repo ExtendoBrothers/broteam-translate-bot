@@ -62,7 +62,8 @@ export class AutomaticPoster {
         postTracker.getPostCount30m() >= BROWSER_POST_LIMIT_30M ||
         rateLimitTracker.isRateLimited('post')) return;
 
-    const item = candidateStore.list('ready').find(entry => isAutoPostEligible(entry));
+    const eligible = candidateStore.list('ready').filter(entry => isAutoPostEligible(entry));
+    const item = eligible.find(entry => !entry.autoPostState) ?? eligible[0];
     if (!item) return;
     const index = item.autoPostState === 'uncertain'
       ? item.postedCandidateIndex ?? -1
@@ -108,6 +109,13 @@ export class AutomaticPoster {
     if (partCount + postTracker.getPostCount24h() > BROWSER_POST_LIMIT_24H ||
         partCount + postTracker.getPostCount30m() > BROWSER_POST_LIMIT_30M) {
       status = 'Waiting for enough posting slots for the thread';
+      return;
+    }
+    if (item.autoPostState === 'uncertain' &&
+        ((partCount < BROWSER_POST_LIMIT_30M &&
+          partCount + postTracker.getPostCount30m() >= BROWSER_POST_LIMIT_30M) ||
+         partCount + postTracker.getPostCount24h() >= BROWSER_POST_LIMIT_24H)) {
+      status = 'Waiting to retry; a posting slot is reserved for new items';
       return;
     }
 

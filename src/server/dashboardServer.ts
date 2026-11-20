@@ -10,6 +10,8 @@
  *   POST /api/queue/fetch         → trigger a manual nitter/jina fetch
  *   POST /api/queue/submit        → add a tweet by manual text input
  *   POST /api/queue/:id/post/:idx → mark candidate :idx as posted, returns intent URL
+ *   POST /api/queue/:id/confirm-posted → confirm an uncertain automatic post
+ *   POST /api/queue/:id/preference/:idx → save a preferred translation
  *   DELETE /api/queue/:id         → skip/dismiss tweet
  *
  * Optional authentication: set DASHBOARD_PASSWORD env var for basic token auth.
@@ -25,6 +27,8 @@ import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
+import { postTracker } from '../utils/postTracker';
+import { splitTweet } from '../utils/tweetSplitter';
 import { recordPositives } from '../utils/languageWeights';
 import { updateWeightsFromFeedback } from '../utils/heuristicEvaluator';
 import { translationLogEmitter } from '../utils/translationLogEmitter';
@@ -337,6 +341,30 @@ async function handleRequest(
     const mode = process.env.BOT_MODE === 'automatic' ? 'automatic' : 'manual';
     json(res, 200, { items, generatingCount: generationQueue.depth, mode,
       automaticStatus: mode === 'automatic' ? getAutomaticPostingStatus() : undefined });
+    return;
+  }
+
+  // ── POST /api/queue/:id/confirm-posted ──────────────────────────────────
+  const confirmMatch = url.match(/^\/api\/queue\/([^/]+)\/confirm-posted$/);
+  if (method === 'POST' && confirmMatch) {
+    const [, queueId] = confirmMatch;
+    const item = candidateStore.getById(queueId);
+    const candidate = item?.candidates[item.postedCandidateIndex ?? -1];
+    if (!item || item.status !== 'ready' || item.autoPostState !== 'uncertain' || !candidate) {
+      json(res, 409, { error: 'Post confirmation unavailable; refresh the queue' });
+      return;
+    }
+    const interrupted = item.autoPostError === 'Posting was interrupted. Check Twitter before dismissing this item.';
+    if (!candidateStore.confirmUncertainPost(queueId)) {
+      json(res, 500, { error: 'Could not save confirmation; please try again' });
+      return;
+    }
+    if (interrupted) {
+      for (let i = 0; i < splitTweet(candidate.result).length; i++) postTracker.recordPost();
+    }
+    recordSuccessfulPost(item.tweet.id, candidate.result, false);
+    logger.info(`[DashboardServer] Manually confirmed post ${queueId}; awaiting preference`);
+    json(res, 200, { message: 'Post confirmed; choose your preference' });
     return;
   }
 

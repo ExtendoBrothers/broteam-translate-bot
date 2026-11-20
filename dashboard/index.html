@@ -491,6 +491,20 @@ async function selectPreference(queueId, candidateIndex) {
   }
 }
 
+async function confirmPosted(queueId) {
+  if (!confirm('Confirm that the attempted post is already on X? This stops automatic retries.')) return;
+  try {
+    const r = await apiFetch(`/api/queue/${queueId}/confirm-posted`, { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    toast('Post confirmed — choose your preferred translation', 'ok');
+    await refreshQueue();
+  } catch (e) {
+    toast(`Could not confirm post: ${e.message}`, 'err');
+    await refreshQueue();
+  }
+}
+
 // ─── Skip tweet ───────────────────────────────────────────────────────────────
 async function skipTweet(queueId) {
   try {
@@ -629,6 +643,9 @@ function renderTweetCard(item) {
           </div>
         </div>
         <div class="tweet-card-actions">
+          ${item.autoPostState === 'uncertain' && item.status === 'ready'
+            ? `<button class="btn btn-post" onclick="confirmPosted('${escAttr(item.id)}')">Confirm posted</button>`
+            : ''}
           <button class="btn btn-danger" ${item.autoPostState === 'posting' ? 'disabled' : ''} onclick="skipTweet('${escAttr(item.id)}')">✕ Skip</button>
         </div>
       </div>
