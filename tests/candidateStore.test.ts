@@ -139,6 +139,105 @@ describe('CandidateStore', () => {
       expect(result!.intentUrl).toContain(encodeURIComponent('Translated text'));
     });
 
+    describe('automatic posting', () => {
+      it('persists the reservation and keeps the posted candidate separate from the preference', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate, { ...mockCandidate, chainIndex: 1, result: 'Preferred' }]);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+        expect(candidateStore.markPosted(id, 1)).toBeNull();
+        expect(candidateStore.markSkipped(id)).toBe(false);
+        expect(candidateStore.finishAutoPost(id, 'posted')).toBe(true);
+        expect(candidateStore.selectPreference(id, 1)).toBe(true);
+        expect(candidateStore.selectPreference(id, 0)).toBe(false);
+        expect(candidateStore.getById(id)).toMatchObject({
+          status: 'posted', autoPostState: 'posted', postedCandidateIndex: 0, preferredCandidateIndex: 1,
+        });
+      });
+
+      it('does not reserve a post if persistence fails', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate]);
+        mockSafeFileOps.atomicWriteJsonSync.mockReturnValueOnce(false);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        expect(candidateStore.getById(id).autoPostState).toBeUndefined();
+      });
+
+      it('marks an interrupted post uncertain on restart rather than retrying it', () => {
+        jest.resetModules();
+        mockFs = require('fs');
+        mockFs.existsSync.mockReturnValue(true);
+        mockFs.readFileSync.mockReturnValue(JSON.stringify([{
+          id: 'interrupted', tweet: mockTweet, status: 'ready', candidates: [mockCandidate],
+          autoPostState: 'posting', postedCandidateIndex: 0,
+        }]));
+        const store = require('../src/server/candidateStore').candidateStore;
+        expect(store.getById('interrupted').autoPostState).toBe('uncertain');
+        expect(store.beginAutoPost('interrupted', 0)).toBe(false);
+        expect(store.markPosted('interrupted', 0)).toBeNull();
+      });
+
+      it('persists retry timing and count, caps retries, and reserves only the same candidate', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate, { ...mockCandidate, result: 'Other' }]);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+        const future = new Date(Date.now() + 60_000).toISOString();
+        expect(candidateStore.finishAutoPost(id, 'uncertain', 'timeout', future)).toBe(true);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        candidateStore.getById(id).autoPostRetryAt = new Date(Date.now() - 1).toISOString();
+        expect(candidateStore.beginAutoPost(id, 1)).toBe(false);
+
+        mockSafeFileOps.atomicWriteJsonSync.mockReturnValueOnce(false);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        expect(candidateStore.getById(id).autoPostState).toBe('uncertain');
+        expect(candidateStore.getById(id).autoPostRetryCount).toBeUndefined();
+        for (let count = 1; count <= 10; count++) {
+          expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+          expect(candidateStore.getById(id).autoPostRetryCount).toBe(count);
+          expect(candidateStore.finishAutoPost(id, 'uncertain', 'timeout', new Date(Date.now() - 1).toISOString())).toBe(true);
+        }
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+      });
+
+      it('retains the retry count and delay when the queue is reloaded', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate]);
+        candidateStore.beginAutoPost(id, 0);
+        const retryAt = new Date(Date.now() - 1).toISOString();
+        candidateStore.finishAutoPost(id, 'uncertain', 'timeout', retryAt);
+        candidateStore.beginAutoPost(id, 0);
+        candidateStore.finishAutoPost(id, 'uncertain', 'timeout', retryAt);
+        const saved = JSON.stringify(candidateStore.list());
+        jest.resetModules();
+        mockFs = require('fs');
+        mockFs.existsSync.mockReturnValue(true);
+        mockFs.readFileSync.mockReturnValue(saved);
+        const store = require('../src/server/candidateStore').candidateStore;
+        expect(store.getById(id)).toMatchObject({ autoPostRetryCount: 1, autoPostRetryAt: retryAt });
+        expect(store.beginAutoPost(id, 0)).toBe(true);
+        expect(store.getById(id).autoPostRetryCount).toBe(2);
+      });
+
+      it('retries legacy confirmation timeouts but not explicitly non-retryable timeouts', () => {
+        const id = candidateStore.add(mockTweet);
+        candidateStore.setReady(id, [mockCandidate]);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+        const message = 'Posting outcome uncertain: TimeoutError: Waiting failed: 30000ms exceeded. Check Twitter before dismissing this item.';
+        expect(candidateStore.finishAutoPost(id, 'uncertain', message)).toBe(true);
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        delete candidateStore.getById(id).autoPostRetryable;
+        expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+      });
+
+      it('reports an unreadable queue so automatic startup can fail closed', () => {
+        jest.resetModules();
+        mockFs = require('fs');
+        mockFs.existsSync.mockReturnValue(true);
+        mockFs.readFileSync.mockReturnValue('{invalid json');
+        const store = require('../src/server/candidateStore').candidateStore;
+        expect(store.getLoadError()).toBeDefined();
+      });
+    });
+
     it('sets status to posted and records candidate index', () => {
       const id = candidateStore.add(mockTweet);
       candidateStore.setReady(id, [mockCandidate]);

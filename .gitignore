@@ -37,6 +37,7 @@ heuristic-weights.json
 .post-tracker.json
 .twitter-user-cache.json
 .twitter-oauth2-tokens.json
+.automatic-browser-profile/
 .oauth2-meta.json
 
 # Temp files from atomic writes

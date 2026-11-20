@@ -17,8 +17,7 @@
  *  All candidates are scored with the humor scorer and heuristic evaluator.
  *  The best candidate is flagged with `isBestCandidate = true`.
  *
- * This module is intentionally decoupled from the auto-posting pipeline.
- * It is used only by the dashboard server in manual mode.
+ * The dashboard uses these candidates in both manual and automatic modes.
  */
 
 import fs from 'fs';
@@ -31,6 +30,7 @@ import { logger, rotateLogFile } from '../utils/logger';
 import { config } from '../config';
 import { isSpammyResult, containsSuspiciousDomain } from '../utils/spamFilter';
 import { detectLanguageByLexicon, getEnglishMatchPercentage } from '../translator/lexicon';
+import { getLanguageQualityIssue } from '../translator/languageQuality';
 import { emitLogLine } from '../utils/translationLogEmitter';
 import { getMinimumLengthPercent, getMinimumLengthRatio } from '../utils/translationQuality';
 import { weightedShuffle, recordNegatives, getWeightsForLangs } from '../utils/languageWeights';
@@ -290,38 +290,26 @@ function isAcceptable(
     }
   }
 
-  // Language detection — non-Latin script quick-reject, then lexicon, then langdetect fallback
-  const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
-  const hasArabic = /[\u0600-\u06FF]/.test(textOnly);
-  const hasCJK = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
-
-  let detectedLang: string;
-
-  if (hasCyrillic || hasArabic || hasCJK) {
-    detectedLang = 'non-latin';
-  } else {
-    // Lexicon is authoritative — trust its result unconditionally
-    const lexiconResult = detectLanguageByLexicon(textOnly);
-    detectedLang = lexiconResult || 'und';
-
-    // Fallback to langdetect only when lexicon is inconclusive ('und')
-    if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-      const englishMatchPct = getEnglishMatchPercentage(textOnly);
-      try {
-        const detections = langdetect.detect(textOnly);
-        if (
-          detections?.length > 0 &&
-          detections[0].lang === 'en' &&
-          detections[0].prob > 0.7 &&
-          englishMatchPct >= 20
-        ) {
-          detectedLang = 'en';
-        }
-      } catch { /* ignore */ }
-    }
+  // Language detection: lexicon, then langdetect fallback.
+  const lexiconResult = detectLanguageByLexicon(textOnly);
+  let detectedLang = lexiconResult || 'und';
+  if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+    const englishMatchPct = getEnglishMatchPercentage(textOnly);
+    try {
+      const detections = langdetect.detect(textOnly);
+      if (
+        detections?.length > 0 &&
+        detections[0].lang === 'en' &&
+        detections[0].prob > 0.7 &&
+        englishMatchPct >= 20
+      ) {
+        detectedLang = 'en';
+      }
+    } catch { /* ignore */ }
   }
 
   const notEnglish = detectedLang !== 'en';
+  const languageIssue = getLanguageQualityIssue(finalResult, originalText);
 
   const reasons: string[] = [];
   if (tooShort) reasons.push(`Too short: ${textOnly.length} < ${getMinimumLengthPercent(originalTextOnly)}% of input (${originalTextOnly.length})`);
@@ -330,6 +318,7 @@ function isAcceptable(
   if (punctuationOnly) reasons.push('Punctuation only');
   if (sameAsInput) reasons.push('Same as input');
   if (notEnglish) reasons.push(`Not English: detected ${detectedLang}`);
+  if (languageIssue) reasons.push(languageIssue);
   if (problematicChar) reasons.push('Problematic character');
   if (repetitive) reasons.push('Repetitive/spammy content');
 
@@ -630,38 +619,20 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
       .replace(/\s{2,}/g, ' ')
       .trim();
 
-    const hasCyrillic = /[\u0400-\u04FF]/.test(textOnly);
-    const hasArabic   = /[\u0600-\u06FF]/.test(textOnly);
-    const hasCJK      = /[\u4E00-\u9FFF\u3040-\u309F\u30A0-\u30FF]/.test(textOnly);
-    let detectedLang: string;
-
-    if (hasCyrillic || hasArabic || hasCJK) {
-      detectedLang = 'non-latin';
-    } else {
-      const lexiconResult   = detectLanguageByLexicon(textOnly);
-      detectedLang          = lexiconResult || 'und';
-      const englishMatchPct = getEnglishMatchPercentage(textOnly);
-
-      if (detectedLang === 'en' && englishMatchPct >= 50 && englishMatchPct < 70) {
-        try {
-          const d = langdetect.detect(textOnly);
-          if (!d?.length || d[0].lang !== 'en' || d[0].prob < 0.8) detectedLang = 'und';
-        } catch { /* ignore */ }
-      }
-
-      if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
-        const pct = getEnglishMatchPercentage(textOnly);
-        try {
-          const d = langdetect.detect(textOnly);
-          if (d?.length && d[0].lang === 'en' && d[0].prob > 0.8 &&
-              (!d[1] || d[1].prob <= d[0].prob - 0.1) && pct >= 20) {
-            detectedLang = d[0].lang;
-          }
-        } catch { /* ignore */ }
-      }
+    const lexiconResult = detectLanguageByLexicon(textOnly);
+    let detectedLang = lexiconResult || 'und';
+    if (detectedLang === 'und' && textOnly.split(/\W+/).filter(w => w.length > 2).length > 0) {
+      const pct = getEnglishMatchPercentage(textOnly);
+      try {
+        const d = langdetect.detect(textOnly);
+        if (d?.length && d[0].lang === 'en' && d[0].prob > 0.8 &&
+            (!d[1] || d[1].prob <= d[0].prob - 0.1) && pct >= 20) {
+          detectedLang = d[0].lang;
+        }
+      } catch { /* ignore */ }
     }
 
-    candidate.isEnglish  = detectedLang === 'en';
+    candidate.isEnglish  = detectedLang === 'en' && !getLanguageQualityIssue(candidate.result, tweet.text);
     candidate.tieBreaker = differenceScore(candidate.result, tweet.text)
                          + unexpectednessScore(candidate.result, tweet.text) * 2;
 
@@ -670,11 +641,15 @@ export async function generateCandidates(tweet: Tweet): Promise<Candidate[]> {
     );
   }
 
-  // ── Best-candidate selection: English preference → finalScore → tiebreaker ──
+  // ── Best-candidate selection: quality → English → finalScore → tiebreaker ──
   let bestIdx = 0;
   for (let i = 1; i < candidates.length; i++) {
     const curr = candidates[i];
     const best = candidates[bestIdx];
+    const currAcceptable = !curr.error && !curr.acceptabilityWarnings?.length;
+    const bestAcceptable = !best.error && !best.acceptabilityWarnings?.length;
+    if (currAcceptable && !bestAcceptable) { bestIdx = i; continue; }
+    if (!currAcceptable && bestAcceptable) { continue; }
     if (curr.isEnglish && !best.isEnglish)  { bestIdx = i; continue; }
     if (!curr.isEnglish && best.isEnglish)  { continue; }
     if (curr.finalScore > best.finalScore) { bestIdx = i; continue; }

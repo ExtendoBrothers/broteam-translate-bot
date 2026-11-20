@@ -1,8 +1,7 @@
 /**
- * MANUAL MODE FORK
+ * Dashboard bot with manual and optional automatic browser posting.
  *
- * This entry point replaces the auto-posting bot with a manual review dashboard.
- * - No Twitter API credentials required (no posting via API)
+ * - No Twitter API credentials required (posting uses browser intent links)
  * - Fetches source tweets via Nitter/Jina only
  * - Generates 4 translation candidates per tweet
  * - User reviews candidates and posts via twitter.com/intent/tweet in their browser
@@ -29,6 +28,7 @@ import { candidateStore } from './server/candidateStore';
 import { generationQueue } from './server/generationQueue';
 import { fetchTweets } from './twitter/fetchTweets';
 import { tweetTracker } from './utils/tweetTracker';
+import { AutomaticPoster } from './server/automaticPoster';
 
 // How often to poll Nitter for new tweets automatically (default: every 30 minutes)
 const FETCH_INTERVAL_MS = Number(process.env.FETCH_INTERVAL_MS || String(30 * 60 * 1000));
@@ -57,11 +57,18 @@ async function runFetchCycle(): Promise<void> {
 
 async function main() {
   try {
+    const mode = process.env.BOT_MODE || 'manual';
+    if (mode !== 'manual' && mode !== 'automatic') throw new Error(`Invalid BOT_MODE: ${mode}`);
+    if (mode === 'automatic' && candidateStore.getLoadError()) {
+      throw new Error(`Cannot start automatic posting: candidate queue failed to load: ${candidateStore.getLoadError()}`);
+    }
+    const automaticPoster = mode === 'automatic' ? new AutomaticPoster() : undefined;
     // Initialize graceful shutdown handlers
     initializeGracefulShutdown();
 
     onShutdown(async () => {
-      logger.info('[ManualMode] Shutting down dashboard server…');
+      await automaticPoster?.stop();
+      logger.info('[Dashboard] Shutting down dashboard server…');
       await stopDashboardServer();
       await logHealthReport();
     });
@@ -92,8 +99,8 @@ async function main() {
     }
 
     const version = getVersion();
-    logger.info(`Starting BroTeam Translate Bot v${version} [MANUAL MODE]…`);
-    logger.info('No Twitter API credentials required — using Nitter + dashboard posting.');
+    logger.info(`Starting BroTeam Translate Bot v${version} [${mode.toUpperCase()} MODE]…`);
+    logger.info('No Twitter API credentials required — using Nitter + browser posting.');
 
     // Start health monitoring
     startHealthMonitoring(5 * 60 * 1000);
@@ -110,14 +117,15 @@ async function main() {
 
     // Import any pre-translated items from the old auto-bot's queue
     candidateStore.importOldQueue();
+    automaticPoster?.start();
 
     // Initial fetch on startup
     await runFetchCycle();
 
     // Periodic fetch
     setInterval(runFetchCycle, FETCH_INTERVAL_MS);
-    logger.info(`[ManualMode] Polling Nitter every ${FETCH_INTERVAL_MS / 60000} min.`);
-    logger.info('[ManualMode] Bot is running. Open the dashboard to review candidates.');
+    logger.info(`[Dashboard] Polling Nitter every ${FETCH_INTERVAL_MS / 60000} min.`);
+    logger.info('[Dashboard] Bot is running. Open the dashboard to review candidates.');
 
   } catch (error) {
     logger.error(`Error in main execution: ${error}`);

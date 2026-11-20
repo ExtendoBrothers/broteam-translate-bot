@@ -275,8 +275,8 @@
 <!-- ── Top bar ───────────────────────────────────────────────────── -->
 <div class="topbar">
   <div>
-    <h1>🔁 BroTeam Translate · Manual Mode</h1>
-    <div class="subtitle">No Twitter API required — you post, you decide</div>
+    <h1 id="modeTitle">🔁 BroTeam Translate · Manual Mode</h1>
+    <div class="subtitle" id="modeSubtitle">No Twitter API required — you post, you decide</div>
   </div>
   <button class="btn btn-primary" id="btnFetch" onclick="triggerFetch()">
     ⬇ Fetch from Nitter
@@ -287,6 +287,7 @@
 <div id="statusBar">
   <span><span id="dotStatus" class="dot dot-warn"></span>&nbsp;<span id="statusText">Connecting…</span></span>
   <span id="queueCount">0 pending</span>
+  <span id="autoStatus"></span>
   <span id="genDepth" style="display:none">⏳ <span id="genDepthNum">0</span> waiting to generate</span>
   <span id="lastRefresh"></span>
 </div>
@@ -349,6 +350,7 @@ const POLL_MS = 4000;
 
 // ─── State ──────────────────────────────────────────────────────────────────
 let queueItems = [];
+let mode = 'manual';
 let postedIds = new Set(JSON.parse(localStorage.getItem('postedIds') || '[]'));
 let pollTimer = null;
 
@@ -382,6 +384,12 @@ async function refreshQueue() {
     if (!r.ok) throw new Error(`HTTP ${r.status}`);
     const data = await r.json();
     queueItems = data.items || data; // handle both shapes
+    mode = data.mode || 'manual';
+    document.getElementById('modeTitle').textContent = `🔁 BroTeam Translate · ${mode === 'automatic' ? 'Automatic' : 'Manual'} Mode`;
+    document.getElementById('modeSubtitle').textContent = mode === 'automatic'
+      ? 'No Twitter API required — the bot posts, you choose your preferred translation'
+      : 'No Twitter API required — you post, you decide';
+    document.getElementById('autoStatus').textContent = data.automaticStatus || '';
     const depth = data.generatingCount || 0;
 
     // show/hide waiting-to-generate indicator
@@ -406,7 +414,7 @@ function updateStatus(ok, errMsg) {
   txt.textContent = ok ? 'Connected' : `Error: ${errMsg}`;
   lastPoll.textContent = `Last refresh: ${new Date().toLocaleTimeString()}`;
 
-  const pending = queueItems.filter(i => i.status === 'generating' || i.status === 'ready').length;
+  const pending = queueItems.length;
   document.getElementById('queueCount').textContent = `${pending} pending`;
   document.getElementById('queueCountBadge').textContent = `${pending} item${pending !== 1 ? 's' : ''}`;
 }
@@ -471,6 +479,18 @@ async function postCandidate(queueId, candidateIndex) {
   }
 }
 
+async function selectPreference(queueId, candidateIndex) {
+  try {
+    const r = await apiFetch(`/api/queue/${queueId}/preference/${candidateIndex}`, { method: 'POST' });
+    const data = await r.json();
+    if (!r.ok) throw new Error(data.error || `HTTP ${r.status}`);
+    toast('Preference saved — no additional post was made', 'ok');
+    await refreshQueue();
+  } catch (e) {
+    toast(`Could not save preference: ${e.message}`, 'err');
+  }
+}
+
 // ─── Skip tweet ───────────────────────────────────────────────────────────────
 async function skipTweet(queueId) {
   try {
@@ -497,7 +517,7 @@ function scoreBar(label, value, cssClass) {
 }
 
 // ─── Render a single candidate card ──────────────────────────────────────────
-function renderCandidate(queueId, candidate, isGenerating) {
+function renderCandidate(item, candidate, index, isGenerating) {
   const isBest = candidate.isBestCandidate;
   const hasError = !!candidate.error;
   const langPath = (candidate.languages || []).join(' → ') || '—';
@@ -542,9 +562,16 @@ function renderCandidate(queueId, candidate, isGenerating) {
     return `<details class="heuristic-breakdown"><summary>Heuristic breakdown (${entries.length} rules)</summary>${rows}</details>`;
   })();
 
+  const isPosted = item.autoPostState === 'posted';
+  const unavailable = item.autoPostState === 'posting' || item.autoPostState === 'uncertain'
+    || (mode === 'automatic' && !item.autoPostState);
   const postBtn = isGenerating
     ? `<button class="btn btn-ghost" disabled><span class="spinner"></span></button>`
-    : `<button class="btn btn-post" onclick="postCandidate('${escAttr(queueId)}', ${candidate.chainIndex})">
+    : isPosted
+      ? `<button class="btn btn-post" onclick="selectPreference('${escAttr(item.id)}', ${index})">Choose preference</button>`
+      : unavailable
+        ? `<button class="btn btn-ghost" disabled>Awaiting automatic post</button>`
+        : `<button class="btn btn-post" onclick="postCandidate('${escAttr(item.id)}', ${index})">
          🐦 Post
        </button>`;
 
@@ -553,6 +580,7 @@ function renderCandidate(queueId, candidate, isGenerating) {
       <div class="candidate-label">
         ${escHtml(candidate.chainLabel || `Chain ${candidate.chainIndex}`)}
         ${badgeHtml}
+        ${isPosted && item.postedCandidateIndex === index ? '<span class="badge-best">POSTED</span>' : ''}
       </div>
       <div class="candidate-langs" title="${escAttr(langPath)}">en → ${escHtml(langPath)} → en</div>
       ${resultHtml}
@@ -584,7 +612,7 @@ function renderTweetCard(item) {
     : item.candidates;
 
   const candidatesHtml = (slots || [])
-    .map(c => renderCandidate(item.id, c, isGenerating))
+    .map((c, i) => renderCandidate(item, c, i, isGenerating))
     .join('');
 
   return `
@@ -595,10 +623,13 @@ function renderTweetCard(item) {
           <div class="tweet-meta">
             @${escHtml(item.tweet.user?.username || 'unknown')} · ${escHtml(tweetDate)}
             ${isGenerating ? ' · <span class="spinner" style="vertical-align:middle"></span> generating candidates…' : ''}
+            ${item.autoPostState === 'posted' ? ' · automatically posted — choose your preference' : ''}
+            ${item.autoPostState === 'posting' ? ' · posting in progress' : ''}
+            ${item.autoPostError ? ` · ${escHtml(item.autoPostError)}` : ''}
           </div>
         </div>
         <div class="tweet-card-actions">
-          <button class="btn btn-danger" onclick="skipTweet('${escAttr(item.id)}')">✕ Skip</button>
+          <button class="btn btn-danger" ${item.autoPostState === 'posting' ? 'disabled' : ''} onclick="skipTweet('${escAttr(item.id)}')">✕ Skip</button>
         </div>
       </div>
       <div class="candidates-grid">
@@ -610,7 +641,7 @@ function renderTweetCard(item) {
 // ─── Render full queue ────────────────────────────────────────────────────────
 function renderQueue() {
   const list = document.getElementById('queue');
-  const visible = queueItems.filter(i => i.status === 'generating' || i.status === 'ready');
+  const visible = queueItems;
 
   if (visible.length === 0) {
     list.innerHTML = `

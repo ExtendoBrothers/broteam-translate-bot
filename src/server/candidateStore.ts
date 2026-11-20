@@ -16,6 +16,17 @@ import * as crypto from 'crypto';
 const STORE_FILE = path.join(process.cwd(), 'candidate-queue.json');
 // Maximum items to keep in the queue (oldest skipped/posted items are pruned)
 const MAX_QUEUE_SIZE = 100;
+export const MAX_AUTO_POST_RETRIES = 10;
+
+export function isAutoPostEligible(item: QueueItem, now = Date.now()): boolean {
+  if (item.status !== 'ready') return false;
+  if (!item.autoPostState) return true;
+  if (item.autoPostState !== 'uncertain' || (item.autoPostRetryCount ?? 0) >= MAX_AUTO_POST_RETRIES) return false;
+  const legacyTimeout = item.autoPostRetryable === undefined && item.autoPostRetryAt === undefined &&
+    item.autoPostError?.startsWith('Posting outcome uncertain: TimeoutError: Waiting failed: 30000ms exceeded.');
+  if (legacyTimeout) return true;
+  return item.autoPostRetryable === true && !!item.autoPostRetryAt && Date.parse(item.autoPostRetryAt) <= now;
+}
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -25,7 +36,7 @@ export type QueueStatus = 'generating' | 'ready' | 'posted' | 'skipped';
 
 export interface QueueItem {
   id: string;
-  tweet: Tweet & { createdAt: string }; // serialized as ISO string
+  tweet: Omit<Tweet, 'createdAt'> & { createdAt: string }; // serialized as ISO string
   candidates: Candidate[];
   fetchedAt: string;  // ISO date
   status: QueueStatus;
@@ -33,6 +44,13 @@ export interface QueueItem {
   postedAt?: string;
   skippedAt?: string;
   error?: string;
+  autoPostState?: 'posting' | 'posted' | 'uncertain' | 'blocked';
+  autoPostError?: string;
+  autoPostRetryCount?: number;
+  autoPostRetryAt?: string;
+  autoPostRetryable?: boolean;
+  preferredCandidateIndex?: number;
+  preferredAt?: string;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -41,6 +59,7 @@ export interface QueueItem {
 
 class CandidateStore {
   private items: Map<string, QueueItem> = new Map();
+  private loadError?: string;
 
   constructor() {
     this._load();
@@ -53,23 +72,35 @@ class CandidateStore {
       if (!fs.existsSync(STORE_FILE)) return;
       const raw = fs.readFileSync(STORE_FILE, 'utf-8');
       const parsed = JSON.parse(raw) as QueueItem[];
+      if (!Array.isArray(parsed)) throw new Error('Queue file must contain an array');
       if (Array.isArray(parsed)) {
+        let interrupted = false;
         for (const item of parsed) {
+          if (item.autoPostState === 'posting') {
+            item.autoPostState = 'uncertain';
+            item.autoPostError = 'Posting was interrupted. Check Twitter before dismissing this item.';
+            item.autoPostRetryable = false;
+            delete item.autoPostRetryAt;
+            interrupted = true;
+          }
           this.items.set(item.id, item);
         }
+        if (interrupted && !this._save()) logger.error('[CandidateStore] Could not persist interrupted post state');
         logger.info(`[CandidateStore] Loaded ${this.items.size} item(s) from disk`);
       }
     } catch (err) {
+      this.loadError = String(err);
       logger.warn(`[CandidateStore] Could not load store file: ${err}`);
     }
   }
 
-  private _save(): void {
+  private _save(): boolean {
     try {
       const arr = Array.from(this.items.values());
-      atomicWriteJsonSync(STORE_FILE, arr);
+      return atomicWriteJsonSync(STORE_FILE, arr);
     } catch (err) {
       logger.error(`[CandidateStore] Failed to persist store: ${err}`);
+      return false;
     }
   }
 
@@ -81,7 +112,7 @@ class CandidateStore {
     );
     for (const item of sorted) {
       if (this.items.size <= MAX_QUEUE_SIZE) break;
-      if (item.status === 'posted' || item.status === 'skipped') {
+      if ((item.status === 'posted' && (item.autoPostState !== 'posted' || item.preferredAt)) || item.status === 'skipped') {
         this.items.delete(item.id);
       }
     }
@@ -159,7 +190,8 @@ class CandidateStore {
    */
   markPosted(id: string, candidateIndex: number): { intentUrl: string } | null {
     const item = this.items.get(id);
-    if (!item) return null;
+    if (!item || item.status !== 'ready' || item.autoPostState === 'posting' ||
+        item.autoPostState === 'posted' || item.autoPostState === 'uncertain') return null;
     const candidate = item.candidates[candidateIndex];
     if (!candidate) return null;
 
@@ -175,12 +207,58 @@ class CandidateStore {
   /** Mark a tweet as skipped (dismissed from queue). */
   markSkipped(id: string): boolean {
     const item = this.items.get(id);
-    if (!item) return false;
+    if (!item || item.autoPostState === 'posting') return false;
     item.status = 'skipped';
     item.skippedAt = new Date().toISOString();
     this._removeFromOldQueue(item.tweet.id);
     this._save();
     return true;
+  }
+
+  /** Persist an in-flight marker before contacting Twitter, preventing blind retries after a crash. */
+  beginAutoPost(id: string, candidateIndex: number): boolean {
+    const item = this.items.get(id);
+    if (!item || !isAutoPostEligible(item) || !item.candidates[candidateIndex] ||
+        (item.autoPostState === 'uncertain' && item.postedCandidateIndex !== candidateIndex)) return false;
+    const previous = { ...item };
+    if (item.autoPostState === 'uncertain') item.autoPostRetryCount = (item.autoPostRetryCount ?? 0) + 1;
+    item.autoPostState = 'posting';
+    item.postedCandidateIndex = candidateIndex;
+    delete item.autoPostRetryAt;
+    if (this._save()) return true;
+    Object.assign(item, previous);
+    if (previous.autoPostState === undefined) delete item.autoPostState;
+    if (previous.postedCandidateIndex === undefined) delete item.postedCandidateIndex;
+    if (previous.autoPostRetryCount === undefined) delete item.autoPostRetryCount;
+    return false;
+  }
+
+  finishAutoPost(id: string, state: 'posted' | 'uncertain' | 'blocked', error?: string, retryAt?: string): boolean {
+    const item = this.items.get(id);
+    if (!item || (state === 'blocked'
+      ? !isAutoPostEligible(item)
+      : item.autoPostState !== 'posting')) return false;
+    item.autoPostState = state;
+    item.autoPostError = error;
+    item.autoPostRetryable = state === 'uncertain' && !!retryAt;
+    if (retryAt) item.autoPostRetryAt = retryAt;
+    else delete item.autoPostRetryAt;
+    if (state === 'posted') {
+      item.status = 'posted';
+      item.postedAt = new Date().toISOString();
+    }
+    return this._save();
+  }
+
+  selectPreference(id: string, candidateIndex: number): boolean {
+    const item = this.items.get(id);
+    if (!item || item.autoPostState !== 'posted' || item.preferredAt || !item.candidates[candidateIndex]) return false;
+    item.preferredCandidateIndex = candidateIndex;
+    item.preferredAt = new Date().toISOString();
+    if (this._save()) return true;
+    delete item.preferredCandidateIndex;
+    delete item.preferredAt;
+    return false;
   }
 
   /** Get all items (optionally filter by status). */
@@ -193,6 +271,10 @@ class CandidateStore {
 
   getById(id: string): QueueItem | undefined {
     return this.items.get(id);
+  }
+
+  getLoadError(): string | undefined {
+    return this.loadError;
   }
 
   /**

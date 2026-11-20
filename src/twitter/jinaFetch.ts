@@ -2,6 +2,7 @@ import { Tweet } from '../types';
 import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { snowflakeToDate } from '../utils/snowflakeId';
+import { withReplyRecipients } from './replyText';
 
 // Simple fallback fetcher using r.jina.ai to retrieve public timeline HTML.
 // This is a best-effort scraper: it may not always return full recent tweets.
@@ -16,7 +17,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     return [];
   }
 
-  const url = `https://r.jina.ai/https://x.com/${username}`;
+  const url = `https://r.jina.ai/https://x.com/${username}/with_replies`;
   try {
     const controller = new AbortController();
     const timeoutId = setTimeout(() => controller.abort(), 15000);
@@ -59,6 +60,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     const lines = postsSection.split('\n');
     let currentText = '';
     let skipNext = false; // Flag to skip quoted/embedded tweets
+    let replyRecipients: string[] = [];
     
     for (let i = 0; i < lines.length && tweets.length < max; i++) {
       const line = lines[i].trim();
@@ -68,8 +70,15 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
         continue;
       }
 
-      // If the line is a quoted tweet or reply to someone else, skip it
-      if (line.match(/^Quote$/) || line.match(/^Replying to @/) || line.match(quotedTweetRegex)) {
+      if (/^Replying to\b/i.test(line)) {
+        replyRecipients = line.match(/@[a-zA-Z0-9_]+/g) || [];
+        currentText = '';
+        skipNext = false;
+        continue;
+      }
+
+      // Skip quoted/embedded tweets, not replies by the source account.
+      if (line.match(/^Quote$/) || line.match(quotedTweetRegex)) {
         skipNext = true;
         currentText = '';
         continue;
@@ -83,6 +92,8 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
         const id = match[1];
         if (seenIds.has(id)) {
           currentText = '';
+          replyRecipients = [];
+          skipNext = false;
           continue;
         }
         seenIds.add(id);
@@ -97,6 +108,9 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
           .replace(/\d+:\d+/g, '') // Remove timestamps like "0:23"
           .replace(/\s+/g, ' ')
           .trim();
+        if (text && replyRecipients.length > 0) {
+          text = withReplyRecipients(text, username, replyRecipients);
+        }
 
         if (text && text.length >= 5 && !/^(Image|Quote|Replying)/i.test(text)) {
           if (text.length > 280) text = text.slice(0, 277) + '...';
@@ -114,6 +128,7 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
         }
         currentText = '';
         skipNext = false;
+        replyRecipients = [];
         continue;
       }
 

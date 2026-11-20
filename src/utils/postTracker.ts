@@ -81,6 +81,11 @@ class PostTracker {
     return this.postTimestamps.length;
   }
 
+  public getPostCount30m(): number {
+    const cutoff = Date.now() - 30 * 60 * 1000;
+    return this.postTimestamps.filter(date => date.getTime() > cutoff).length;
+  }
+
   /**
      * Check if we can post without exceeding the limit
      */
@@ -108,7 +113,7 @@ class PostTracker {
   public recordPost() {
     this.postTimestamps.push(new Date());
     this.saveState();
-    logger.info(`Recorded post. Total in last 24h: ${this.getPostCount24h()}/${MAX_POSTS_PER_24H}`);
+    logger.info(`Recorded post. Total in last 24h: ${this.getPostCount24h()}`);
   }
 
   /**

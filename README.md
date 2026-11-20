@@ -5,7 +5,7 @@
 [![Node Version](https://img.shields.io/badge/node-%3E%3D18.0.0-brightgreen)](https://nodejs.org)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.1.6-blue)](https://www.typescriptlang.org/)
 
-A Twitter translation bot that fetches tweets from @BroTeamPills, runs them through multi-language chains for comedic effect, and presents the results in a **local web dashboard** for manual review. You choose which translation to post — the bot opens a `twitter.com/intent/tweet` URL in your browser so you post it yourself. **No Twitter API credentials required for the manual version. Alternatively, revert to version v0.12.2 for full automatic tweet fetching and posting. That version works but is no longer updated because Twitter disabled free API usage Q1 2026: https://github.com/ExtendoBrothers/broteam-translate-bot/releases/tag/v0.12.2**
+A Twitter translation bot that fetches tweets from @BroTeamPills, runs them through multi-language chains for comedic effect, and presents the results in a **local web dashboard**. In manual mode you choose a translation and post it via the Twitter intent link. Optional automatic mode uses that link in a dedicated browser and keeps the candidates on the dashboard for your feedback. Neither mode requires Twitter API credentials.
 
 ## How It Works
 
@@ -16,10 +16,61 @@ A Twitter translation bot that fetches tweets from @BroTeamPills, runs them thro
 5. You review the candidates, pick the best one, and click **Post**
 6. The bot opens `twitter.com/intent/tweet?text=...` in your browser — you click Tweet
 
+In automatic mode the bot instead posts the dashboard's BEST candidate (quality
+gate first, then English preference and humor plus heuristic score) and leaves
+the item visible until you choose your preferred translation. That choice updates
+feedback and language weights; it does not make another post.
+
+### Automatic browser posting
+
+Run `./scripts/restart-clean.ps1` and choose **A** when prompted, or use
+`./scripts/restart-clean.ps1 -Mode automatic` for a non-interactive restart.
+Choose **M** (the default) to keep manual posting. All eligible ready items,
+including the existing queue and manually submitted items, can be posted.
+By default, the bot starts Chrome with the separate `.automatic-browser-profile`
+directory; sign in to the intended X account in that browser.
+
+To use an existing Firefox session instead, restart Firefox once with
+`--remote-debugging-port 9222` and set
+`AUTOMATIC_BROWSER_WS_ENDPOINT=ws://127.0.0.1:9222/session` in your local
+`.env`. For Firefox Portable, launch its underlying `App\firefox64\firefox.exe`
+with `-no-remote -profile "<portable directory>\Data\profile"` and the
+remote-debugging flag. Close the existing Firefox instance using that profile
+first; afterward the bot attaches to the running browser and leaves it open
+when the bot stops. It reuses an existing X tab for the login check when one is
+available in the default browser context; otherwise it opens a login tab. Posts
+are prepared in a separate temporary tab. The debugging endpoint grants local
+processes control over your browser, so only enable it on a trusted machine and
+do not expose it to the network. Keep the browser open and avoid interacting
+with the bot's tabs while posting. Challenges, browser changes, and X interface
+changes may require your attention.
+
+If Firefox reports that an automation session is already active, stop the other
+automation client. If a previous bot stopped unexpectedly and left a stale
+session, close and reopen Firefox with the same remote-debugging flag; the bot
+will retry pending items. Check X before retrying any item marked uncertain.
+
+Long translations are composed as threads. Browser posting is limited to 50 posts
+per 24 hours and 10 posts per 30 minutes, counting each thread part and other
+posts recorded by the bot. Posts made outside the bot are not counted. Browser
+posting also uses a 20-minute interval between attempts. Failed quality checks
+remain available for manual review. Language checks flag non-Latin scripts and
+suspicious untranslated words, while allowing contextual names and quotations;
+the dictionary-based checks can still make mistakes. Previously queued results
+are checked again before automatic posting. If post confirmation times out, the
+bot retries automatically up to 10 times, at least 30 seconds apart and subject
+to posting limits. **A timeout does not prove that X rejected the post: retries
+can create duplicates.** Other uncertain outcomes, including interrupted posts,
+remain on the dashboard for review. Browser automation depends on X's interface
+and is not guaranteed to work if X changes it.
+
 The Nitter RSS fallback uses public instances that permit scraping; availability
 can change. Check [Nitter Status](https://status.d420.net/) for current instance
 and RSS health. A reported healthy instance may still fail for a specific feed
 or network, in which case the bot tries the next instance.
+The bot requests timelines including replies when supported. Reply addressees
+are preserved in the translation text, except when the followed account is the
+sole addressee; its self-reply mention is removed to avoid tagging it.
 
 ## Key Features
 
@@ -94,6 +145,7 @@ broteam-translate-bot/
 - Node.js v18+
 - Docker Desktop (for LibreTranslate)
 - **No Twitter API credentials needed**
+- Google Chrome for automatic mode, or Firefox started with its local WebDriver BiDi endpoint
 
 ### Installation
 
@@ -171,7 +223,9 @@ npm run setup
 | Variable | Default | Description |
 |----------|---------|-------------|
 | `NODE_ENV` | `development` | Environment mode |
+| `BOT_MODE` | `manual` | `manual` or `automatic`; the restart script selects this for PM2 |
 | `MONTHLY_FETCH_LIMIT` | `0` | Keep at `0` to always skip the Twitter API |
+| `AUTOMATIC_BROWSER_WS_ENDPOINT` | — | Local Firefox WebDriver BiDi URL; when unset, automatic posting launches Chrome |
 
 See [.env.example](.env.example) for a complete template.
 
@@ -210,6 +264,7 @@ Served on `http://localhost:3456` (configurable via `DASHBOARD_PORT`).
 | `POST` | `/api/queue/fetch` | Trigger a manual Nitter fetch cycle |
 | `POST` | `/api/queue/submit` | Add a tweet by manual text input |
 | `POST` | `/api/queue/:id/post/:idx` | Mark candidate as posted → returns `intentUrl` |
+| `POST` | `/api/queue/:id/preference/:idx` | Save a preferred candidate for an automatically posted item |
 | `DELETE` | `/api/queue/:id` | Dismiss/skip a tweet |
 
 The `POST .../post/:idx` response includes a `twitter.com/intent/tweet` URL the dashboard opens in a new tab.

@@ -1,6 +1,7 @@
 import { logger } from '../utils/logger';
 import { Tweet } from '../types';
 import { snowflakeToDateSafe } from '../utils/snowflakeId';
+import { withReplyRecipients } from './replyText';
 
 /** Remove link-card metadata from URL-only tweets in public timeline sources. */
 export function cleanFetchedTweetText(text: string): string {
@@ -26,7 +27,7 @@ async function fetchFromSyndicationAPI(username: string, maxTweets = 40): Promis
   
   try {
     // Twitter syndication endpoint (public, used for embeds)
-    const url = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}?showReplies=false&showRetweets=false`;
+    const url = `https://syndication.twitter.com/srv/timeline-profile/screen-name/${username}?showReplies=true&showRetweets=false`;
     
     logger.info(`Fetching from Twitter syndication API for @${username}`);
     
@@ -57,7 +58,10 @@ async function fetchFromSyndicationAPI(username: string, maxTweets = 40): Promis
       if (entry.type !== 'tweet' || !entry.content?.tweet) continue;
       
       const tweet = entry.content.tweet;
-      const text = cleanFetchedTweetText(tweet.full_text || tweet.text || '');
+      let text = cleanFetchedTweetText(tweet.full_text || tweet.text || '');
+      if (tweet.in_reply_to_screen_name) {
+        text = withReplyRecipients(text, username, [tweet.in_reply_to_screen_name]);
+      }
       const tweetId = tweet.id_str || '';
       
       // Always extract timestamp from Twitter snowflake ID since API created_at is unreliable
