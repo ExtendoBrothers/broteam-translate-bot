@@ -148,14 +148,13 @@ describe('browser publisher', () => {
       const [predicate, , isThread] = calls[calls.length - 1];
       const originalDocument = Object.getOwnPropertyDescriptor(globalThis, 'document');
       try {
+        const toast = { textContent: 'Your post was sent' };
         Object.defineProperty(globalThis, 'document', {
-          configurable: true, value: { querySelector: () => ({ textContent: 'Your post was sent' }) },
+          configurable: true, value: { querySelector: () => toast },
         });
         expect(predicate(isThread)).toBe(false);
         expect(predicate(false)).toBe(true);
-        Object.defineProperty(globalThis, 'document', {
-          configurable: true, value: { querySelector: () => ({ textContent: 'Your posts were sent' }) },
-        });
+        toast.textContent = 'Your posts were sent';
         expect(predicate(isThread)).toBe(true);
       } finally {
         if (originalDocument) Object.defineProperty(globalThis, 'document', originalDocument);
