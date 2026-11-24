@@ -9,6 +9,8 @@ import { connectToFirefox } from './firefoxConnection';
 const PROFILE = path.join(process.cwd(), '.automatic-browser-profile');
 const EDITORS = '[data-testid^="tweetTextarea_"]';
 
+export class UnsafeComposerError extends Error {}
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -57,6 +59,7 @@ export class BrowserPublisher {
   private ownsLoginPage = false;
   private attached = false;
   private readonly preparedChunks = new WeakMap<Page, string[]>();
+  private cancelConfirmation?: () => void;
 
   async isLoggedIn(): Promise<boolean> {
     if (!this.browser?.connected) {
@@ -73,6 +76,9 @@ export class BrowserPublisher {
           channel: 'chrome',
           userDataDir: PROFILE,
           headless: false,
+          handleSIGINT: false,
+          handleSIGTERM: false,
+          handleSIGHUP: false,
         });
         this.attached = false;
       }
@@ -119,7 +125,7 @@ export class BrowserPublisher {
     if (!this.browser?.connected) throw new Error('Browser is not open');
     const chunks = splitTweet(text);
     if (!chunks.length || chunks.some(chunk => chunk.length > 280)) {
-      throw new Error('Translation cannot be safely split into posts of at most 280 characters');
+      throw new UnsafeComposerError('Translation cannot be safely split into posts of at most 280 characters');
     }
 
     const page = await this.browser.newPage();
@@ -145,6 +151,7 @@ export class BrowserPublisher {
           throw new Error(`Twitter composer did not preserve thread part ${i + 1}`);
         }
       }
+      await page.waitForSelector('[data-testid="tweetButton"]', { visible: true, timeout: 10_000 });
       this.preparedChunks.set(page, chunks);
       return page;
     } catch (error) {
@@ -156,7 +163,6 @@ export class BrowserPublisher {
   async publish(page: Page): Promise<void> {
     const chunks = this.preparedChunks.get(page);
     if (!chunks) throw new Error('Browser composer was not prepared by this publisher');
-    await page.waitForSelector('[data-testid="tweetButton"]', { visible: true, timeout: 10_000 });
     const controller = new AbortController();
     const remaining = [...chunks];
     const postIds = new Set<string>();
@@ -168,6 +174,7 @@ export class BrowserPublisher {
     let timeout: ReturnType<typeof setTimeout> | undefined;
     const timeoutResult = new Promise<void>((_resolve, reject) => {
       timeout = setTimeout(() => reject(new TimeoutError('Post confirmation timed out after 30000ms')), 30_000);
+      this.cancelConfirmation = () => reject(new Error('Browser publisher stopped before post confirmation'));
     });
     const onResponse = (response: HTTPResponse): void => {
       void createdPost(response).then(post => {
@@ -204,10 +211,12 @@ export class BrowserPublisher {
       controller.abort();
       page.off('response', onResponse);
       this.preparedChunks.delete(page);
+      this.cancelConfirmation = undefined;
     }
   }
 
   async close(): Promise<void> {
+    this.cancelConfirmation?.();
     const browser = this.browser;
     const page = this.loginPage;
     const ownsPage = this.ownsLoginPage;

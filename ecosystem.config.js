@@ -6,7 +6,6 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        DRY_RUN: '0',
         BOT_MODE: process.env.BOT_MODE || 'manual'
       },
       instances: 1,
@@ -24,8 +23,7 @@ module.exports = {
       min_uptime: '30s',          // Consider unstable if crashes within 30s
       exp_backoff_restart_delay: 100,  // Exponential backoff starting at 100ms
       env_windows: {
-        NODE_ENV: 'production',
-        DRY_RUN: '0'
+        NODE_ENV: 'production'
       }
     },
     {

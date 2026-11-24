@@ -166,7 +166,7 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): boolean {
 
     if (isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
       logger.warn('[FEEDBACK] Blocked spammy feedback entry.');
-      return false;
+      return true;
     }
     // Append-only write avoids loading/parsing/rewriting the full JSONL file on every post.
     // Use open/write/fsync/close for better durability than a buffered append helper.
@@ -268,11 +268,22 @@ async function handleRequest(
 ): Promise<void> {
   const method = req.method || 'GET';
   const url = req.url || '/';
+  const port = req.socket.localPort;
+  const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+
+  if (!allowed.includes(`http://${req.headers.host?.toLowerCase()}`)) {
+    json(res, 403, { error: 'Forbidden host' });
+    return;
+  }
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) &&
+      req.headers.origin !== undefined && !allowed.includes(req.headers.origin)) {
+    json(res, 403, { error: 'Forbidden origin' });
+    return;
+  }
 
   // ── CORS preflight ───────────────────────────────────────────────────────
   if (method === 'OPTIONS') {
     const origin = req.headers['origin'] || '';
-    const allowed = [`http://localhost:${DASHBOARD_PORT}`, `http://127.0.0.1:${DASHBOARD_PORT}`];
     if (allowed.includes(origin)) {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': origin,
@@ -354,7 +365,14 @@ async function handleRequest(
       json(res, 409, { error: 'Post confirmation unavailable; refresh the queue' });
       return;
     }
-    const interrupted = item.autoPostError === 'Posting was interrupted. Check Twitter before dismissing this item.';
+    const interrupted = !item.autoPostAttempt &&
+      item.autoPostError === 'Posting was interrupted. Check Twitter before dismissing this item.';
+    if (item.autoPostAttempt && (!postTracker.reserveAutomaticAttempt(
+      item.id, item.autoPostAttempt.timestamp, item.autoPostAttempt.partCount,
+    ) || !candidateStore.markAutoPostAccounted(queueId))) {
+      json(res, 500, { error: 'Could not save post accounting; please try again' });
+      return;
+    }
     if (!candidateStore.confirmUncertainPost(queueId)) {
       json(res, 500, { error: 'Could not save confirmation; please try again' });
       return;
@@ -362,7 +380,12 @@ async function handleRequest(
     if (interrupted) {
       for (let i = 0; i < splitTweet(candidate.result).length; i++) postTracker.recordPost();
     }
-    recordSuccessfulPost(item.tweet.id, candidate.result, false);
+    if (!recordSuccessfulPost(item.tweet.id, candidate.result, false, !!item.autoPostAttempt) ||
+        (item.autoPostAttempt && !candidateStore.markAutoPostRecorded(queueId))) {
+      logger.error(`[DashboardServer] Could not record confirmed post ${queueId}; automatic reconciliation will retry`);
+      json(res, 500, { error: 'Post confirmed, but tracking could not be saved' });
+      return;
+    }
     logger.info(`[DashboardServer] Manually confirmed post ${queueId}; awaiting preference`);
     json(res, 200, { message: 'Post confirmed; choose your preference' });
     return;

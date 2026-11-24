@@ -64,6 +64,13 @@ export async function fetchTweetsFromJina(username: string, max = 20): Promise<T
     
     for (let i = 0; i < lines.length && tweets.length < max; i++) {
       const line = lines[i].trim();
+
+      if (line.toLowerCase() === `@${username.toLowerCase()}`) {
+        currentText = '';
+        replyRecipients = [];
+        skipNext = false;
+        continue;
+      }
       
       // Ignore metadata and section headers
       if (line.match(/^(Title:|URL Source:|Published Time:|Markdown Content:|Image \d+:|---+|@\w+$)/)) {

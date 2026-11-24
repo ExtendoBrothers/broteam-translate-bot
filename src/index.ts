@@ -28,7 +28,8 @@ import { candidateStore } from './server/candidateStore';
 import { generationQueue } from './server/generationQueue';
 import { fetchTweets } from './twitter/fetchTweets';
 import { tweetTracker } from './utils/tweetTracker';
-import { AutomaticPoster } from './server/automaticPoster';
+import { postTracker } from './utils/postTracker';
+import { AutomaticPoster, reconcileAutomaticPosts } from './server/automaticPoster';
 
 // How often to poll Nitter for new tweets automatically (default: every 30 minutes)
 const FETCH_INTERVAL_MS = Number(process.env.FETCH_INTERVAL_MS || String(30 * 60 * 1000));
@@ -59,9 +60,6 @@ async function main() {
   try {
     const mode = process.env.BOT_MODE || 'manual';
     if (mode !== 'manual' && mode !== 'automatic') throw new Error(`Invalid BOT_MODE: ${mode}`);
-    if (mode === 'automatic' && candidateStore.getLoadError()) {
-      throw new Error(`Cannot start automatic posting: candidate queue failed to load: ${candidateStore.getLoadError()}`);
-    }
     const automaticPoster = mode === 'automatic' ? new AutomaticPoster() : undefined;
     // Initialize graceful shutdown handlers
     initializeGracefulShutdown();
@@ -96,6 +94,15 @@ async function main() {
     if (!acquireLock()) {
       logger.error('Another instance is already running. Exiting.');
       process.exit(1);
+    }
+
+    candidateStore.initialize();
+    postTracker.reload();
+    if (mode === 'automatic' && candidateStore.getLoadError()) {
+      throw new Error(`Cannot start automatic posting: candidate queue failed to load: ${candidateStore.getLoadError()}`);
+    }
+    if (!candidateStore.getLoadError() && !reconcileAutomaticPosts()) {
+      logger.error('Could not reconcile automatic post tracking; automatic posting will remain paused.');
     }
 
     const version = getVersion();

@@ -61,6 +61,35 @@ describe('manual queue submission', () => {
     jest.clearAllMocks();
   });
 
+  it('rejects cross-origin mutations and DNS rebinding hosts', async () => {
+    const request = { method: 'POST', body: JSON.stringify({ text: 'Example text' }) };
+    const crossOrigin = await fetch(`${baseUrl}/api/queue/submit`, {
+      ...request, headers: { Origin: 'https://attacker.example', 'Content-Type': 'text/plain' },
+    });
+    expect(crossOrigin.status).toBe(403);
+    const rebindingStatus = await new Promise<number | undefined>((resolve, reject) => {
+      const req = http.request(`${baseUrl}/api/queue/submit`, {
+        method: 'POST', headers: { Host: `attacker.example:${new URL(baseUrl).port}` },
+      }, response => {
+        response.resume();
+        resolve(response.statusCode);
+      });
+      req.on('error', reject);
+      req.end(request.body);
+    });
+    expect(rebindingStatus).toBe(403);
+    expect(candidateStore.add).not.toHaveBeenCalled();
+  });
+
+  it('accepts a same-origin dashboard mutation', async () => {
+    jest.mocked(candidateStore.list).mockReturnValue([]);
+    const response = await fetch(`${baseUrl}/api/queue/submit`, {
+      method: 'POST', headers: { Origin: baseUrl, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ text: 'Example text' }),
+    });
+    expect(response.status).toBe(201);
+  });
+
   it.each<QueueStatus>(['posted', 'skipped'])('allows matching text from a %s item', async status => {
     const item = { id: 'old-item', status, tweet: { text: 'Example text' } };
     jest.mocked(candidateStore.list).mockImplementation(filter => {

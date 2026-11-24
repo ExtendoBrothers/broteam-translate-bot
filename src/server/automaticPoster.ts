@@ -1,12 +1,14 @@
 import { candidateStore, isAutoPostEligible } from './candidateStore';
-import { BrowserPublisher } from './browserPublisher';
-import { isContentDuplicateSync } from '../utils/contentDeduplication';
+import { BrowserPublisher, UnsafeComposerError } from './browserPublisher';
+import { areContentsDuplicate, isContentDuplicateSync } from '../utils/contentDeduplication';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
 import { postTracker } from '../utils/postTracker';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { logger } from '../utils/logger';
 import { splitTweet } from '../utils/tweetSplitter';
 import { getLanguageQualityIssue } from '../translator/languageQuality';
+import { isAcceptable } from '../workers/candidateGenerator';
+import { isSpammyResult } from '../utils/spamFilter';
 
 const POLL_INTERVAL_MS = 30_000;
 const BROWSER_POST_INTERVAL_SECONDS = 30;
@@ -16,6 +18,26 @@ let status = 'Automatic posting is disabled';
 
 export function getAutomaticPostingStatus(): string {
   return status;
+}
+
+export function reconcileAutomaticPosts(): boolean {
+  for (const item of candidateStore.list()) {
+    const attempt = item.autoPostAttempt;
+    if (!attempt) continue;
+    if (!postTracker.reserveAutomaticAttempt(item.id, attempt.timestamp, attempt.partCount) ||
+        (!item.autoPostAccounted && !candidateStore.markAutoPostAccounted(item.id))) {
+      logger.error(`[AutomaticPoster] Could not reconcile post accounting for ${item.id}`);
+      return false;
+    }
+    if (item.autoPostState === 'posted' && !item.autoPostRecorded) {
+      if (!recordSuccessfulPost(item.tweet.id, attempt.content, false, true) ||
+          !candidateStore.markAutoPostRecorded(item.id)) {
+        logger.error(`[AutomaticPoster] Could not reconcile posted content for ${item.id}`);
+        return false;
+      }
+    }
+  }
+  return true;
 }
 
 export class AutomaticPoster {
@@ -57,15 +79,28 @@ export class AutomaticPoster {
       status = 'Dry run: automatic posting is disabled';
       return;
     }
-    if (postTracker.getPostCount24h() >= BROWSER_POST_LIMIT_24H ||
-        postTracker.getPostCount30m() >= BROWSER_POST_LIMIT_30M ||
+    if (!reconcileAutomaticPosts()) {
+      status = 'Automatic posting paused: unable to reconcile previous attempts';
+      return;
+    }
+    const dailyCount = postTracker.getPostCount24h();
+    const recentCount = postTracker.getPostCount30m();
+    if (postTracker.getStorageError()) {
+      status = `Automatic posting paused: ${postTracker.getStorageError()}`;
+      logger.error(`[AutomaticPoster] ${status}`);
+      return;
+    }
+    if (dailyCount >= BROWSER_POST_LIMIT_24H ||
+        recentCount >= BROWSER_POST_LIMIT_30M ||
         rateLimitTracker.isRateLimited('post')) return;
 
     const item = candidateStore.list('ready').find(entry => isAutoPostEligible(entry));
     if (!item) return;
     const index = item.candidates.findIndex(candidate => candidate.isBestCandidate);
     const candidate = item.candidates[index];
-    if (!candidate || candidate.error || !candidate.result.trim() || candidate.acceptabilityWarnings?.length) {
+    if (!candidate || candidate.error || !candidate.result.trim() || candidate.acceptabilityWarnings?.length ||
+        (candidate.acceptabilityWarnings === undefined &&
+          (!isAcceptable(candidate.result, item.tweet.text).acceptable || isSpammyResult(candidate.result)))) {
       const message = 'Best candidate failed the quality gate; manual review required.';
       if (!candidateStore.finishAutoPost(item.id, 'blocked', message)) {
         logger.error(`[AutomaticPoster] Could not persist blocked state for ${item.id}`);
@@ -84,7 +119,14 @@ export class AutomaticPoster {
       return;
     }
 
-    if (isContentDuplicateSync(candidate.result)) {
+    const isDuplicate = () => isContentDuplicateSync(candidate.result) ||
+      candidateStore.list('ready').some(entry =>
+        entry.id !== item.id && (entry.autoPostState === 'posting' || entry.autoPostState === 'uncertain') &&
+        entry.postedCandidateIndex !== undefined &&
+        !!entry.candidates[entry.postedCandidateIndex] &&
+        areContentsDuplicate(candidate.result, entry.candidates[entry.postedCandidateIndex].result));
+
+    if (isDuplicate()) {
       const message = 'Best candidate duplicates previously posted content; manual review required.';
       if (!candidateStore.finishAutoPost(item.id, 'blocked', message)) {
         logger.error(`[AutomaticPoster] Could not persist blocked state for ${item.id}`);
@@ -120,8 +162,12 @@ export class AutomaticPoster {
     } catch (err) {
       if (this.stopping) return;
       const message = `Could not prepare browser composer: ${err}`;
-      if (!candidateStore.finishAutoPost(item.id, 'blocked', message)) {
-        logger.error(`[AutomaticPoster] Could not persist blocked state for ${item.id}`);
+      if (err instanceof UnsafeComposerError) {
+        if (!candidateStore.finishAutoPost(item.id, 'blocked', message)) {
+          logger.error(`[AutomaticPoster] Could not persist blocked state for ${item.id}`);
+        }
+      } else {
+        status = `${message}; will retry later`;
       }
       logger.error(`[AutomaticPoster] ${item.id}: ${message}`);
       return;
@@ -132,10 +178,15 @@ export class AutomaticPoster {
       if (this.stopping ||
           partCount + postTracker.getPostCount24h() > BROWSER_POST_LIMIT_24H ||
           partCount + postTracker.getPostCount30m() > BROWSER_POST_LIMIT_30M ||
-          rateLimitTracker.isRateLimited('post') || isContentDuplicateSync(candidate.result) ||
-          !candidateStore.beginAutoPost(item.id, index)) {
+          postTracker.getStorageError() || rateLimitTracker.isRateLimited('post') || isDuplicate() ||
+          !candidateStore.beginAutoPost(item.id, index, partCount)) {
         logger.warn(`[AutomaticPoster] ${item.id} changed or could not be reserved; not posting`);
         return;
+      }
+      const attempt = item.autoPostAttempt;
+      if (!attempt || !postTracker.reserveAutomaticAttempt(item.id, attempt.timestamp, attempt.partCount) ||
+          !candidateStore.markAutoPostAccounted(item.id)) {
+        throw new Error('Could not persist automatic post accounting');
       }
       await this.publisher.publish(page);
       confirmed = true;
@@ -144,7 +195,6 @@ export class AutomaticPoster {
       if (!candidateStore.finishAutoPost(item.id, 'uncertain', message)) {
         logger.error(`[AutomaticPoster] Could not persist uncertain state for ${item.id}`);
       }
-      for (let i = 0; i < partCount; i++) postTracker.recordPost();
       rateLimitTracker.setCooldown('post', BROWSER_POST_INTERVAL_SECONDS, 'uncertain automatic browser post');
       logger.error(`[AutomaticPoster] ${item.id}: ${message}`);
     } finally {
@@ -157,8 +207,10 @@ export class AutomaticPoster {
       if (!candidateStore.finishAutoPost(item.id, 'posted')) {
         logger.error(`[AutomaticPoster] Posted ${item.id}, but could not persist confirmation; check Twitter after restart`);
       }
-      recordSuccessfulPost(item.tweet.id, candidate.result);
-      for (let i = 1; i < partCount; i++) postTracker.recordPost();
+      if (!recordSuccessfulPost(item.tweet.id, candidate.result, false, true) ||
+          !candidateStore.markAutoPostRecorded(item.id)) {
+        logger.error(`[AutomaticPoster] Could not persist posted content for ${item.id}; will reconcile`);
+      }
       rateLimitTracker.setCooldown('post', BROWSER_POST_INTERVAL_SECONDS, 'automatic browser post spacing');
       logger.info(`[AutomaticPoster] Posted ${item.id}; awaiting dashboard preference`);
     }

@@ -2,7 +2,7 @@ jest.mock('../src/utils/logger', () => ({ logger: { info: jest.fn(), error: jest
 jest.mock('../src/utils/tweetTracker', () => ({ tweetTracker: { markProcessed: jest.fn() } }));
 jest.mock('../src/utils/postTracker', () => ({ postTracker: { recordPost: jest.fn() } }));
 jest.mock('../src/utils/tweetQueue', () => ({ tweetQueue: {} }));
-jest.mock('../src/utils/contentDeduplication', () => ({ logPostedContent: jest.fn() }));
+jest.mock('../src/utils/contentDeduplication', () => ({ logPostedContent: jest.fn(() => true) }));
 jest.mock('../src/utils/translationStability', () => ({}));
 jest.mock('../src/utils/enhancedInstanceLock', () => ({}));
 

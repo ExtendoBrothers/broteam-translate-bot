@@ -9,7 +9,8 @@ jest.mock('http', () => {
 });
 jest.mock('child_process', () => ({ execFile: jest.fn() }));
 jest.mock('../src/server/candidateStore', () => ({
-  candidateStore: { list: jest.fn(), getById: jest.fn(), selectPreference: jest.fn(), confirmUncertainPost: jest.fn() },
+  candidateStore: { list: jest.fn(), getById: jest.fn(), selectPreference: jest.fn(), confirmUncertainPost: jest.fn(),
+    markAutoPostAccounted: jest.fn(), markAutoPostRecorded: jest.fn() },
 }));
 jest.mock('../src/server/generationQueue', () => ({ generationQueue: { depth: 0 } }));
 jest.mock('../src/server/automaticPoster', () => ({ getAutomaticPostingStatus: jest.fn() }));
@@ -19,8 +20,10 @@ jest.mock('../src/utils/logger', () => ({
   logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() },
 }));
 jest.mock('../src/utils/spamFilter', () => ({ isSpammyFeedbackEntry: jest.fn(() => false) }));
-jest.mock('../src/utils/duplicatePrevention', () => ({ recordSuccessfulPost: jest.fn() }));
-jest.mock('../src/utils/postTracker', () => ({ postTracker: { recordPost: jest.fn() } }));
+jest.mock('../src/utils/duplicatePrevention', () => ({ recordSuccessfulPost: jest.fn(() => true) }));
+jest.mock('../src/utils/postTracker', () => ({
+  postTracker: { recordPost: jest.fn(), reserveAutomaticAttempt: jest.fn() },
+}));
 jest.mock('../src/utils/languageWeights', () => ({ recordPositives: jest.fn() }));
 jest.mock('../src/utils/heuristicEvaluator', () => ({ updateWeightsFromFeedback: jest.fn() }));
 jest.mock('../src/utils/translationLogEmitter', () => ({
@@ -32,6 +35,7 @@ import { recordSuccessfulPost } from '../src/utils/duplicatePrevention';
 import { recordPositives } from '../src/utils/languageWeights';
 import { updateWeightsFromFeedback } from '../src/utils/heuristicEvaluator';
 import { postTracker } from '../src/utils/postTracker';
+import { isSpammyFeedbackEntry } from '../src/utils/spamFilter';
 
 describe('automatic posting feedback', () => {
   let baseUrl: string;
@@ -117,6 +121,16 @@ describe('automatic posting feedback', () => {
     expect(item.preferredCandidateIndex).toBe(1);
   });
 
+  it('saves the preference even when the feedback entry is filtered', async () => {
+    item.id = 'filtered';
+    jest.mocked(isSpammyFeedbackEntry).mockReturnValueOnce(true);
+    const response = await fetch(`${baseUrl}/api/queue/filtered/preference/1`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(item.preferredCandidateIndex).toBe(1);
+    const entries = fs.readFileSync(path.join(tempDir, 'feedback-data.jsonl'), 'utf8');
+    expect(entries).not.toContain('"queueItemId":"filtered"');
+  });
+
   it('confirms an uncertain post without counting it again and allows preference review', async () => {
     item.id = 'confirmed';
     item.status = 'ready';
@@ -129,7 +143,7 @@ describe('automatic posting feedback', () => {
     });
     const response = await fetch(`${baseUrl}/api/queue/confirmed/confirm-posted`, { method: 'POST' });
     expect(response.status).toBe(200);
-    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', 'Posted', false);
+    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', 'Posted', false, false);
     expect(postTracker.recordPost).not.toHaveBeenCalled();
     const queue = await (await fetch(`${baseUrl}/api/queue`)).json() as { items: QueueItem[] };
     expect(queue.items).toHaveLength(1);
@@ -147,7 +161,23 @@ describe('automatic posting feedback', () => {
     const response = await fetch(`${baseUrl}/api/queue/interrupted/confirm-posted`, { method: 'POST' });
     expect(response.status).toBe(200);
     expect(postTracker.recordPost).toHaveBeenCalledTimes(2);
-    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', item.candidates[0].result, false);
+    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', item.candidates[0].result, false, false);
+  });
+
+  it('reconciles reserved accounting before confirming a recovered post', async () => {
+    item.id = 'reserved';
+    item.status = 'ready';
+    item.autoPostState = 'uncertain';
+    item.autoPostAttempt = { timestamp: '2026-01-01T00:00:00.000Z', partCount: 2, content: 'Posted' };
+    jest.mocked(postTracker.reserveAutomaticAttempt).mockReturnValueOnce(true);
+    jest.mocked(candidateStore.markAutoPostAccounted).mockReturnValueOnce(true);
+    jest.mocked(candidateStore.markAutoPostRecorded).mockReturnValueOnce(true);
+    jest.mocked(candidateStore.confirmUncertainPost).mockReturnValueOnce(true);
+    const response = await fetch(`${baseUrl}/api/queue/reserved/confirm-posted`, { method: 'POST' });
+    expect(response.status).toBe(200);
+    expect(postTracker.reserveAutomaticAttempt).toHaveBeenCalledWith('reserved', item.autoPostAttempt.timestamp, 2);
+    expect(postTracker.recordPost).not.toHaveBeenCalled();
+    expect(recordSuccessfulPost).toHaveBeenCalledWith('tweet', 'Posted', false, true);
   });
 
   it('does not confirm an in-flight post or record a post after a persistence failure', async () => {

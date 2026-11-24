@@ -27,6 +27,7 @@ Run `./scripts/restart-clean.ps1` and choose **A** when prompted, or use
 `./scripts/restart-clean.ps1 -Mode automatic` for a non-interactive restart.
 Choose **M** (the default) to keep manual posting. All eligible ready items,
 including the existing queue and manually submitted items, can be posted.
+Set `DRY_RUN=1` in `.env` or the inherited environment to disable automatic posting.
 By default, the bot starts Chrome with the separate `.automatic-browser-profile`
 directory; sign in to the intended X account in that browser.
 
@@ -53,7 +54,10 @@ will continue processing pending items. Check X before acting on any item marked
 Long translations are composed as threads. Browser posting is limited to 50 posts
 per 24 hours and 10 posts per 30 minutes, counting each thread part and other
 posts recorded by the bot. Posts made outside the bot are not counted. Browser
-posting also uses a 30-second interval between attempts. Failed quality checks
+posting also uses a 30-second interval between attempts. Attempts are reserved
+in the queue and quota history before submission and recovered after a restart;
+an interrupted attempt may therefore count even if no post was sent. Automatic
+posting pauses if quota history cannot be read or saved. Failed quality checks
 remain available for manual review. Language checks flag non-Latin scripts and
 suspicious untranslated words, while allowing contextual names and quotations;
 the dictionary-based checks can still make mistakes. Previously queued results
@@ -63,9 +67,14 @@ automatically. Check X and use **Confirm posted** if it succeeded, or dismiss
 the item if it did not. Confirming lets you choose a preferred translation without
 posting again. The bot looks for X's success message or successful creation
 responses for every thread part; changes to X or browser support for reading
-responses can still leave an outcome uncertain. Posting limits still apply, including to
+responses can still leave an outcome uncertain. Other queued translations that
+duplicate an uncertain attempt remain blocked for review. Transient browser
+preparation failures are retried on a later polling interval. Posting limits still apply, including to
 uncertain attempts. Browser automation depends on X's interface and is not
 guaranteed to work if X changes it.
+
+The dashboard rejects mutation requests from other origins and non-local host
+headers. `DASHBOARD_PASSWORD` can additionally protect local API access.
 
 The Nitter RSS fallback uses public instances that permit scraping; availability
 can change. Check [Nitter Status](https://status.d420.net/) for current instance

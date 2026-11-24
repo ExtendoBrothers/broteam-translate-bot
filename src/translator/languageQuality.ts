@@ -6,11 +6,11 @@ const foreignWords = new Set(
   Object.entries(LEXICONS)
     .filter(([language]) => language !== 'en')
     .flatMap(([, words]) => [...words])
-    .filter(word => word.length >= 4 && !LEXICONS.en.has(word))
+    .filter(word => word.length >= 4 && !LEXICONS.en.has(word) && !englishDictionary.has(word))
 );
 for (const word of [
   'hola', 'bonjour', 'gracias', 'buongiorno', 'grazie', 'arigato', 'arigatou', 'spasibo', 'privet',
-  'guten', 'danke', 'bitte', 'nicht', 'haben', 'goedemorgen', 'dankjewel', 'jullie',
+  'guten', 'danke', 'bitte', 'nicht', 'haben', 'goedemorgen', 'dankjewel', 'jullie', 'hombre',
   'selamat', 'pagi', 'terima', 'kasih', 'semuanya', 'tidak', 'dengan', 'napredni', 'lahko', 'hvala',
 ]) {
   foreignWords.add(word);

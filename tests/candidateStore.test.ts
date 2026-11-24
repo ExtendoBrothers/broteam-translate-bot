@@ -57,6 +57,7 @@ describe('CandidateStore', () => {
     mockSafeFileOps.atomicWriteJsonSync.mockReturnValue(true);
     const mod = require('../src/server/candidateStore');
     candidateStore = mod.candidateStore;
+    candidateStore.initialize();
   });
 
   // ── add() ────────────────────────────────────────────────────────────────────
@@ -143,7 +144,10 @@ describe('CandidateStore', () => {
       it('persists the reservation and keeps the posted candidate separate from the preference', () => {
         const id = candidateStore.add(mockTweet);
         candidateStore.setReady(id, [mockCandidate, { ...mockCandidate, chainIndex: 1, result: 'Preferred' }]);
-        expect(candidateStore.beginAutoPost(id, 0)).toBe(true);
+        expect(candidateStore.beginAutoPost(id, 0, 1)).toBe(true);
+        expect(candidateStore.getById(id).autoPostAttempt).toMatchObject({
+          content: 'Translated text', partCount: 1,
+        });
         expect(candidateStore.markPosted(id, 1)).toBeNull();
         expect(candidateStore.markSkipped(id)).toBe(false);
         expect(candidateStore.finishAutoPost(id, 'posted')).toBe(true);
@@ -158,7 +162,7 @@ describe('CandidateStore', () => {
         const id = candidateStore.add(mockTweet);
         candidateStore.setReady(id, [mockCandidate]);
         mockSafeFileOps.atomicWriteJsonSync.mockReturnValueOnce(false);
-        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        expect(candidateStore.beginAutoPost(id, 0, 1)).toBe(false);
         expect(candidateStore.getById(id).autoPostState).toBeUndefined();
       });
 
@@ -171,8 +175,14 @@ describe('CandidateStore', () => {
           autoPostState: 'posting', postedCandidateIndex: 0,
         }]));
         const store = require('../src/server/candidateStore').candidateStore;
+        store.initialize();
         expect(store.getById('interrupted').autoPostState).toBe('uncertain');
-        expect(store.beginAutoPost('interrupted', 0)).toBe(false);
+        expect(store.getById('interrupted').autoPostAttempt).toMatchObject({
+          content: 'Translated text', partCount: 1,
+        });
+        expect(store.markSkipped('interrupted')).toBe(false);
+        expect(store.markAutoPostAccounted('interrupted')).toBe(true);
+        expect(store.beginAutoPost('interrupted', 0, 1)).toBe(false);
         expect(store.markPosted('interrupted', 0)).toBeNull();
       });
 
@@ -188,8 +198,9 @@ describe('CandidateStore', () => {
           autoPostState: 'uncertain', postedCandidateIndex: 0, ...retryFields,
         }]));
         const { candidateStore: store, isAutoPostEligible } = require('../src/server/candidateStore');
+        store.initialize();
         expect(isAutoPostEligible(store.getById('uncertain'))).toBe(false);
-        expect(store.beginAutoPost('uncertain', 0)).toBe(false);
+        expect(store.beginAutoPost('uncertain', 0, 1)).toBe(false);
         expect(store.getById('uncertain').autoPostRetryAt).toBeUndefined();
         if (retryFields.autoPostRetryable) {
           expect(store.getById('uncertain').autoPostRetryable).toBe(false);
@@ -202,14 +213,14 @@ describe('CandidateStore', () => {
       it('confirms an uncertain post, cancels retries, and preserves it for preference review', () => {
         const id = candidateStore.add(mockTweet);
         candidateStore.setReady(id, [mockCandidate]);
-        candidateStore.beginAutoPost(id, 0);
+        candidateStore.beginAutoPost(id, 0, 1);
         candidateStore.finishAutoPost(id, 'uncertain', 'timeout');
         expect(candidateStore.confirmUncertainPost(id)).toBe(true);
         expect(candidateStore.getById(id)).toMatchObject({
           status: 'posted', autoPostState: 'posted', postedCandidateIndex: 0, autoPostRetryable: false,
         });
         expect(candidateStore.getById(id).autoPostRetryAt).toBeUndefined();
-        expect(candidateStore.beginAutoPost(id, 0)).toBe(false);
+        expect(candidateStore.beginAutoPost(id, 0, 1)).toBe(false);
         expect(candidateStore.selectPreference(id, 0)).toBe(true);
         expect(candidateStore.confirmUncertainPost(id)).toBe(false);
       });
@@ -217,7 +228,7 @@ describe('CandidateStore', () => {
       it('rejects confirmation while posting and restores the uncertain state if saving fails', () => {
         const id = candidateStore.add(mockTweet);
         candidateStore.setReady(id, [mockCandidate]);
-        candidateStore.beginAutoPost(id, 0);
+        candidateStore.beginAutoPost(id, 0, 1);
         expect(candidateStore.confirmUncertainPost(id)).toBe(false);
         candidateStore.finishAutoPost(id, 'uncertain', 'timeout');
         const before = { ...candidateStore.getById(id) };
@@ -232,6 +243,7 @@ describe('CandidateStore', () => {
         mockFs.existsSync.mockReturnValue(true);
         mockFs.readFileSync.mockReturnValue('{invalid json');
         const store = require('../src/server/candidateStore').candidateStore;
+        store.initialize();
         expect(store.getLoadError()).toBeDefined();
       });
     });
@@ -357,6 +369,8 @@ describe('CandidateStore', () => {
       freshFs.existsSync.mockReturnValue(true);
       freshFs.readFileSync.mockReturnValue(JSON.stringify(storeData));
       const { candidateStore: store } = require('../src/server/candidateStore');
+      expect(freshFs.readFileSync).not.toHaveBeenCalled();
+      store.initialize();
       expect(store.getById('loaded-id-1')).toBeDefined();
       expect(store.getById('loaded-id-1').status).toBe('ready');
     });
@@ -374,6 +388,7 @@ describe('CandidateStore', () => {
       const freshFs = require('fs');
       freshFs.existsSync.mockReturnValue(false);
       const { candidateStore: store } = require('../src/server/candidateStore');
+      store.initialize();
       expect(store.list()).toHaveLength(0);
     });
   });

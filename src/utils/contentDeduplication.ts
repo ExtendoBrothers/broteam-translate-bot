@@ -22,6 +22,13 @@ const BASE_DIR = process.env.NODE_ENV === 'test' && process.env.JEST_WORKER_ID
 const POSTED_OUTPUTS_FILE = path.join(BASE_DIR, 'posted-outputs.log');
 const SIMILARITY_THRESHOLD = 0.85; // Jaccard similarity threshold for duplicates
 
+export function areContentsDuplicate(first: string, second: string): boolean {
+  const normalizedFirst = normalizeText(first);
+  const normalizedSecond = normalizeText(second);
+  return normalizedFirst === normalizedSecond ||
+    calculateSimilarity(normalizedFirst, normalizedSecond) >= SIMILARITY_THRESHOLD;
+}
+
 /**
  * Check if content is too similar to previously posted content (optimized with streaming)
  * 
@@ -213,17 +220,51 @@ export function isAcceptableWithSemanticCheck(
 /**
  * Add content to the posted outputs log with enhanced tracking
  */
-export function logPostedContent(tweetId: string, content: string) {
+export function logPostedContent(tweetId: string, content: string, idempotent = false): boolean {
   try {
+    if (idempotent && fs.existsSync(POSTED_OUTPUTS_FILE)) {
+      const lines = fs.readFileSync(POSTED_OUTPUTS_FILE, 'utf8').split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        let entry: { tweetId?: string; content?: string };
+        try {
+          entry = JSON.parse(line) as { tweetId?: string; content?: string };
+        } catch (error) {
+          logger.warn(`Ignoring malformed posted content entry: ${error}`);
+          continue;
+        }
+        if (entry && entry.tweetId === tweetId && entry.content === content) {
+          const fd = fs.openSync(POSTED_OUTPUTS_FILE, 'a');
+          try {
+            fs.fsyncSync(fd);
+          } finally {
+            fs.closeSync(fd);
+          }
+          return true;
+        }
+      }
+    }
     const entry = JSON.stringify({
       timestamp: new Date().toISOString(),
       tweetId,
       content
     }) + '\n';
-    fs.appendFileSync(POSTED_OUTPUTS_FILE, entry, 'utf8');
+    if (idempotent) {
+      const fd = fs.openSync(POSTED_OUTPUTS_FILE, 'a');
+      try {
+        fs.writeSync(fd, entry, undefined, 'utf8');
+        fs.fsyncSync(fd);
+      } finally {
+        fs.closeSync(fd);
+      }
+    } else {
+      fs.appendFileSync(POSTED_OUTPUTS_FILE, entry, 'utf8');
+    }
     logger.debug(`Logged posted content for tweet ${tweetId}`);
+    return true;
   } catch (error) {
     logger.error(`Failed to log posted content: ${error}`);
+    return false;
   }
 }
 

@@ -218,7 +218,7 @@ function unexpectednessScore(result: string, original: string): number {
 // Quality gate — full port of isAcceptable() from translateAndPostWorker
 // ─────────────────────────────────────────────────────────────────────────────
 
-function isAcceptable(
+export function isAcceptable(
   finalResult: string,
   originalText: string
 ): { acceptable: boolean; reason: string } {

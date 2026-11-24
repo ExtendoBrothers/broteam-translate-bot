@@ -93,6 +93,7 @@ describe('browser publisher', () => {
     await publisher.isLoggedIn();
     expect(puppeteer.launch).toHaveBeenCalledWith({
       channel: 'chrome', userDataDir: path.join(process.cwd(), '.automatic-browser-profile'), headless: false,
+      handleSIGINT: false, handleSIGTERM: false, handleSIGHUP: false,
     });
     await publisher.close();
     expect(browser.close).toHaveBeenCalledTimes(1);
@@ -152,6 +153,7 @@ describe('browser publisher', () => {
         Object.defineProperty(globalThis, 'document', {
           configurable: true, value: { querySelector: () => toast },
         });
+
         expect(predicate(isThread)).toBe(false);
         expect(predicate(false)).toBe(true);
         toast.textContent = 'Your posts were sent';
@@ -175,6 +177,18 @@ describe('browser publisher', () => {
     } finally {
       jest.useRealTimers();
     }
+  });
+
+  it('cancels pending confirmation when the publisher stops', async () => {
+    await publisher.isLoggedIn();
+    const composer = await publisher.prepare('Test post');
+    page.waitForFunction.mockReturnValueOnce(new Promise(() => {}));
+    const publishing = publisher.publish(composer);
+    const rejected = expect(publishing).rejects.toThrow('stopped before post confirmation');
+    await new Promise(resolve => setImmediate(resolve));
+    await publisher.close();
+    await rejected;
+    expect(events.listenerCount('response')).toBe(0);
   });
 
   it('reuses an existing X tab for repeated login checks without navigating or closing it', async () => {
@@ -212,5 +226,12 @@ describe('browser publisher', () => {
     await expect(publisher.prepare('x'.repeat(500))).rejects.toThrow('cannot be safely split');
     expect(browser.newPage).toHaveBeenCalledTimes(1);
     await publisher.close();
+  });
+
+  it.each([70, 600])('keeps every marked thread part within 280 characters (%i words)', count => {
+    const parts = splitTweet('hello '.repeat(count));
+    expect(parts.length).toBeGreaterThan(count === 600 ? 9 : 1);
+    expect(parts.every(part => part.length <= 280)).toBe(true);
+    expect(parts.map(part => part.replace(/ \(\d+\/\d+\)$/, '')).join(' ')).toBe('hello '.repeat(count).trim());
   });
 });

@@ -31,6 +31,8 @@ describe('translation language quality', () => {
     ["You don't have to do this alone.", source],
     ["I'm cold", source],
     ["I've got it", source],
+    ['The situation is dire.', source],
+    ['Encore and tempo are good.', source],
   ])('allows English and contextual names or quoted words: %s', (result, original) => {
     expect(getLanguageQualityIssue(result, original)).toBeUndefined();
   });
