@@ -11,6 +11,7 @@ import { setEnvVar } from '../utils/envWriter';
 import { snowflakeToDateSafe } from '../utils/snowflakeId';
 import { tweetTracker } from '../utils/tweetTracker';
 import { monthlyUsageTracker } from '../utils/monthlyUsageTracker';
+import { withReplyRecipients } from './replyText';
 import * as fs from 'fs';
 import * as path from 'path';
 
@@ -315,7 +316,8 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
     logger.info(`Using Twitter API (fetch ${used + 1}/${limit} this month)`);
     const timeline = await client.getUserTimeline(targetUserId, {
       max_results: 40,  // Increased to 40 per user request
-      'tweet.fields': ['created_at', 'text', 'entities']
+      'tweet.fields': ['created_at', 'text', 'entities', 'in_reply_to_user_id'],
+      expansions: ['in_reply_to_user_id']
     });
 
     const expandUrls = (text: string, entities: Record<string, unknown> | undefined): string => {
@@ -345,7 +347,17 @@ export async function fetchTweets(isDryRun: boolean = false): Promise<Tweet[]> {
         continue;
       }
             
-      const expandedText = expandUrls(tweet.text, (tweet as { entities?: Record<string, unknown> }).entities);
+      let expandedText = expandUrls(tweet.text, (tweet as { entities?: Record<string, unknown> }).entities);
+      if (tweet.in_reply_to_user_id) {
+        const recipient = tweet.in_reply_to_user_id === targetUserId
+          ? targetUsername
+          : timeline.data.includes?.users?.find(user => user.id === tweet.in_reply_to_user_id)?.username;
+        if (recipient) {
+          expandedText = withReplyRecipients(expandedText, targetUsername, [recipient]);
+        } else {
+          logger.warn(`Could not resolve reply recipient for tweet ${tweet.id}`);
+        }
+      }
       tweets.push({
         id: tweet.id,
         text: expandedText,

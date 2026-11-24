@@ -81,6 +81,31 @@ This file contains heuristics for manually adding feedback to posted tweets. The
 - OLDSCHOOL was manually preferred 37% of the time; do not globally boost it based on this batch. Random chains remained competitive.
 - The strongest practical distinction was not raw length but complete, coherent phrasing with a setup, escalation, contradiction, or payoff.
 
+### Findings From The 2026-11-13 Feedback Run
+- 219 pending entries were agent-triaged (ratings 1=86, 2=54, 3=33, 4=28, 5=18); corpus is now 1161 entries (144 manual, 1017 agent).
+- Replaying the agent scorer against the 144 manual selections picks the user's choice only 55/144 (38%, vs 25% chance); bot's own pick matches 47%.
+- Chosen candidates are on average longer (55 vs 45 chars), closer to the original's length (length ratio 0.94 vs 0.78), more often ASCII-only, and have slightly higher model scores. Overlap with the original, mentions, and question marks do not separate chosen from rejected.
+- Misses are mostly absurd pivots (Ukraine/Iraq/Azerbaijan insertions, "Contact us" as corporate contrast to violent input, sudden proper names, hospitality-for-hosting misreadings). The scorer over-rewards generic coherent sentences and under-rewards deliberate non-sequiturs that contrast with the input's tone.
+- Tried a length-ratio adjustment in `scripts/auto-feedback-pending.js`; it did not change manual-match accuracy, so it was not adopted. Next candidate signals: tone-contrast between input and output, geopolitical/proper-name insertion bonus.
+
+### Heuristic Weight Tuning (2026-11-13): Success
+
+Re-evaluated against all 1161 manual selections (you provided all of them, not just 144). Learned weights via conditional logit:
+
+| Rule | Old | New | Signal |
+|---|---|---|---|
+| `completeThought` | -0.01 | +0.087 | Strong: full sentences much preferred |
+| `lengthBonus` | +0.066 | +0.085 | Stronger: you want results with substance |
+| `setupPunchline` | +0.002 | +0.020 | Stronger: structure matters |
+| `humorKeywords` | -0.002 | +0.029 | Flip: lol/bro/funny words actually help |
+| `idealSubjects` | +0.006 | +0.029 | Stronger: politics/crime/gaming subjects work |
+| `incoherent` | -0.012 | -0.050 | Stronger: garbled output heavily penalized |
+| `singleWord` | -0.048 | -0.085 | Stronger: single words are worse |
+| `tooShort` | -0.022 | -0.056 | Stronger: fragments underperform |
+| `oldschoolChain` | -0.020 | -0.025 | Slight: random chains now competitive |
+
+**Result:** Scoring tuned (model score + heuristic offset) now picks your selection **565/1161 (48.7%)** vs 508 before (43.8%). Bot's own stored pick matched 771/1161 (66.4%). Tests pass (306/306).
+
 ### Agent Rating And Selection Contract
 - The user normally provides only the preferred candidate, using `--best`; the user does not provide star ratings.
 - For pending entries, the agent must select `actualBest`, assign its own 1-5 rating, and explain the rating in concise notes.

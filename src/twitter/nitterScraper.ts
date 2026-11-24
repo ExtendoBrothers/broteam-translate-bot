@@ -3,6 +3,7 @@ import { logger } from '../utils/logger';
 import { rateLimitTracker } from '../utils/rateLimitTracker';
 import { snowflakeToDate } from '../utils/snowflakeId';
 import { cleanFetchedTweetText } from './nitterFeed';
+import { withReplyRecipients } from './replyText';
 
 /**
  * Try various Nitter instances via RSS feeds
@@ -15,64 +16,25 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
     return [];
   }
 
-  // Try RSS feeds - more reliable than HTML scraping
-  // Expanded list of public Nitter instances (some may be unreliable or rate-limited)
+  // These instances permit scraping and provided compatible RSS feeds when checked.
   const instances = [
-    'nitter.lucabased.xyz',
-    'nitter.net',
-    'nitter.poast.org',
-    'nitter.cz',
-    'nitter.privacydev.net',
-    'nitter.moomoo.me',
-    'nitter.1d4.us',
-    'nitter.nixnet.services',
-    'nitter.pussthecat.org',
-    'nitter.unixfox.eu',
-    'nitter.42l.fr',
-    'nitter.fdn.fr',
-    'nitter.13ad.de',
-    'nitter.mha.fi',
-    'nitter.kavin.rocks',
-    'nitter.bus-hit.me',
-    'nitter.tedomum.net',
-    'nitter.inpt.fr',
-    'nitter.it',
-    'nitter.mint.lgbt',
-    'nitter.nohost.network',
-    'nitter.catsarch.com',
-    'nitter.privacy.com.de',
-    'nitter.pw',
-    'nitter.domain.glass',
-    'nitter.mastodon.pro',
-    'nitter.koehlerweb.org',
-    'nitter.mha.fi',
-    'nitter.1d4.us',
-    'nitter.privacydev.net',
-    'nitter.bus-hit.me',
-    'nitter.unixfox.eu',
-    'nitter.42l.fr',
-    'nitter.fdn.fr',
-    'nitter.13ad.de',
-    'nitter.kavin.rocks',
-    'nitter.tedomum.net',
-    'nitter.inpt.fr',
-    'nitter.it',
-    'nitter.mint.lgbt',
-    'nitter.nohost.network',
-    'nitter.catsarch.com',
-    'nitter.privacy.com.de',
-    'nitter.pw',
-    'nitter.domain.glass',
-    'nitter.mastodon.pro',
-    'nitter.koehlerweb.org',
-    // Add/remove as needed; some may be down or rate-limited
+    'xitter.cf',
+    'nitter.gq',
+    'xitter.gq',
+    'teapawt.net',
+    'teapaw.org',
+    'teapawt.org',
+    'nitter.cf',
   ];
 
-  for (const instance of instances) {
+  const feeds = ['with_replies/rss', 'rss'].flatMap(feed =>
+    instances.map(instance => ({ instance, feed }))
+  );
+  for (const { instance, feed } of feeds) {
     try {
       // Try RSS feed first - more reliable
-      const rssUrl = `https://${instance}/${username}/rss`;
-      logger.info(`Trying Nitter RSS: ${instance}`);
+      const rssUrl = `https://${instance}/${username}/${feed}`;
+      logger.info(`Trying Nitter RSS: ${instance}/${feed}`);
       
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), 10000);
@@ -114,10 +76,11 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
         if (!linkMatch) continue;
         
         const link = linkMatch[1];
-        const idMatch = link.match(/status\/(\d+)/);
+        const idMatch = link.match(/\/([^/]+)\/status\/(\d+)/i);
         if (!idMatch) continue;
-        
-        const id = idMatch[1];
+        if (idMatch[1].toLowerCase() !== username.toLowerCase()) continue;
+
+        const id = idMatch[2];
         
         // Extract description (tweet text)
         const descMatch = itemContent.match(/<description><!\[CDATA\[([\s\S]*?)\]\]><\/description>/);
@@ -135,6 +98,11 @@ export async function fetchFromNitterInstances(username: string, max = 20): Prom
           .replace(/\s+/g, ' ')
           .trim();
         text = cleanFetchedTweetText(text);
+        if (!text) continue;
+        const replyMatch = itemContent.match(/<title>\s*(?:<!\[CDATA\[)?R to @([a-zA-Z0-9_]+):/i);
+        if (replyMatch) {
+          text = withReplyRecipients(text, username, [replyMatch[1]]);
+        }
         
         if (!text || text.length < 5) continue;
         if (text.length > 280) text = text.slice(0, 277) + '...';

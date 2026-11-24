@@ -12,6 +12,7 @@ jest.mock('langdetect', () => ({
 }));
 
 jest.mock('../src/translator/lexicon', () => ({
+  ...jest.requireActual('../src/translator/lexicon'),
   detectLanguageByLexicon: jest.fn().mockReturnValue('en'),
   getEnglishMatchPercentage: jest.fn().mockReturnValue(80),
 }));
@@ -189,6 +190,38 @@ describe('generateCandidates', () => {
   // ── Best candidate selection ───────────────────────────────────────────────────
 
   describe('best candidate selection', () => {
+    it('marks a rejected fallback and selects an acceptable candidate instead', async () => {
+      let completedChains = 0;
+      mockTranslateText.mockImplementation((_text: string, target: string) => {
+        if (target !== 'en') return Promise.resolve('intermediate');
+        completedChains++;
+        return Promise.resolve(completedChains === 4 ? 'דניס Dina Foods' : 'An unexpected English sentence appears.');
+      });
+      mockScoreHumor.mockImplementation((text: string) => Promise.resolve({ score: text.includes('דניס') ? 1 : 0.1 }));
+      mockEvaluateHeuristics.mockReturnValue({ offset: 0, rules: {} });
+
+      const candidates = await generateCandidates(baseTweet);
+      expect(candidates[3].acceptabilityWarnings).toEqual(
+        expect.arrayContaining([expect.stringContaining('דניס')]),
+      );
+      expect(candidates[3].isBestCandidate).toBe(false);
+    });
+
+    it('prefers an acceptable candidate over a higher-scoring rejected English result', async () => {
+      let completedChains = 0;
+      mockTranslateText.mockImplementation((_text: string, target: string) => {
+        if (target !== 'en') return Promise.resolve('intermediate');
+        completedChains++;
+        return Promise.resolve(completedChains === 4 ? baseTweet.text : 'An unexpected English sentence appears.');
+      });
+      mockScoreHumor.mockImplementation((text: string) => Promise.resolve({ score: text === baseTweet.text ? 1 : 0.1 }));
+      mockEvaluateHeuristics.mockReturnValue({ offset: 0, rules: {} });
+
+      const candidates = await generateCandidates(baseTweet);
+      expect(candidates[3].acceptabilityWarnings).toContain('Same as input');
+      expect(candidates.find(c => c.isBestCandidate)?.acceptabilityWarnings).toEqual([]);
+    });
+
     it('flags the candidate with the highest finalScore', async () => {
       // Give each chain a unique humor score so we can identify the winner
       mockScoreHumor
@@ -230,6 +263,32 @@ describe('generateCandidates', () => {
   // ── Translation chain behaviour ───────────────────────────────────────────────
 
   describe('translation chain', () => {
+    it('accepts a short name-containing English result', async () => {
+      mockTranslateText.mockImplementation((_text: string, target: string) =>
+        Promise.resolve(target === 'en' ? "miss d'Suza" : 'intermediate'));
+      const candidates = await generateCandidates({
+        ...baseTweet, text: "dinner at Dinesh D'souza's house Video",
+      });
+      expect(candidates[0].result).toBe("miss d'Suza");
+      expect(candidates[0].acceptabilityWarnings).toEqual([]);
+      expect(candidates[0].isEnglish).toBe(true);
+    });
+
+    it.each(['Area and personalzuar E-mail.com', 'דניס Dina Foods'])(
+      'retries when the translated output contains suspicious language: %s', async badResult => {
+      let finalAttempts = 0;
+      mockTranslateText.mockImplementation((_text: string, target: string) => {
+        if (target !== 'en') return Promise.resolve('intermediate');
+        finalAttempts++;
+        return Promise.resolve(finalAttempts === 1 ? badResult : 'An unexpected English sentence appears.');
+        },
+      );
+      const candidates = await generateCandidates(baseTweet);
+      expect(candidates[0].attempts).toBe(2);
+      expect(candidates[0].result).toBe('An unexpected English sentence appears.');
+      expect(candidates[0].acceptabilityWarnings).toEqual([]);
+    });
+
     it('calls translateText at least once per chain (4 chains = many calls)', async () => {
       await generateCandidates(baseTweet);
       // 4 chains × (depth pivot steps + 1 back-to-en) — at minimum 4 calls
@@ -324,7 +383,7 @@ describe('generateCandidates', () => {
       jest.doMock('../src/utils/heuristicEvaluator', () => ({ evaluateHeuristics: jest.fn().mockReturnValue({ offset: 0, details: [], rules: {} }) }));
       jest.doMock('../src/utils/logger', () => ({ logger: { info: jest.fn(), warn: jest.fn(), error: jest.fn(), debug: jest.fn() }, rotateLogFile: jest.fn() }));
       jest.doMock('langdetect', () => ({ detect: jest.fn().mockReturnValue([{ lang: 'en', prob: 0.95 }]) }));
-      jest.doMock('../src/translator/lexicon', () => ({ detectLanguageByLexicon: jest.fn().mockReturnValue('en'), getEnglishMatchPercentage: jest.fn().mockReturnValue(80) }));
+      jest.doMock('../src/translator/lexicon', () => ({ ...jest.requireActual('../src/translator/lexicon'), detectLanguageByLexicon: jest.fn().mockReturnValue('en'), getEnglishMatchPercentage: jest.fn().mockReturnValue(80) }));
       jest.doMock('../src/utils/spamFilter', () => ({ isSpammyResult: jest.fn().mockReturnValue(false) }));
       const { generateCandidates: freshGen } = require('../src/workers/candidateGenerator');
       const candidates = await freshGen(baseTweet);

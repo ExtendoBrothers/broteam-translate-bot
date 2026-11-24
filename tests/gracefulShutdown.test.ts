@@ -3,8 +3,44 @@
  */
 
 import { onShutdown, isShuttingDown } from '../src/utils/gracefulShutdown';
+import { spawnSync } from 'child_process';
+import * as fs from 'fs';
+import * as os from 'os';
+import * as path from 'path';
 
 describe('gracefulShutdown', () => {
+  it.each(['SIGTERM', 'PM2'])('runs cleanup before releasing the lock on %s shutdown', signal => {
+    const cwd = fs.mkdtempSync(path.join(os.tmpdir(), 'bot-shutdown-test-'));
+    try {
+      const lockModule = path.resolve(__dirname, '../src/utils/enhancedInstanceLock.ts');
+      const shutdownModule = path.resolve(__dirname, '../src/utils/gracefulShutdown.ts');
+      const script = `
+        const { acquireLock } = require(${JSON.stringify(lockModule)});
+        const { initializeGracefulShutdown, onShutdown } = require(${JSON.stringify(shutdownModule)});
+        if (!acquireLock()) throw new Error('Failed to acquire test lock');
+        initializeGracefulShutdown();
+        onShutdown(async () => {
+          await new Promise(resolve => setTimeout(resolve, 25));
+          if (!require('fs').existsSync('.bot-instance.lock')) throw new Error('Lock released before cleanup');
+          console.log('ASYNC_CLEANUP_COMPLETE');
+        });
+        ${signal === 'PM2' ? "process.emit('message', 'shutdown');" : "process.emit('SIGTERM');"}
+      `;
+      const result = spawnSync(process.execPath, [
+        '-r', require.resolve('ts-node/register/transpile-only'), '-e', script,
+      ], {
+        cwd, encoding: 'utf8', timeout: 15_000,
+        env: { ...process.env, TS_NODE_PROJECT: path.resolve(__dirname, '../tsconfig.json') },
+      });
+      expect(result.error).toBeUndefined();
+      expect(result.status).toBe(0);
+      expect(result.stdout).toContain('ASYNC_CLEANUP_COMPLETE');
+      expect(fs.existsSync(path.join(cwd, '.bot-instance.lock'))).toBe(false);
+    } finally {
+      fs.rmSync(cwd, { recursive: true, force: true });
+    }
+  });
+
   describe('onShutdown', () => {
     it('should register cleanup handler without error', () => {
       expect(() => {

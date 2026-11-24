@@ -6,7 +6,7 @@ module.exports = {
       cwd: __dirname,
       env: {
         NODE_ENV: 'production',
-        DRY_RUN: '0'
+        BOT_MODE: process.env.BOT_MODE || 'manual'
       },
       instances: 1,
       exec_mode: 'fork',
@@ -15,7 +15,7 @@ module.exports = {
       max_memory_restart: '800M',
       time: true,
       windowsHide: true,
-      kill_timeout: 5000,
+      kill_timeout: 15000,
       shutdown_with_message: true,
       listen_timeout: 3000,
       // Restart loop prevention (use exponential backoff to avoid tight restart loops)
@@ -23,8 +23,7 @@ module.exports = {
       min_uptime: '30s',          // Consider unstable if crashes within 30s
       exp_backoff_restart_delay: 100,  // Exponential backoff starting at 100ms
       env_windows: {
-        NODE_ENV: 'production',
-        DRY_RUN: '0'
+        NODE_ENV: 'production'
       }
     },
     {

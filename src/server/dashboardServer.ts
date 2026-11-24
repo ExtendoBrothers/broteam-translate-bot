@@ -10,6 +10,8 @@
  *   POST /api/queue/fetch         → trigger a manual nitter/jina fetch
  *   POST /api/queue/submit        → add a tweet by manual text input
  *   POST /api/queue/:id/post/:idx → mark candidate :idx as posted, returns intent URL
+ *   POST /api/queue/:id/confirm-posted → confirm an uncertain automatic post
+ *   POST /api/queue/:id/preference/:idx → save a preferred translation
  *   DELETE /api/queue/:id         → skip/dismiss tweet
  *
  * Optional authentication: set DASHBOARD_PASSWORD env var for basic token auth.
@@ -25,10 +27,13 @@ import { tweetTracker } from '../utils/tweetTracker';
 import { logger } from '../utils/logger';
 import { isSpammyFeedbackEntry } from '../utils/spamFilter';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
+import { postTracker } from '../utils/postTracker';
+import { splitTweet } from '../utils/tweetSplitter';
 import { recordPositives } from '../utils/languageWeights';
 import { updateWeightsFromFeedback } from '../utils/heuristicEvaluator';
 import { translationLogEmitter } from '../utils/translationLogEmitter';
 import { Tweet } from '../types';
+import { getAutomaticPostingStatus } from './automaticPoster';
 
 const DASHBOARD_PORT = Number(process.env.DASHBOARD_PORT || '3456');
 const DASHBOARD_PASSWORD = process.env.DASHBOARD_PASSWORD || '';
@@ -105,14 +110,15 @@ function isAuthorized(req: http.IncomingMessage): boolean {
 // Feedback logging (ported from translateAndPostWorker)
 // ─────────────────────────────────────────────────────────────────────────────
 
-function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
+function writeFeedback(item: QueueItem, postedCandidateIndex: number): boolean {
   try {
     const selected = item.candidates[postedCandidateIndex];
-    if (!selected) return;
+    if (!selected) return false;
 
     const botPick = item.candidates.find(c => c.isBestCandidate);
 
     const feedbackEntry = {
+      queueItemId:   item.id,
       timestamp:     new Date().toISOString(),
       tweetId:       item.tweet.id,
       originalText:  item.tweet.text,
@@ -131,7 +137,9 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
         heuristicRules:    c.heuristicRules ?? {},
       })),
       botSelected:    botPick?.chainLabel ?? null,
+      postedResult:   item.autoPostState === 'posted' ? item.candidates[item.postedCandidateIndex ?? -1]?.result : selected.result,
       userSelected:   selected.chainLabel,
+      userSelectedIndex: postedCandidateIndex,
       selectedResult: selected.result,
       selectedScore:  selected.finalScore ?? selected.humorScore,
       userFeedback:   null,
@@ -139,9 +147,26 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
 
     const feedbackPath = path.join(process.cwd(), 'feedback-data.jsonl');
 
+    if (item.autoPostState === 'posted' && fs.existsSync(feedbackPath)) {
+      const lines = fs.readFileSync(feedbackPath, 'utf8').split('\n');
+      for (const line of lines) {
+        if (!line.trim()) continue;
+        try {
+          const entry = JSON.parse(line) as { queueItemId?: string; userSelectedIndex?: number };
+          if (entry.queueItemId === item.id) {
+            if (entry.userSelectedIndex === postedCandidateIndex) return true;
+            logger.error(`[FEEDBACK] A different preference was already saved for ${item.id}`);
+            return false;
+          }
+        } catch (err) {
+          logger.warn(`[FEEDBACK] Ignoring malformed feedback line: ${err}`);
+        }
+      }
+    }
+
     if (isSpammyFeedbackEntry(feedbackEntry as Record<string, unknown>)) {
       logger.warn('[FEEDBACK] Blocked spammy feedback entry.');
-      return;
+      return true;
     }
     // Append-only write avoids loading/parsing/rewriting the full JSONL file on every post.
     // Use open/write/fsync/close for better durability than a buffered append helper.
@@ -179,7 +204,7 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
     // Record successful post for cross-session duplicate prevention
     // (marks tweetTracker + logs content to contentDeduplication, same as main bot)
     try {
-      recordSuccessfulPost(item.tweet.id, selected.result);
+      if (item.autoPostState !== 'posted') recordSuccessfulPost(item.tweet.id, selected.result);
     } catch (err) {
       logger.warn('[FEEDBACK] recordSuccessfulPost failed (non-critical):', err);
     }
@@ -224,8 +249,10 @@ function writeFeedback(item: QueueItem, postedCandidateIndex: number): void {
           );
         });
     }, 100);
+    return true;
   } catch (err) {
     logger.error('[FEEDBACK] Failed to write feedback entry:', err);
+    return false;
   }
 }
 
@@ -241,11 +268,22 @@ async function handleRequest(
 ): Promise<void> {
   const method = req.method || 'GET';
   const url = req.url || '/';
+  const port = req.socket.localPort;
+  const allowed = [`http://localhost:${port}`, `http://127.0.0.1:${port}`];
+
+  if (!allowed.includes(`http://${req.headers.host?.toLowerCase()}`)) {
+    json(res, 403, { error: 'Forbidden host' });
+    return;
+  }
+  if (!['GET', 'HEAD', 'OPTIONS'].includes(method) &&
+      req.headers.origin !== undefined && !allowed.includes(req.headers.origin)) {
+    json(res, 403, { error: 'Forbidden origin' });
+    return;
+  }
 
   // ── CORS preflight ───────────────────────────────────────────────────────
   if (method === 'OPTIONS') {
     const origin = req.headers['origin'] || '';
-    const allowed = [`http://localhost:${DASHBOARD_PORT}`, `http://127.0.0.1:${DASHBOARD_PORT}`];
     if (allowed.includes(origin)) {
       res.writeHead(204, {
         'Access-Control-Allow-Origin': origin,
@@ -309,8 +347,69 @@ async function handleRequest(
 
   // ── GET /api/queue ───────────────────────────────────────────────────────
   if (method === 'GET' && url === '/api/queue') {
-    const items = candidateStore.list(['generating', 'ready']);
-    json(res, 200, { items, generatingCount: generationQueue.depth });
+    const items = candidateStore.list(['generating', 'ready', 'posted'])
+      .filter(item => item.status !== 'posted' || (item.autoPostState === 'posted' && !item.preferredAt));
+    const mode = process.env.BOT_MODE === 'automatic' ? 'automatic' : 'manual';
+    json(res, 200, { items, generatingCount: generationQueue.depth, mode,
+      automaticStatus: mode === 'automatic' ? getAutomaticPostingStatus() : undefined });
+    return;
+  }
+
+  // ── POST /api/queue/:id/confirm-posted ──────────────────────────────────
+  const confirmMatch = url.match(/^\/api\/queue\/([^/]+)\/confirm-posted$/);
+  if (method === 'POST' && confirmMatch) {
+    const [, queueId] = confirmMatch;
+    const item = candidateStore.getById(queueId);
+    const candidate = item?.candidates[item.postedCandidateIndex ?? -1];
+    if (!item || item.status !== 'ready' || item.autoPostState !== 'uncertain' || !candidate) {
+      json(res, 409, { error: 'Post confirmation unavailable; refresh the queue' });
+      return;
+    }
+    const interrupted = !item.autoPostAttempt &&
+      item.autoPostError === 'Posting was interrupted. Check Twitter before dismissing this item.';
+    if (item.autoPostAttempt && (!postTracker.reserveAutomaticAttempt(
+      item.id, item.autoPostAttempt.timestamp, item.autoPostAttempt.partCount,
+    ) || !candidateStore.markAutoPostAccounted(queueId))) {
+      json(res, 500, { error: 'Could not save post accounting; please try again' });
+      return;
+    }
+    if (!candidateStore.confirmUncertainPost(queueId)) {
+      json(res, 500, { error: 'Could not save confirmation; please try again' });
+      return;
+    }
+    if (interrupted) {
+      for (let i = 0; i < splitTweet(candidate.result).length; i++) postTracker.recordPost();
+    }
+    if (!recordSuccessfulPost(item.tweet.id, candidate.result, false, !!item.autoPostAttempt) ||
+        (item.autoPostAttempt && !candidateStore.markAutoPostRecorded(queueId))) {
+      logger.error(`[DashboardServer] Could not record confirmed post ${queueId}; automatic reconciliation will retry`);
+      json(res, 500, { error: 'Post confirmed, but tracking could not be saved' });
+      return;
+    }
+    logger.info(`[DashboardServer] Manually confirmed post ${queueId}; awaiting preference`);
+    json(res, 200, { message: 'Post confirmed; choose your preference' });
+    return;
+  }
+
+  // ── POST /api/queue/:id/preference/:candidateIndex ────────────────────────
+  const preferenceMatch = url.match(/^\/api\/queue\/([^/]+)\/preference\/(\d+)$/);
+  if (method === 'POST' && preferenceMatch) {
+    const [, queueId, idxStr] = preferenceMatch;
+    const candidateIndex = parseInt(idxStr, 10);
+    const item = candidateStore.getById(queueId);
+    if (!item || item.autoPostState !== 'posted' || item.preferredAt || !item.candidates[candidateIndex]) {
+      json(res, 409, { error: 'Preference unavailable or already selected' });
+      return;
+    }
+    if (!writeFeedback(item, candidateIndex)) {
+      json(res, 500, { error: 'Could not save feedback; please try again' });
+      return;
+    }
+    if (!candidateStore.selectPreference(queueId, candidateIndex)) {
+      json(res, 500, { error: 'Feedback saved, but preference state could not be saved; retry the same selection' });
+      return;
+    }
+    json(res, 200, { message: 'Preference saved' });
     return;
   }
 
@@ -370,7 +469,7 @@ async function handleRequest(
     // re-paste). Compare normalised text against items currently in the queue.
     const normalise = (s: string) => s.toLowerCase().replace(/\s+/g, ' ').trim();
     const normText = normalise(text);
-    const allItems = candidateStore.list(['generating', 'ready', 'posted']);
+    const allItems = candidateStore.list(['generating', 'ready']);
     const textDupe = allItems.find(item => normalise(item.tweet.text) === normText);
     if (textDupe) {
       json(res, 409, { error: 'Duplicate text already in queue', existingId: textDupe.id });

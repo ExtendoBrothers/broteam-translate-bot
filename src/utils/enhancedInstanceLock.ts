@@ -10,6 +10,7 @@ import * as path from 'path';
 import * as os from 'os';
 import { execFileSync } from 'child_process';
 import { logger } from './logger';
+import { shutdownManager } from './gracefulShutdown';
 
 const LOCK_FILE = path.join(process.cwd(), '.bot-instance.lock');
 const HEARTBEAT_INTERVAL = 30000; // 30 seconds
@@ -270,20 +271,23 @@ const instanceLock = new InstanceLock();
 
 // Graceful shutdown handling
 process.on('SIGINT', () => {
+  if (shutdownManager.isInitialized()) return;
   logger.info('Received SIGINT, releasing instance lock...');
   instanceLock.release();
   process.exit(0);
 });
 
 process.on('SIGTERM', () => {
+  if (shutdownManager.isInitialized()) return;
   logger.info('Received SIGTERM, releasing instance lock...');
   instanceLock.release();
   process.exit(0);
 });
 
 // PM2 shutdown message
-process.on('message', (msg: any) => {
+process.on('message', (msg: unknown) => {
   if (msg === 'shutdown') {
+    if (shutdownManager.isInitialized()) return;
     logger.info('Received PM2 shutdown message, releasing instance lock...');
     instanceLock.release();
     process.exit(0);

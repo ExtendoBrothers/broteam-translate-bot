@@ -217,6 +217,16 @@ class RateLimitTracker {
     this.saveState();
   }
 
+  public shortenCooldown(key: string, reason: string, newReason: string, reductionSeconds: number) {
+    const entry = this.entries.get(key);
+    if (!entry || entry.type !== 'cooldown' || entry.reason !== reason) return;
+
+    entry.until = new Date(entry.until.getTime() - reductionSeconds * 1000);
+    entry.reason = newReason;
+    this.saveState();
+    logger.info(`Updated cooldown for '${key}' until ${entry.until.toISOString()} (${newReason})`);
+  }
+
   /**
      * Clear rate limit (for testing or manual override)
      */

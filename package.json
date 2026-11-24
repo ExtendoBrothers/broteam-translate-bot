@@ -32,7 +32,10 @@
     "dotenv": "^17.4.2",
     "flatted": "^3.4.2",
     "langdetect": "^0.2.1",
+    "puppeteer-core": "24.34.0",
     "twitter-api-v2": "^1.14.0",
+    "word-list-json": "^0.2.0",
+    "ws": "^8.18.0",
     "winston": "^3.8.2"
   },
   "optionalDependencies": {
@@ -43,6 +46,7 @@
     "@jest/globals": "^30.4.1",
     "@types/jest": "^30.0.0",
     "@types/node": "^25.7.0",
+    "@types/ws": "^8.18.0",
     "@typescript-eslint/eslint-plugin": "^8.59.4",
     "@typescript-eslint/parser": "^8.59.3",
     "eslint": "^10.10.0",

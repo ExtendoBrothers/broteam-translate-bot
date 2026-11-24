@@ -113,24 +113,26 @@ export async function checkForDuplicates(
 /**
  * Record a successful post and update all tracking systems
  */
-export function recordSuccessfulPost(tweetId: string, content: string) {
+export function recordSuccessfulPost(tweetId: string, content: string, countPost = true, idempotent = false): boolean {
   try {
     // Mark tweet as processed
     tweetTracker.markProcessed(tweetId);
 
     // Record the post
-    postTracker.recordPost();
+    if (countPost) postTracker.recordPost();
 
     // Log posted content for duplicate detection
-    logPostedContent(tweetId, content);
+    if (!(idempotent ? logPostedContent(tweetId, content, true) : logPostedContent(tweetId, content))) return false;
 
     // Update last post time
     updateLastPostTime();
 
     logger.info(`Successfully recorded post for tweet ${tweetId}`);
+    return true;
 
   } catch (error) {
     logger.error(`Failed to record successful post: ${error}`);
+    return false;
   }
 }
 

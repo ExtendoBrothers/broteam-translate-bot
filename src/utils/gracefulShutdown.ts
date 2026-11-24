@@ -9,6 +9,7 @@ type CleanupHandler = () => Promise<void> | void;
 class ShutdownManager {
   private handlers: CleanupHandler[] = [];
   private isShuttingDown = false;
+  private initialized = false;
   private shutdownTimeout = 10000; // 10 seconds
 
   /**
@@ -22,10 +23,15 @@ class ShutdownManager {
    * Initialize shutdown listeners
    */
   initialize(): void {
+    if (this.initialized) return;
+    this.initialized = true;
     // Handle various termination signals
     process.on('SIGTERM', () => this.shutdown('SIGTERM'));
     process.on('SIGINT', () => this.shutdown('SIGINT'));
     process.on('SIGHUP', () => this.shutdown('SIGHUP'));
+    process.on('message', message => {
+      if (message === 'shutdown') void this.shutdown('PM2 shutdown');
+    });
 
     // Handle uncaught exceptions (already handled in index.ts, but ensure cleanup)
     process.on('beforeExit', () => {
@@ -81,6 +87,10 @@ class ShutdownManager {
    */
   isShutdownInProgress(): boolean {
     return this.isShuttingDown;
+  }
+
+  isInitialized(): boolean {
+    return this.initialized;
   }
 }
 

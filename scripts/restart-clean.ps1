@@ -1,18 +1,41 @@
+param(
+    [ValidateSet('manual', 'automatic')]
+    [string]$Mode
+)
+
 # PowerShell script to guarantee a clean build and PM2 restart
-# Usage: ./scripts/restart-clean.ps1
+# Usage: ./scripts/restart-clean.ps1 [-Mode manual|automatic]
+
+if (-not $Mode) {
+    do {
+        $selection = (Read-Host "Posting mode: [M]anual (default) or [A]utomatic").Trim().ToLowerInvariant()
+        if ($selection -eq '' -or $selection -eq 'm' -or $selection -eq 'manual') { $Mode = 'manual' }
+        elseif ($selection -eq 'a' -or $selection -eq 'automatic') { $Mode = 'automatic' }
+        else { Write-Host "Choose M or A." }
+    } while (-not $Mode)
+}
+
+$previousMode = $env:BOT_MODE
+$env:BOT_MODE = $Mode
+Write-Host "Selected posting mode: $Mode"
 
 $script:RepoRoot = (Resolve-Path (Join-Path $PSScriptRoot '..')).Path
 
 # ---------------------------------------------------------------------------
 # Helper: gracefully shut down all known bot instances before rebuilding.
 # Order of operations:
-#   1. Read lock file → SIGTERM the PID → wait up to 10s → force-kill if needed
-#   2. Gracefully stop the PM2-tracked process, then delete it
+#   1. Gracefully stop and delete the PM2-tracked process
+#   2. Stop the locked PID if it is still running
 #   3. Hunt for any remaining orphaned node processes running broteam code
 #   4. Remove the lock file
 # ---------------------------------------------------------------------------
 function Stop-AllBotInstances {
     $lockFile = Join-Path $script:RepoRoot ".bot-instance.lock"
+
+    Write-Host "Gracefully stopping PM2 process..."
+    pm2 stop broteam-translate-bot 2>$null | Out-Null
+    Write-Host "Deleting PM2 process entry..."
+    pm2 delete broteam-translate-bot 2>$null | Out-Null
 
     if (Test-Path $lockFile) {
         try {
@@ -50,14 +73,6 @@ function Stop-AllBotInstances {
         Write-Host "Removing lock file..."
         Remove-Item -Force $lockFile -ErrorAction SilentlyContinue
     }
-
-    Write-Host "Gracefully stopping PM2 process..."
-    pm2 stop broteam-translate-bot 2>$null | Out-Null
-    Start-Sleep -Seconds 3
-
-    Write-Host "Deleting PM2 process entry..."
-    pm2 delete broteam-translate-bot 2>$null | Out-Null
-    Start-Sleep -Seconds 2
 
     $orphans = Get-Process -Name node -ErrorAction SilentlyContinue | Where-Object {
         $cmdLine = (Get-CimInstance Win32_Process -Filter "ProcessId = $($_.Id)" -ErrorAction SilentlyContinue).CommandLine
@@ -102,6 +117,7 @@ Remove-Item -Recurse -Force (Join-Path $script:RepoRoot 'dist') -ErrorAction Sil
 
 Write-Host "Building project..."
 npm run build
+if ($LASTEXITCODE -ne 0) { throw "Build failed; bot was not started." }
 
 Write-Host "Updating package.json version..."
 node scripts/update-package-version.js
@@ -123,5 +139,6 @@ if ($LASTEXITCODE -ne 0) {
 Write-Host "Done. Bot is running the latest build with fresh environment."
 }
 finally {
+    $env:BOT_MODE = $previousMode
     Pop-Location
 }
