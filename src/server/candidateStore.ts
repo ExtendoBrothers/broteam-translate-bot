@@ -16,16 +16,8 @@ import * as crypto from 'crypto';
 const STORE_FILE = path.join(process.cwd(), 'candidate-queue.json');
 // Maximum items to keep in the queue (oldest skipped/posted items are pruned)
 const MAX_QUEUE_SIZE = 100;
-export const MAX_AUTO_POST_RETRIES = 10;
-
-export function isAutoPostEligible(item: QueueItem, now = Date.now()): boolean {
-  if (item.status !== 'ready') return false;
-  if (!item.autoPostState) return true;
-  if (item.autoPostState !== 'uncertain' || (item.autoPostRetryCount ?? 0) >= MAX_AUTO_POST_RETRIES) return false;
-  const legacyTimeout = item.autoPostRetryable === undefined && item.autoPostRetryAt === undefined &&
-    item.autoPostError?.startsWith('Posting outcome uncertain: TimeoutError: Waiting failed: 30000ms exceeded.');
-  if (legacyTimeout) return true;
-  return item.autoPostRetryable === true && !!item.autoPostRetryAt && Date.parse(item.autoPostRetryAt) <= now;
+export function isAutoPostEligible(item: QueueItem): boolean {
+  return item.status === 'ready' && !item.autoPostState;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -74,18 +66,25 @@ class CandidateStore {
       const parsed = JSON.parse(raw) as QueueItem[];
       if (!Array.isArray(parsed)) throw new Error('Queue file must contain an array');
       if (Array.isArray(parsed)) {
-        let interrupted = false;
+        let changed = false;
         for (const item of parsed) {
           if (item.autoPostState === 'posting') {
             item.autoPostState = 'uncertain';
             item.autoPostError = 'Posting was interrupted. Check Twitter before dismissing this item.';
             item.autoPostRetryable = false;
             delete item.autoPostRetryAt;
-            interrupted = true;
+            changed = true;
+          } else if (item.autoPostState === 'uncertain' &&
+              (item.autoPostRetryable === true || item.autoPostRetryAt !== undefined ||
+               (item.autoPostRetryable === undefined && item.autoPostError?.includes('Automatic retry')))) {
+            item.autoPostRetryable = false;
+            delete item.autoPostRetryAt;
+            item.autoPostError = 'Posting outcome uncertain. Automatic retries are disabled; check X before confirming or dismissing this item.';
+            changed = true;
           }
           this.items.set(item.id, item);
         }
-        if (interrupted && !this._save()) logger.error('[CandidateStore] Could not persist interrupted post state');
+        if (changed && !this._save()) logger.error('[CandidateStore] Could not persist uncertain post state');
         logger.info(`[CandidateStore] Loaded ${this.items.size} item(s) from disk`);
       }
     } catch (err) {
@@ -218,31 +217,26 @@ class CandidateStore {
   /** Persist an in-flight marker before contacting Twitter, preventing blind retries after a crash. */
   beginAutoPost(id: string, candidateIndex: number): boolean {
     const item = this.items.get(id);
-    if (!item || !isAutoPostEligible(item) || !item.candidates[candidateIndex] ||
-        (item.autoPostState === 'uncertain' && item.postedCandidateIndex !== candidateIndex)) return false;
+    if (!item || !isAutoPostEligible(item) || !item.candidates[candidateIndex]) return false;
     const previous = { ...item };
-    if (item.autoPostState === 'uncertain') item.autoPostRetryCount = (item.autoPostRetryCount ?? 0) + 1;
     item.autoPostState = 'posting';
     item.postedCandidateIndex = candidateIndex;
-    delete item.autoPostRetryAt;
     if (this._save()) return true;
     Object.assign(item, previous);
     if (previous.autoPostState === undefined) delete item.autoPostState;
     if (previous.postedCandidateIndex === undefined) delete item.postedCandidateIndex;
-    if (previous.autoPostRetryCount === undefined) delete item.autoPostRetryCount;
     return false;
   }
 
-  finishAutoPost(id: string, state: 'posted' | 'uncertain' | 'blocked', error?: string, retryAt?: string): boolean {
+  finishAutoPost(id: string, state: 'posted' | 'uncertain' | 'blocked', error?: string): boolean {
     const item = this.items.get(id);
     if (!item || (state === 'blocked'
       ? !isAutoPostEligible(item)
       : item.autoPostState !== 'posting')) return false;
     item.autoPostState = state;
     item.autoPostError = error;
-    item.autoPostRetryable = state === 'uncertain' && !!retryAt;
-    if (retryAt) item.autoPostRetryAt = retryAt;
-    else delete item.autoPostRetryAt;
+    item.autoPostRetryable = false;
+    delete item.autoPostRetryAt;
     if (state === 'posted') {
       item.status = 'posted';
       item.postedAt = new Date().toISOString();

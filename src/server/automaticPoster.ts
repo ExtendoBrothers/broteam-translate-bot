@@ -1,6 +1,5 @@
-import { candidateStore, isAutoPostEligible, MAX_AUTO_POST_RETRIES } from './candidateStore';
+import { candidateStore, isAutoPostEligible } from './candidateStore';
 import { BrowserPublisher } from './browserPublisher';
-import { TimeoutError } from 'puppeteer-core';
 import { isContentDuplicateSync } from '../utils/contentDeduplication';
 import { recordSuccessfulPost } from '../utils/duplicatePrevention';
 import { postTracker } from '../utils/postTracker';
@@ -62,12 +61,9 @@ export class AutomaticPoster {
         postTracker.getPostCount30m() >= BROWSER_POST_LIMIT_30M ||
         rateLimitTracker.isRateLimited('post')) return;
 
-    const eligible = candidateStore.list('ready').filter(entry => isAutoPostEligible(entry));
-    const item = eligible.find(entry => !entry.autoPostState) ?? eligible[0];
+    const item = candidateStore.list('ready').find(entry => isAutoPostEligible(entry));
     if (!item) return;
-    const index = item.autoPostState === 'uncertain'
-      ? item.postedCandidateIndex ?? -1
-      : item.candidates.findIndex(candidate => candidate.isBestCandidate);
+    const index = item.candidates.findIndex(candidate => candidate.isBestCandidate);
     const candidate = item.candidates[index];
     if (!candidate || candidate.error || !candidate.result.trim() || candidate.acceptabilityWarnings?.length) {
       const message = 'Best candidate failed the quality gate; manual review required.';
@@ -111,14 +107,6 @@ export class AutomaticPoster {
       status = 'Waiting for enough posting slots for the thread';
       return;
     }
-    if (item.autoPostState === 'uncertain' &&
-        ((partCount < BROWSER_POST_LIMIT_30M &&
-          partCount + postTracker.getPostCount30m() >= BROWSER_POST_LIMIT_30M) ||
-         partCount + postTracker.getPostCount24h() >= BROWSER_POST_LIMIT_24H)) {
-      status = 'Waiting to retry; a posting slot is reserved for new items';
-      return;
-    }
-
     if (!await this.publisher.isLoggedIn()) {
       status = 'Sign in to X in the browser tab to enable automatic posting';
       logger.warn(`[AutomaticPoster] ${status}`);
@@ -152,14 +140,8 @@ export class AutomaticPoster {
       await this.publisher.publish(page);
       confirmed = true;
     } catch (err) {
-      const retries = item.autoPostRetryCount ?? 0;
-      const retryAt = err instanceof TimeoutError && retries < MAX_AUTO_POST_RETRIES && !this.stopping
-        ? new Date(Date.now() + POLL_INTERVAL_MS).toISOString()
-        : undefined;
-      const message = retryAt
-        ? `Posting outcome uncertain: ${err}. Automatic retry ${retries + 1}/${MAX_AUTO_POST_RETRIES} scheduled; duplicate posts are possible.`
-        : `Posting outcome uncertain: ${err}. Check Twitter before dismissing this item.`;
-      if (!candidateStore.finishAutoPost(item.id, 'uncertain', message, retryAt)) {
+      const message = `Posting outcome uncertain: ${err}. Check X before confirming or dismissing this item; it will not be retried automatically.`;
+      if (!candidateStore.finishAutoPost(item.id, 'uncertain', message)) {
         logger.error(`[AutomaticPoster] Could not persist uncertain state for ${item.id}`);
       }
       for (let i = 0; i < partCount; i++) postTracker.recordPost();

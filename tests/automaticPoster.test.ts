@@ -1,5 +1,4 @@
 jest.mock('../src/server/candidateStore', () => ({
-  MAX_AUTO_POST_RETRIES: 10,
   isAutoPostEligible: jest.fn((item: { status: string; autoPostState?: string }) =>
     item.status === 'ready' && !item.autoPostState),
   candidateStore: {
@@ -21,7 +20,7 @@ jest.mock('../src/utils/logger', () => ({
 
 import { AutomaticPoster } from '../src/server/automaticPoster';
 import { BrowserPublisher } from '../src/server/browserPublisher';
-import { candidateStore, isAutoPostEligible } from '../src/server/candidateStore';
+import { candidateStore } from '../src/server/candidateStore';
 import { recordSuccessfulPost } from '../src/utils/duplicatePrevention';
 import { postTracker } from '../src/utils/postTracker';
 import { rateLimitTracker } from '../src/utils/rateLimitTracker';
@@ -94,7 +93,7 @@ describe('automatic poster', () => {
     poster.start();
     await jest.advanceTimersByTimeAsync(0);
     expect(candidateStore.finishAutoPost).toHaveBeenCalledWith(
-      'queue', 'uncertain', expect.stringContaining('Check Twitter'), undefined,
+      'queue', 'uncertain', expect.stringContaining('Check X'),
     );
     expect(recordSuccessfulPost).not.toHaveBeenCalled();
     expect(rateLimitTracker.setCooldown).toHaveBeenCalledWith(
@@ -102,92 +101,30 @@ describe('automatic poster', () => {
     );
   });
 
-  it('schedules a bounded retry for a confirmation timeout', async () => {
-    publisher.publish.mockRejectedValueOnce(new TimeoutError('Waiting failed: 30000ms exceeded'));
-    poster.start();
-    await jest.advanceTimersByTimeAsync(0);
-    expect(candidateStore.finishAutoPost).toHaveBeenCalledWith(
-      'queue', 'uncertain', expect.stringContaining('Automatic retry 1/10'),
-      new Date(Date.now() + 30_000).toISOString(),
-    );
-    expect(recordSuccessfulPost).not.toHaveBeenCalled();
-  });
-
-  it('stops retrying after ten retries', async () => {
-    jest.mocked(candidateStore.list).mockReturnValue([{
-      ...item, autoPostRetryCount: 10,
-    } as ReturnType<typeof candidateStore.list>[number]]);
-    publisher.publish.mockRejectedValueOnce(new TimeoutError('Waiting failed: 30000ms exceeded'));
-    poster.start();
-    await jest.advanceTimersByTimeAsync(0);
-    expect(candidateStore.finishAutoPost).toHaveBeenCalledWith(
-      'queue', 'uncertain', expect.stringContaining('Check Twitter'), undefined,
-    );
-  });
-
-  it('retries a timed-out post on the next eligible polling interval', async () => {
-    const retryItem = { ...item, autoPostState: undefined as string | undefined, autoPostRetryCount: 0, postedCandidateIndex: 1 };
-    jest.mocked(candidateStore.list).mockReturnValue([retryItem as ReturnType<typeof candidateStore.list>[number]]);
-    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true).mockReturnValueOnce(true);
-    const reserve = () => {
-      if (retryItem.autoPostState === 'uncertain') retryItem.autoPostRetryCount++;
-      retryItem.autoPostState = 'posting';
-      return true;
-    };
-    jest.mocked(candidateStore.beginAutoPost).mockImplementationOnce(reserve).mockImplementationOnce(reserve);
-    jest.mocked(candidateStore.finishAutoPost).mockImplementationOnce(() => {
-      retryItem.autoPostState = 'uncertain';
-      return true;
-    }).mockImplementationOnce((_id, state) => {
-      retryItem.autoPostState = state;
+  it('does not retry a confirmation timeout on later polling intervals', async () => {
+    const uncertainItem = { ...item, autoPostState: undefined as string | undefined };
+    jest.mocked(candidateStore.list).mockReturnValue([uncertainItem as ReturnType<typeof candidateStore.list>[number]]);
+    jest.mocked(candidateStore.finishAutoPost).mockImplementationOnce((_id, state) => {
+      uncertainItem.autoPostState = state;
       return true;
     });
-
     publisher.publish.mockRejectedValueOnce(new TimeoutError('Waiting failed: 30000ms exceeded'));
     poster.start();
     await jest.advanceTimersByTimeAsync(0);
+    expect(candidateStore.finishAutoPost).toHaveBeenCalledWith(
+      'queue', 'uncertain', expect.stringContaining('will not be retried automatically'),
+    );
+    await jest.advanceTimersByTimeAsync(120_000);
     expect(publisher.publish).toHaveBeenCalledTimes(1);
-    await jest.advanceTimersByTimeAsync(30_000);
-    expect(publisher.publish).toHaveBeenCalledTimes(2);
-    expect(candidateStore.finishAutoPost).toHaveBeenLastCalledWith('queue', 'posted');
-    expect(retryItem.autoPostRetryCount).toBe(1);
+    expect(recordSuccessfulPost).not.toHaveBeenCalled();
   });
-
-  it('retries the previously attempted candidate even if the best candidate changes', async () => {
-    jest.mocked(candidateStore.list).mockReturnValue([{
-      ...item, autoPostState: 'uncertain', postedCandidateIndex: 0,
-    } as ReturnType<typeof candidateStore.list>[number]]);
-    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true);
-    poster.start();
-    await jest.advanceTimersByTimeAsync(0);
-    expect(publisher.prepare).toHaveBeenCalledWith('first');
-    expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('queue', 0);
-  });
-
-  it('posts a new item before an eligible uncertain retry', async () => {
+  it('posts new items while an uncertain item awaits review', async () => {
     jest.mocked(candidateStore.list).mockReturnValue([
       { ...item, id: 'retry', autoPostState: 'uncertain', postedCandidateIndex: 1 },
       { ...item, id: 'new' },
     ] as ReturnType<typeof candidateStore.list>);
-    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true).mockReturnValueOnce(true);
     poster.start();
     await jest.advanceTimersByTimeAsync(0);
-    expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('new', 1);
-  });
-
-  it('reserves the last 30-minute slot for a new item instead of consuming it on a retry', async () => {
-    const retry = { ...item, id: 'retry', autoPostState: 'uncertain', postedCandidateIndex: 1 };
-    jest.mocked(candidateStore.list).mockReturnValue([retry] as ReturnType<typeof candidateStore.list>);
-    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true);
-    jest.mocked(postTracker.getPostCount30m).mockReturnValue(9);
-    poster.start();
-    await jest.advanceTimersByTimeAsync(0);
-    expect(publisher.prepare).not.toHaveBeenCalled();
-    jest.mocked(candidateStore.list).mockReturnValue([
-      retry, { ...item, id: 'new' },
-    ] as ReturnType<typeof candidateStore.list>);
-    jest.mocked(isAutoPostEligible).mockReturnValueOnce(true).mockReturnValueOnce(true);
-    await jest.advanceTimersByTimeAsync(30_000);
     expect(candidateStore.beginAutoPost).toHaveBeenCalledWith('new', 1);
   });
 

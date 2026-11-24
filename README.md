@@ -48,7 +48,7 @@ changes may require your attention.
 If Firefox reports that an automation session is already active, stop the other
 automation client. If a previous bot stopped unexpectedly and left a stale
 session, close and reopen Firefox with the same remote-debugging flag; the bot
-will retry pending items. Check X before retrying any item marked uncertain.
+will continue processing pending items. Check X before acting on any item marked uncertain.
 
 Long translations are composed as threads. Browser posting is limited to 50 posts
 per 24 hours and 10 posts per 30 minutes, counting each thread part and other
@@ -57,14 +57,13 @@ posting also uses a 30-second interval between attempts. Failed quality checks
 remain available for manual review. Language checks flag non-Latin scripts and
 suspicious untranslated words, while allowing contextual names and quotations;
 the dictionary-based checks can still make mistakes. Previously queued results
-are checked again before automatic posting. If post confirmation times out, the
-bot retries automatically up to 10 times, at least 30 seconds apart and subject
-to posting limits. **A timeout does not prove that X rejected the post: retries
-can create duplicates.** Other uncertain outcomes, including interrupted posts,
-remain on the dashboard for review. After checking X, use **Confirm posted** on
-an uncertain item to stop retries and choose a preferred translation without
-posting again. New items take priority over retries, which reserve a posting
-slot for new items when possible. Posting limits still apply, including to
+are checked again before automatic posting. A confirmation timeout or interrupted
+post does not prove that X rejected it, so uncertain items are never retried
+automatically. Check X and use **Confirm posted** if it succeeded, or dismiss
+the item if it did not. Confirming lets you choose a preferred translation without
+posting again. The bot looks for X's success message or successful creation
+responses for every thread part; changes to X or browser support for reading
+responses can still leave an outcome uncertain. Posting limits still apply, including to
 uncertain attempts. Browser automation depends on X's interface and is not
 guaranteed to work if X changes it.
 

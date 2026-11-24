@@ -1,12 +1,51 @@
 /* global document */
 import * as path from 'path';
-import puppeteer, { Browser, Page, TimeoutError } from 'puppeteer-core';
+import puppeteer, { Browser, HTTPResponse, Page, TimeoutError } from 'puppeteer-core';
 import { config } from '../config';
 import { splitTweet } from '../utils/tweetSplitter';
+import { logger } from '../utils/logger';
 import { connectToFirefox } from './firefoxConnection';
 
 const PROFILE = path.join(process.cwd(), '.automatic-browser-profile');
 const EDITORS = '[data-testid^="tweetTextarea_"]';
+
+function isRecord(value: unknown): value is Record<string, unknown> {
+  return typeof value === 'object' && value !== null && !Array.isArray(value);
+}
+
+async function createdPost(response: HTTPResponse): Promise<{ id: string; text: string } | undefined> {
+  const url = new URL(response.url());
+  if (url.protocol !== 'https:' || !/^(?:www\.)?(?:x|twitter)\.com$/i.test(url.hostname) ||
+      !/^\/i\/api\/graphql\/[^/]+\/CreateTweet$/.test(url.pathname) ||
+      response.request().method() !== 'POST') return undefined;
+  if (!response.ok()) {
+    logger.warn(`[BrowserPublisher] X creation request returned HTTP ${response.status()}`);
+    return undefined;
+  }
+
+  const rawBody = await response.request().fetchPostData();
+  if (!rawBody) {
+    logger.warn('[BrowserPublisher] X creation request body was unavailable for confirmation');
+    return undefined;
+  }
+  const body: unknown = JSON.parse(rawBody);
+  const payload: unknown = await response.json();
+  if (!isRecord(body) || !isRecord(body.variables) || typeof body.variables.tweet_text !== 'string' ||
+      !isRecord(payload) || (payload.errors !== undefined &&
+        (!Array.isArray(payload.errors) || payload.errors.length > 0)) ||
+      !isRecord(payload.data) || !isRecord(payload.data.create_tweet) ||
+      !isRecord(payload.data.create_tweet.tweet_results) ||
+      !isRecord(payload.data.create_tweet.tweet_results.result)) {
+    logger.warn('[BrowserPublisher] X creation response did not contain a successful post result');
+    return undefined;
+  }
+  const id = payload.data.create_tweet.tweet_results.result.rest_id;
+  if (typeof id !== 'string' || !/^\d+$/.test(id)) {
+    logger.warn('[BrowserPublisher] X creation response did not contain a valid post ID');
+    return undefined;
+  }
+  return { id, text: body.variables.tweet_text };
+}
 
 function isXPage(page: Page): boolean {
   return /^https:\/\/(?:www\.)?(?:x|twitter)\.com(?::443)?(?:[/?#]|$)/i.test(page.url());
@@ -17,6 +56,7 @@ export class BrowserPublisher {
   private loginPage?: Page;
   private ownsLoginPage = false;
   private attached = false;
+  private readonly preparedChunks = new WeakMap<Page, string[]>();
 
   async isLoggedIn(): Promise<boolean> {
     if (!this.browser?.connected) {
@@ -105,6 +145,7 @@ export class BrowserPublisher {
           throw new Error(`Twitter composer did not preserve thread part ${i + 1}`);
         }
       }
+      this.preparedChunks.set(page, chunks);
       return page;
     } catch (error) {
       await page.close();
@@ -113,14 +154,57 @@ export class BrowserPublisher {
   }
 
   async publish(page: Page): Promise<void> {
+    const chunks = this.preparedChunks.get(page);
+    if (!chunks) throw new Error('Browser composer was not prepared by this publisher');
     await page.waitForSelector('[data-testid="tweetButton"]', { visible: true, timeout: 10_000 });
-    await Promise.all([
-      page.waitForFunction(() => {
-        const toast = document.querySelector('[data-testid="toast"]');
-        return !!toast && /your posts? (?:was|were) (?:sent|posted)/i.test(toast.textContent || '');
-      }, { timeout: 30_000 }),
-      page.click('[data-testid="tweetButton"]'),
-    ]);
+    const controller = new AbortController();
+    const remaining = [...chunks];
+    const postIds = new Set<string>();
+    let finished = false;
+    let resolveConfirmation: () => void = () => {};
+    const confirmation = new Promise<void>(resolve => {
+      resolveConfirmation = resolve;
+    });
+    let timeout: ReturnType<typeof setTimeout> | undefined;
+    const timeoutResult = new Promise<void>((_resolve, reject) => {
+      timeout = setTimeout(() => reject(new TimeoutError('Post confirmation timed out after 30000ms')), 30_000);
+    });
+    const onResponse = (response: HTTPResponse): void => {
+      void createdPost(response).then(post => {
+        if (finished || !post || postIds.has(post.id)) return;
+        const index = remaining.indexOf(post.text);
+        if (index < 0) return;
+        postIds.add(post.id);
+        remaining.splice(index, 1);
+        if (remaining.length === 0) {
+          logger.info('[BrowserPublisher] Confirmed post from X creation responses');
+          resolveConfirmation();
+        }
+      }).catch(error => {
+        if (!finished) logger.warn(`[BrowserPublisher] Could not inspect X creation response: ${error}`);
+      });
+    };
+    page.on('response', onResponse);
+    void page.waitForFunction((isThread: boolean) => {
+      const toast = document.querySelector('[data-testid="toast"]');
+      const text = toast?.textContent || '';
+      return isThread
+        ? /your posts were (?:sent|posted)/i.test(text)
+        : /your posts? (?:was|were) (?:sent|posted)/i.test(text);
+    }, { timeout: 30_000, signal: controller.signal }, chunks.length > 1).then(() => {
+      if (!finished) resolveConfirmation();
+    }).catch(error => {
+      if (!finished) logger.warn(`[BrowserPublisher] Could not observe post confirmation message: ${error}`);
+    });
+    try {
+      await Promise.all([Promise.race([confirmation, timeoutResult]), page.click('[data-testid="tweetButton"]')]);
+    } finally {
+      finished = true;
+      clearTimeout(timeout);
+      controller.abort();
+      page.off('response', onResponse);
+      this.preparedChunks.delete(page);
+    }
   }
 
   async close(): Promise<void> {

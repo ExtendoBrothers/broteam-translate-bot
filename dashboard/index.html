@@ -492,7 +492,7 @@ async function selectPreference(queueId, candidateIndex) {
 }
 
 async function confirmPosted(queueId) {
-  if (!confirm('Confirm that the attempted post is already on X? This stops automatic retries.')) return;
+  if (!confirm('Confirm that the attempted post is already on X?')) return;
   try {
     const r = await apiFetch(`/api/queue/${queueId}/confirm-posted`, { method: 'POST' });
     const data = await r.json();
@@ -584,7 +584,7 @@ function renderCandidate(item, candidate, index, isGenerating) {
     : isPosted
       ? `<button class="btn btn-post" onclick="selectPreference('${escAttr(item.id)}', ${index})">Choose preference</button>`
       : unavailable
-        ? `<button class="btn btn-ghost" disabled>Awaiting automatic post</button>`
+        ? `<button class="btn btn-ghost" disabled>${item.autoPostState === 'uncertain' ? 'Review post outcome' : 'Awaiting automatic post'}</button>`
         : `<button class="btn btn-post" onclick="postCandidate('${escAttr(item.id)}', ${index})">
          🐦 Post
        </button>`;
