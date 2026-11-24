@@ -3,7 +3,7 @@
   "private": true,
   "license": "WTFPL",
   "engines": {
-    "node": ">=18.0.0"
+    "node": ">=22.12.0"
   },
   "main": "dist/src/index.js",
   "scripts": {
@@ -32,11 +32,11 @@
     "dotenv": "^17.4.2",
     "flatted": "^3.4.2",
     "langdetect": "^0.2.1",
-    "puppeteer-core": "24.34.0",
+    "puppeteer-core": "^25.18.1",
     "twitter-api-v2": "^1.14.0",
+    "winston": "^3.8.2",
     "word-list-json": "^0.2.0",
-    "ws": "^8.18.0",
-    "winston": "^3.8.2"
+    "ws": "^8.18.0"
   },
   "optionalDependencies": {
     "onnxruntime-node": "1.21.1"
@@ -78,6 +78,9 @@
           "tsconfig": "tsconfig.test.json"
         }
       ]
+    },
+    "moduleNameMapper": {
+      "^puppeteer-core$": "<rootDir>/tests/mocks/puppeteer-core.ts"
     },
     "roots": [
       "<rootDir>/src",

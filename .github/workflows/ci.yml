@@ -16,7 +16,7 @@ jobs:
     
     strategy:
       matrix:
-        node-version: [18.x, 20.x]
+        node-version: [22.x, 24.x]
     
     steps:
       - name: Checkout code
@@ -44,14 +44,14 @@ jobs:
         run: npm test
       
       - name: Generate coverage report
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '22.x'
         run: npm run test:coverage
       
       - name: Upload coverage artifact
-        if: matrix.node-version == '20.x'
+        if: matrix.node-version == '22.x'
         uses: actions/upload-artifact@v4
         with:
-          name: coverage-node-20
+          name: coverage-node-22
           path: coverage/
           retention-days: 7
 
@@ -66,7 +66,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
       
       - name: Install dependencies
@@ -90,7 +90,7 @@ jobs:
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: dist-node-20
+          name: dist-node-22
           path: dist/
           retention-days: 7
 
@@ -105,7 +105,7 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
       
       - name: Install dependencies
